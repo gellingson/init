@@ -1,3 +1,4 @@
+
 # test script to play with beautiful soup 4
 
 import re
@@ -19,7 +20,7 @@ def regularize_price(price_string):
 
 
 # get a page of car listings
-page = urllib2.urlopen('http://www.specialtysales.com/allvehicles.php?pg=1&dir=asc&order=year&lim=80')
+page = urllib2.urlopen('http://www.specialtysales.com/allvehicles.php?pg=1&dir=asc&order=year&lim=800')
 
 # soupify it
 soup = BeautifulSoup(page)
@@ -28,7 +29,7 @@ soup = BeautifulSoup(page)
 # look for these: <input class="carid" type="hidden" value="4181"/> and then grab the enclosing <li> node
 
 carids = soup.find_all(class_='carid')
-print('Number of car listings found: {}'.format(len(carids))) # should be 80
+print('Number of car listings found: {}'.format(len(carids))) # should be 800 max
 for carid in carids:
     listing = carid.parent # shorthand for find_parent()?
     words = listing.find('h2').get_text().split(" ",2) # pull out year & make; remaining string is model
@@ -38,5 +39,12 @@ for carid in carids:
     pic = listing.find('img')
     text = listing.find(class_='intro-text').get_text()
     price = regularize_price(listing.find('h3').get_text())
+    try:
+    	vin = re.search('VIN(.+?)*',text).group(1)
+    except AttributeError:
+    	vin = "nada"
+    print(vin)
+    #re.IGNORECASE
 
-    print('{} {} {} {} {}'.format(year, make, model, price, text.encode('ascii', 'replace')))
+    #print('{} {} {} {} {}'.format(year, make, model, price, text.encode('ascii', 'replace')))
+    #print('{} ** {} ** {} ** {} ** {}'.format(year, make, model, price, pic))
