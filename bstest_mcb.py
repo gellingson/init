@@ -17,10 +17,10 @@ def regularize_price(price_string):
     except ValueError:
         price = -1
     return price
-
+    
 
 # get a page of car listings
-page = urllib2.urlopen('http://www.specialtysales.com/allvehicles.php?pg=1&dir=asc&order=year&lim=800')
+page = urllib2.urlopen('http://www.specialtysales.com/allvehicles.php?pg=1&dir=asc&order=year&lim=15')
 
 # soupify it
 soup = BeautifulSoup(page)
@@ -40,7 +40,11 @@ for carid in carids:
     text = listing.find(class_='intro-text').get_text()
     price = regularize_price(listing.find('h3').get_text())
     try:
-    	vin = re.search('VIN(.+?)*',text).group(1)
+    	#vin = re.search('VIN(.+?)*',text, re.I|re.X).group(1)
+    	#vin = re.search('(vin[\#:; ])(.+?)([0-9a-zA-Z-]*)',text, re.I|re.X).group()
+    	vin = re.search('(vin[\#\:\; ]+)([0-9a-zA-Z-]*)',text, re.I|re.X).group(2)
+    	#vin = re.search('(vin[\#\:\; ])(([\#\: ]+?)([0-9a-zA-Z-]*))',text, re.I|re.X).group()
+    	#=[Vv][Ii][Nn][\: ]*+([0-9a-zA-Z]*)
     except AttributeError:
     	vin = "nada"
     print(vin)
