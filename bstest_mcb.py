@@ -20,7 +20,9 @@ def regularize_price(price_string):
     
 
 # get a page of car listings
-page = urllib2.urlopen('http://www.specialtysales.com/allvehicles.php?pg=1&dir=asc&order=year&lim=15')
+#page = urllib2.urlopen('http://www.specialtysales.com/allvehicles.php?pg=1&dir=asc&order=year&lim=15')
+page = urllib2.urlopen('http://www.specialtysales.com/inventory?per_page=80')
+
 
 # soupify it
 soup = BeautifulSoup(page)
