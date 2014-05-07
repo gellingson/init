@@ -21,7 +21,7 @@ def regularize_price(price_string):
 
 # get a page of car listings
 #page = urllib2.urlopen('http://www.specialtysales.com/allvehicles.php?pg=1&dir=asc&order=year&lim=15')
-page = urllib2.urlopen('http://www.specialtysales.com/inventory?per_page=80')
+page = urllib2.urlopen('http://www.specialtysales.com/inventory?per_page=8')
 
 
 # soupify it
@@ -35,7 +35,8 @@ print('Number of car listings found: {}'.format(len(carids))) # should be 800 ma
 for carid in carids:
     listing = carid.parent # shorthand for find_parent()?
     words = listing.find('h2').get_text().split(" ",2) # pull out year & make; remaining string is model
-    year = int(words[0])
+    print('year? ',words[1])
+    #year = int(words[0])
     make = words[1]
     model = words[2]
     pic = listing.find('img')
