@@ -19,19 +19,25 @@ def regularize_price(price_string):
     
 
 # get a page of car listings
-#page = urllib2.urlopen('http://www.specialtysales.com/allvehicles.php?pg=1&dir=asc&order=year&lim=15')
 page = urllib2.urlopen('http://www.specialtysales.com/inventory?per_page=8')
 
 # soupify it
 soup = BeautifulSoup(page)
 
 # get all the relative URLs to go to next pages
-
-#x = soup.find_all(href=re.compile("vehicles"))
-#x = soup.find_all(href=re.compile("vehicles"))
-#x = soup(id=True)
 x = (soup.find_all(class_='carid'))
-para = []
-for i in x:
-	print i,' type ',type(i)
+y = len(x)
+
+# now go through those next pages & pull the relevant information
+
+# get each car listing's id (& related URL)
+vid=[]
+for i in range(y):
+	vid.append(x[i]['value'])
+
+# iterate over every listing & pull info from each page
+for i in range(len(vid)):
+	URL='http://www.specialtysales.com/vehicles/'+vid[i]
+	page = urllib2.urlopen(URL)
+	soup = BeautifulSoup(page)
 
