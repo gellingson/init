@@ -16,10 +16,16 @@ def regularize_price(price_string):
     except ValueError:
         price = -1
     return price
-    
+
+# sloppy, sloppy, sloppy but functional
+def removetd(tag_object):
+	tag_str=str(tag_object)    
+	tag_str = tag_str.replace('<td>','')
+	tag_str = tag_str.replace('</td>','')
+	return tag_str
 
 # get a page of car listings; # at end gives # to pull
-page = urllib2.urlopen('http://www.specialtysales.com/inventory?per_page=1')
+page = urllib2.urlopen('http://www.specialtysales.com/inventory?per_page=800')
 
 # soupify it
 soup = BeautifulSoup(page)
@@ -44,31 +50,22 @@ for i in range(len(vid)):
 	test_listing = {}
 	listing ={}
 	
-	test_listing['status'] = 'F';
-	test_listing['model_year'] = '1955';    
-	test_listing['make'] = 'Ford';
-	listing['model'] = soup.h1.string.partition(' ')[0]
-	#listing['model'] = soup.h1.string
+	listing['make'] = soup.h1.string.partition(' ')[0]
+	listing['model'] = soup.h1.string.partition(' ')[2]
 	listing['price'] = str(re.sub('[^\d\.]','',soup.find('h2').get_text()))
-	test_listing['listing_text'] = 'This is a fake thunderbird listing'
+
 	test_listing['pic_href'] = 'http://www.google.com'
-	test_listing['listing_href'] = 'http://www.yahoo.com'
-    test_listing['source'] = 'dbtest'
-    test_listing['source_id'] = '1'
-    test_listing['stock_no'] = 'stock1234'
-    tag = soup.find_all('td')
-    print tag[1]," ",type(tag)
-
-    #words = listing.find('h2').get_text().split(" ",2) # pull out year & make; remaining string is model
-    #year = int(words[0])
-		
-
-
-"""    test_listing = {}
-    test_listing['listing_text'] = 'This is a fake thunderbird listing';
-    test_listing['pic_href'] = 'http://www.google.com';
-    test_listing['listing_href'] = 'http://www.yahoo.com';
-    test_listing['source'] = 'dbtest';
-    test_listing['source_id'] = '1';
-    test_listing['stock_no'] = 'stock1234';
-"""
+	listing['listing_href'] = URL
+	listing['stock_no'] = 'xxx' #position 1
+	
+	tag = soup.find_all('td')
+	#for t in range(len(tag)):
+	#	print t," ",tag[t]
+	listing['price']=removetd(tag[3])
+	listing['odometer']=removetd(tag[9])
+	listing['engine']=removetd(tag[11])
+	listing['transmission']=removetd(tag[13])
+	listing['VIN']=removetd(tag[15])
+	if listing['price'] > 0:
+		listing['status'] = 'F'
+	print 'make/model ',listing['make'],' ** ',listing['model']
