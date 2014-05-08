@@ -31,7 +31,7 @@ def regularize_price(price_string):
 def test_inventory():
     # 
     test_listing = {}
-    test_listing['status'] = 'F';
+    test_listing['status'] = 'T'; # T -> test data (will exclude from website listings)
     test_listing['model_year'] = '1955';
     test_listing['make'] = 'Ford';
     test_listing['model'] = 'Thunderbird';
@@ -107,7 +107,7 @@ def fantasyjunction_inventory():
         listing['source_id'] = detail_soup.find(id="ContactCarId")['value']
         listing['stock_no'] = listing['source_id'] # no separate stock#
 
-        listing['status'] = 'F'
+        listing['status'] = 'F' # 'F' -> For Sale
 
         # many interesting items are in an "alpha-inner-bottom' div, but for now just grab price
         # tabular format with labels & values in two td elements, e.g.:
