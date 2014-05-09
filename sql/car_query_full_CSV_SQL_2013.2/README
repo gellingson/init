@@ -1,0 +1,13 @@
+
+This directory contains the raw data files downloaded from carqueryapi.com
+(make/model info)
+
+This data has serious limitations (missing make/model/year combos, some
+bogus-looking stuff, mix of curb & gross weights) but it's a start. For
+now I'm loading this as-is using the provided sql file then massaging into
+a table format to use go-forward. Later we may either hand-edit the csv
+data, augment with additional loads that we merge into the db master
+tables, or throw this out entirely & replace with better data.
+
+But for now... here it is. Checking into git so we can leverage this in
+db build scripts and so we don't loose the info.
