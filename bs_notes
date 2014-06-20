@@ -1,0 +1,50 @@
+
+Some notes on bs4 parsing:
+
+traversals are funky...
+
+.next_sibling and .next_element seem next-to-useless
+.find_next_sibling() seems to work OK, at least with criteria e.g. .find_next_sibling('td')
+
+.parent seems to work as expected, returning the enclosing element
+.find_parent() with no params does the same thing as .parent
+.parent() returns a set (!) containing the item itself, children of the item, and siblings of the item
+
+finds with text=foo matches exactly only, e.g. text="foo" does NOT match "foo " or "Foo".
+This does NOT seem to agree with the docs, nor does it match the behavior when given a regular expression to match. Passing in a list treats each element as a separate text, ie it requires exact full match.
+
+The various find()/find_all() commands seem to return the innermost element that matches [all tests]. TThus when given something like:
+
+<td><h3>Foo</h3></td>
+
+find(text='Foo') gives u'Foo'
+find('h3', text='Foo') gives <h3>Foo</h3>
+find('td', text='Foo') gives <td><h3>Foo</h3></td>
+.... UNLESS the find is called on the <td> itself, because find() apparently will never return itself.
+So if you are calling find() on an enclosing <tr>, you are good. If you call that last find on the <td> itself you get back nothing.
+
+Note counter-example, though: specialty detail page price in an <h2> like this:
+<h2><span class="bold">Price:</span>$29,900</h2>
+
+... which can be found via
+detail.find('h2')
+but is NOT returned via either:
+detail.find('h2', text='Price:')
+or
+detail.find('h2', text=re.compile('Price:'))
+
+Why not?? Maybe it only goes up 1 level, where levels are hard to figure...?
+
+Note these query results on a page including:
+
+<div class="big-stripe dark carheader">
+     <h1>1990 Bentley Turbo R 4 Door Saloon Coupe</h1>
+</div>
+							
+>detail.find(text=re.compile('Turbo R'))
+u'1990 Bentley Turbo R 4 Door Saloon Coupe'
+>detail.find('div',text=re.compile('Turbo R'))
+>detail.find('h1',text=re.compile('Turbo R'))
+<h1>1990 Bentley Turbo R 4 Door Saloon Coupe</h1>
+
+So I can find that text string, or the h1, but not the enclosing div (?!)

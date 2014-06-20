@@ -1,5 +1,5 @@
 #!/opt/local/bin/python
-# test script to play with beautiful soup 4
+# this is the main import script for grabbing inventory from various sources
 
 import sys
 import re
@@ -68,197 +68,12 @@ def all_norcal_inventory():
     for dealer in dealers:
         list_of_listings.append(pull_dealer_inventory(dealers[dealer]))
     return False
-    
-# fantasyjunction_inventory()
+
+
+# carbuffs_parse_listing
 #
-# GEE: This method is now OBSOLETE, replaced by pull_dealer_inventory() with appropriate helper methods!
+# GEE NOTE: this method hasn't been redone for carbuffs yet; this is a copy-paste of fj
 #
-# Pull inventory from fantasyjunction.com
-#
-# returns a list of listings dicts
-#
-# see sample inventory and detail pages:
-# samples/fantasy_junction_inventory_page.html
-# samples/fantasy_junction_detail_page.html
-#
-def fantasyjunction_inventory():
-
-    base_url = 'http://www.fantasyjunction.com'
-    list_of_listings = []
-
-    logging.info('Pulling inventory from ' + base_url)
-
-    # get the first page of car listings (fj has fixed pagination 20 cars per page)
-    # GEE TODO replace hardcoded URLs with data-driven (db) mechanism
-    page = urllib2.urlopen(base_url + '/inventory');
-
-    while True:
-        # soupify it
-        soup = BeautifulSoup(page)
-
-        # extract all the listings
-        # each listing is in a class="list-entry pkg list-entry-link"
-        # note: also surrounded by CAR ENTRY START/END comments but that seems messier
-
-        listings = soup.find_all(class_='list-entry pkg list-entry-link')
-        logging.info('Number of car listings found: {}'.format(len(listings)))
-        for entry in listings:
-            listing = {} # build a listing dict for this car
-
-            # get the smaller img from the inventory page, not the big pics on the detail page
-            # GEE TODO make a generalized relative URL->absolute URL handler
-            listing['pic_href'] = base_url + entry.find('img').get_text()
-
-            # get the short listing text from the inventory page as well
-            listing['listing_text'] = entry.find(class_="entry-subheader blue").get_text()
-
-            # get detail page
-            listing['listing_href'] = base_url + entry.find('a').get('href') # detail page URL is first/only link in each listing
-
-            # load it
-            detail_page = urllib2.urlopen(listing['listing_href'])
-            detail_soup = BeautifulSoup(detail_page)
-
-            # pull the rest of the fields from the detail page
-
-            words = detail_soup.find('title').get_text().split(" ",2) # pull out year & make; remaining string is model
-            listing['model_year'] = int(words[0])
-            listing['make'] = words[1]
-            listing['model'] = words[2]
-            # GEE TODO make a better splitter that understands multiword makes (e.g. Alfa Romeo)
-            # GEE TODO ... or for now, pull the make/model from the keywords meta tag
-
-            listing['source'] = 'fantasyjunction'
-            listing['source_id'] = detail_soup.find(id="ContactCarId")['value']
-            listing['stock_no'] = listing['source_id'] # no separate stock#
-
-            listing['status'] = 'F' # 'F' -> For Sale
-
-            # many interesting items are in an "alpha-inner-bottom' div, but for now just grab price
-            # tabular format with labels & values in two td elements, e.g.:
-            # <tr>
-            # <td class="car-detail-name">Price</td>
-            # <td class="car-detail-value"> $42,500</td>
-            # </tr>
-            # GEE note: I can't get the regular parent/child nav to work reliably on these elts
-            # E.g. using .parent or .parent() on the td gives me a list of tds, not the tr ?!
-            # Not sure why... but the find_parent() seems to work even though .parent() goes funky
-            elt = detail_soup.find(id="alpha-inner-bottom")
-            price_tr = elt.find("td", text="Price").find_parent("tr")
-            price_string = price_tr.find("td", class_="car-detail-value").get_text()
-            listing['price'] = regularize_price(price_string)
-
-            # GEE debug
-            logging.debug("item: " + json.dumps(listing))
-
-            list_of_listings.append(listing)
-
-        # is there another page of listings? Look for a link with "next" text
-        # Note that there may be multiple such links (e.g. @ top & bottom of list);
-        # they should be identical so just grab the first
-        next_ref = soup.find('a', text=re.compile("[Nn]ext"))
-        if next_ref:
-            page = urllib2.urlopen(base_url + str(next_ref.get('href')));
-            # GEE TODO - check that this is really a listings page and has
-            # different listings, ie detect and avoid infinite loops
-        else:
-            break
-
-    return list_of_listings
-
-# specialty_inventory()
-#
-# GEE: This method is now OBSOLETE, replaced by pull_dealer_inventory() with appropriate helper methods!
-#
-# Pull inventory from specialtysales.com
-#
-# returns a list of listings dicts
-#
-# see sample inventory and detail pages:
-# samples/fantasy_junction_inventory_page.html
-# samples/fantasy_junction_detail_page.html
-#
-def specialty_inventory():
-
-    base_url = 'http://www.specialtysales.com'
-    list_of_listings = []
-
-    # the 300 parm should mean that all car listings are in one page & there
-    # will be a next page link; our standard pagination loop should cope
-
-    page = urllib2.urlopen(base_url + '/inventory?per_page=300');
-
-    while True:
-        # soupify it
-        soup = BeautifulSoup(page)
-
-        # extract all the listings
-        # each listing is in a <li> block that contains a <class="carid"> entry
-
-        listings = soup.find_all(class_='carid')
-        print('Number of car listings found: {}'.format(len(listings)))
-        for carid in listings:
-            listing = {} # build a listing dict for this car
-
-            # we grabbed all the _carids, but we actually need the enclosing
-            # HTML entry (a line, or <li> block)
-            entry = carid.parent()
-
-            # get the smaller img from the inventory page, not the big pics on the detail page
-            # GEE TODO make a generalized relative URL->absolute URL handler
-            listing['pic_href'] = base_url + entry.find('img').get_text()
-
-            # get the short listing text from the inventory page as well
-            listing['listing_text'] = entry.find(class_="entry-subheader blue").get_text()
-
-            # get detail page
-            listing['listing_href'] = base_url + entry.find('a').get('href') # detail page URL is first/only link in each listing
-
-            # load it
-            detail_page = urllib2.urlopen(listing['listing_href'])
-            detail_soup = BeautifulSoup(detail_page)
-
-            # pull the rest of the fields from the detail page
-            words = detail_soup.find('title').get_text().split(" ",2) # pull out year & make; remaining string is model
-            listing['model_year'] = int(words[0])
-            listing['make'] = words[1]
-            listing['model'] = words[2]
-
-            # GEE TODO make a better splitter that understands multiword makes (e.g. Alfa Romeo)
-
-            listing['source'] = 'specialty'
-            listing['source_id'] = detail_soup.find(id="ContactCarId")['value']
-            listing['stock_no'] = listing['source_id'] # no separate stock#
-
-            listing['status'] = 'F' # 'F' -> For Sale
-
-            # NOTE: this appears to be junk that's actually from fj??
-            # GEE note: I can't get the regular parent/child nav to work reliably on these elts
-            # E.g. using .parent or .parent() on the td gives me a list of tds, not the tr ?!
-            # Not sure why... but the find_parent() seems to work even though .parent() goes funky
-            elt = detail_soup.find(id="alpha-inner-bottom")
-            price_tr = elt.find("td", text="Price").find_parent("tr")
-            price_string = price_tr.find("td", class_="car-detail-value").get_text()
-            listing['price'] = regularize_price(price_string)
-
-            # GEE debug
-            print("item" + json.dumps(listing))
-
-            list_of_listings.append(listing)
-
-        # is there another page of listings? Look for a link with "next" text
-        # Note that there may be multiple such links (e.g. @ top & bottom of list);
-        # they should be identical so just grab the first
-        next_ref = soup.find('a', text=re.compile("[Nn]ext"))
-        if next_ref:
-            page = urllib2.urlopen(base_url + str(next_ref.get('href')));
-            # GEE TODO - check that this is really a listings page and has
-            # different listings, ie detect and avoid infinite loops
-        else:
-            break
-
-    return list_of_listings
-
 def carbuffs_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page as well
@@ -286,6 +101,9 @@ def carbuffs_parse_listing(listing, entry, detail):
 
     return True
 
+
+# fj_parse_listing
+#
 def fj_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page as well
@@ -314,6 +132,8 @@ def fj_parse_listing(listing, entry, detail):
     return True
 
 
+# specialty_parse_listing
+#
 def specialty_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page as well
