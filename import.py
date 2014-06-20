@@ -12,6 +12,12 @@ import logging
 import MySQLdb as db
 from bs4 import BeautifulSoup
 
+# GEE TODO: fix this total unicode HACK!!
+# never mind -- didn't work anyway :(. But I do need comprehensive, real charset-handling
+#import codecs
+#def strict_handler(exception):
+#        return u"", exception.end
+#codecs.register_error("strict", strict_handler)
 
 # regularize methods will take a string input that may be "messy" or vary a bit
 # from site to site and regularize/standardize it
@@ -72,32 +78,52 @@ def all_norcal_inventory():
 
 # carbuffs_parse_listing
 #
-# GEE NOTE: this method hasn't been redone for carbuffs yet; this is a copy-paste of fj
 #
 def carbuffs_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page as well
-    listing['listing_text'] = entry.find(class_="entry-subheader blue").get_text()
+    listing['listing_text'] = entry.find(class_="car-excerpt").text
 
     # pull the rest of the fields from the detail page
-    # GEE TODO make a better splitter that understands multiword makes (e.g. Alfa Romeo)
-    words = detail.find('title').get_text().split(" ",2) # pull out year & make; remaining string is model
+    words = detail.find(class_='car-name').text.encode('ascii','ignore').split(" ", 2)
     listing['model_year'] = int(words[0])
     listing['make'] = words[1]
     listing['model'] = words[2]
 
-    listing['source_id'] = detail.find(id="ContactCarId")['value']
+    # carbuffs has no stock#/inventory ID; use the unique URL element
+    listing['source_id'] = listing['listing_href'].split('inventory')[1].replace("'","")
     listing['stock_no'] = listing['source_id'] # no separate stock#
 
-    # many interesting items are in an "alpha-inner-bottom' div, but for now just grab price
-    # tabular format with labels & values in two td elements, e.g.:
-    # <tr>
-    # <td class="car-detail-name">Price</td>
-    # <td class="car-detail-value"> $42,500</td>
-    # </tr>
-    elt = detail.find(id='alpha-inner-bottom')
-    price_string = elt.find("td", text="Price").parent.find('td', class_="car-detail-value").text
-    listing['price'] = regularize_price(price_string)
+    # common name/value patterns in details page:
+    #<li><strong>Car model year:</strong> 1963</li>
+    #<p class="car-asking-price"><strong>Asking Price:</strong> $89,950</p>
+    listing['price'] = regularize_price(detail.find('strong',text='Asking Price:').next_sibling)
+
+    return True
+
+
+# cvclassics_parse_listing
+#
+# GEE TODO: not yet implemented (this is a cut-and-paste)
+def cvclassics_parse_listing(listing, entry, detail):
+
+    # get the short listing text from the inventory page as well
+    listing['listing_text'] = entry.find(class_="car-excerpt").text
+
+    # pull the rest of the fields from the detail page
+    words = str(detail.find(class_='car-name').text).split(" ", 2)
+    listing['model_year'] = int(words[0])
+    listing['make'] = words[1]
+    listing['model'] = words[2]
+
+    # carbuffs has no stock#/inventory ID; use the unique URL element
+    listing['source_id'] = listing['listing_href'].split('inventory')[1].replace("'","")
+    listing['stock_no'] = listing['source_id'] # no separate stock#
+
+    # common name/value patterns in details page:
+    #<li><strong>Car model year:</strong> 1963</li>
+    #<p class="car-asking-price"><strong>Asking Price:</strong> $89,950</p>
+    listing['price'] = regularize_price(detail.find('strong',text='Asking Price:').next_sibling)
 
     return True
 
@@ -212,7 +238,6 @@ def pull_dealer_inventory(dealer):
 
             # try standard grabs; then call the dealer-specific method for
             # overrides & improvements
-
             listing['source'] = dealer['name']
             listing['pic_href'] = urlparse.urljoin(dealer['base_url'],str(entry.find('img').attrs['src']))
 
@@ -226,7 +251,7 @@ def pull_dealer_inventory(dealer):
             # often the first (likely only) href in the block is the detail page
             detail_url_elt = entry.find('a')
             if detail_url_elt != None:
-                detail_url = get('href')
+                detail_url = detail_url_elt.get('href')
             else:
                 # or alternately, there may be an onclick property we can grab?
                 # the onclick property could be on entry or a subentity
@@ -335,9 +360,17 @@ carbuffs = {
     'name' : 'carbuffs',
     'base_url' : 'http://carbuffs.com',
     'inventory_url' : '/inventory',
-    'extract_car_list_func' : lambda s: s.find_all(class_='car-info'),
+    'extract_car_list_func' : lambda s: s.find_all(class_='car-cont'),
     'listing_from_list_item_func' : lambda s: s,
     'parse_listing_func' : carbuffs_parse_listing
+    }
+cvclassics = {
+    'name' : 'cvclassics',
+    'base_url' : 'http://www.centralvalleyclassics.com',
+    'inventory_url' : '/cars/carsfs.html',
+    'extract_car_list_func' : lambda s: s.find_all('img',alt=re.compile('Click')), # Yuck!
+    'listing_from_list_item_func' : lambda s: s.parent.parent.parent, # Yuck again!
+    'parse_listing_func' : cvclassics_parse_listing
     }
 fj = {
     'name' : 'fj',
