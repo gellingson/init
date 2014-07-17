@@ -98,6 +98,16 @@ def make_sure_path_exists(path):
     return True
 
 
+def soup_from_file(path):
+    with open(path) as file:
+        return BeautifulSoup(file)
+
+    
+# GEE TODO: write this
+def soup_from_url(url):
+    return None
+
+
 # test_inventory()
 #
 # creates a bogus listing since this is a test script :)
@@ -130,6 +140,27 @@ def test_inventory():
 # ============================================================================
 # PARSING METHODS
 # ============================================================================
+
+# placeholder method to copy-and-paste to form a new dealership-specific parse
+#
+def new_parse_listing(listing, entry, detail):
+
+    # get some stuff from the inventory page
+    (listing['model_year'],
+    listing['make'],
+    listing['model']) = regularize_year_make_model('')
+
+    listing['listing_text'] = ''
+
+    # pull the rest of the fields from the detail page
+
+    listing['local_id'] = ''
+    listing['stock_no'] = listing['local_id'] # no separate stock#
+
+    listing['price'] = regularize_price('')
+
+    return True
+
 
 # carbuffs_parse_listing
 #
@@ -167,16 +198,16 @@ def cvclassics_parse_listing(listing, entry, detail):
 
     # this site is super-sparse, with no useful tagging...
     # we just have to make the best of it
+
+    # get year/make/model and short listing text from the inventory page
+
     strings = entry.find_all(text=True)
 
-    # get the short listing text from the inventory page
+    (listing['model_year'],
+    listing['make'],
+    listing['model']) = regularize_year_make_model(strings[0])
+
     listing['listing_text'] = strings[1]
-#xyzzy
-    # pull the rest of the fields from the detail page
-    words = strings[0].split(" ", 2)
-    listing['model_year'] = int(words[0])
-    listing['make'] = words[1]
-    listing['model'] = words[2]
 
     # cvclassics has no stock#/inventory ID; use the unique URL element
     listing['local_id'] = listing['listing_href'].split('/')[-1].replace('.html','')
@@ -188,6 +219,28 @@ def cvclassics_parse_listing(listing, entry, detail):
     if pe != None:
         pe = pe.split(':')[-1]
     listing['price'] = regularize_price(pe)
+
+    return True
+
+
+# dawydiak_parse_listing
+#
+# used for both porsche and non-porsche inventory from Cars Dawydiak
+#
+def dawydiak_parse_listing(listing, entry, detail):
+
+    # get some stuff from the inventory page
+
+    listing['listing_text'] = entry.find(class_='introlist').text
+    listing['price'] = regularize_price(entry.find(class_='dscprice').text)
+
+    # pull the rest of the fields from the detail page
+    listing['model_year'] = detail.find('dt',text=re.compile('Year:')).parent.dd.text
+    listing['make'] = detail.find('dt',text=re.compile('Make:')).parent.dd.text
+    listing['model'] = detail.find('dt',text=re.compile('Model:')).parent.dd.text
+
+    listing['local_id'] = detail.find('dt',text=re.compile('Stock')).parent.dd.text
+    listing['stock_no'] = listing['local_id'] # no separate stock#
 
     return True
 
@@ -529,7 +582,7 @@ def db_insert_or_update_listing(con, listing):
         c2.execute("""select * from listing where source_textid= %s and local_id = %s""", (listing['source_textid'], listing['local_id'],))
         db_listing = c2.fetchone()
 
-        logging.debug("inserted record id={}: {} {} {}".format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
+        logging.debug('inserted record id={}: {} {} {}'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
 
     elif rows == 1:
         # matching listing already -- do we need to update?
@@ -539,7 +592,7 @@ def db_insert_or_update_listing(con, listing):
             up = con.cursor(db.cursors.DictCursor)
             up.execute("""update listing set price = %s, last_update = CURRENT_TIMESTAMP where id = %s""", (listing['price'],db_listing['id']))
         # else listing is up to date; no update required
-        logging.debug("found (updated) record id=%d: %s %s %s", (db_listing['id'],listing['model_year'],listing['make'], listing['model']))
+        logging.debug('found (updated) record id={}: {} {} {}'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
     else:
         # WTF - multiple rows?
         print "YIKES! Multiple matching rows already in the listing table?"
@@ -592,6 +645,22 @@ cvclassics = {
     'listing_from_list_item_func' : lambda s: s.parent.parent.parent, # Yuck again!
     'parse_listing_func' : cvclassics_parse_listing
     }
+dawydiak = {
+    'textid' : 'dawydiak',
+    'base_url' : 'http://www.carsauto.com',
+    'inventory_url' : '/other-inventory.htm?limit=500&order_by=&d=backw',
+    'extract_car_list_func' : lambda s: s.find_all(class_='in-lst-buttoned-nm'),
+    'listing_from_list_item_func' : lambda s: s.parent,
+    'parse_listing_func' : dawydiak_parse_listing
+    }
+dawydiakp = {
+    'textid' : 'dawydiakp',
+    'base_url' : 'http://www.carsauto.com',
+    'inventory_url' : '/porsche-inventory.htm?limit=500&order_by=&d=backw',
+    'extract_car_list_func' : lambda s: s.find_all(class_='in-lst-buttoned-nm'),
+    'listing_from_list_item_func' : lambda s: s.parent,
+    'parse_listing_func' : dawydiak_parse_listing
+    }
 fj = {
     'textid' : 'fj',
     'base_url' : 'http://www.fantasyjunction.com',
@@ -629,6 +698,8 @@ specialty = {
 dealers = {
     'carbuffs' : carbuffs,
     'cvclassics' : cvclassics,
+    'dawydiak' : dawydiak,
+    'dawydiakp' : dawydiakp,
     'fj' : fj,
     'lcc' : lcc,
     'lce' : lce,
