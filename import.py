@@ -55,6 +55,36 @@ def regularize_price(price_string):
     return price
 
 
+# regularize_year_make_model
+#
+# take a string containing year, make, and model (e.g. '1970 ford thunderbird')
+# and split (intelligently) into year, make, and model
+#
+# NOTES:
+# for now this is stupid; will be enhanced to use make/model dict info
+# will return None for any elements we can't figure out (e.g. if passed '')
+#
+def regularize_year_make_model(year_make_model_string):
+    # GEE TODOs:
+    # make a better splitter that understands multiword makes (e.g. Alfa Romeo)
+    # use the year/make/model database to reality check / standardize
+    if year_make_model_string: # is not None or ''
+        words = year_make_model_string.split(" ",2)
+        if len(words) == 3: # assume it went as desired (for now)
+            return words # should be year, make, model
+        else: # oops...
+            # maybe missing year?
+            try:
+                int(words[0])
+            except ValueError:
+                words.insert(0, None) # Stick in a None for year
+            while (len(words) < 3):
+                append(words, None) # pad out...
+            return words
+    else:
+        return (None, None, None)
+
+
 # make_sure_path_exists()
 #
 # utility method that will create any missing components of the given path
@@ -108,7 +138,7 @@ def carbuffs_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page
     listing['listing_text'] = entry.find(class_="car-excerpt").text
-
+    #xyzzy
     # pull the rest of the fields from the detail page
     words = detail.find(class_='car-name').text.encode('ascii','ignore').split(" ", 2)
     listing['model_year'] = int(words[0])
@@ -141,7 +171,7 @@ def cvclassics_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page
     listing['listing_text'] = strings[1]
-
+#xyzzy
     # pull the rest of the fields from the detail page
     words = strings[0].split(" ", 2)
     listing['model_year'] = int(words[0])
@@ -170,11 +200,11 @@ def fj_parse_listing(listing, entry, detail):
     listing['listing_text'] = entry.find(class_="entry-subheader blue").get_text()
 
     # pull the rest of the fields from the detail page
-    # GEE TODO make a better splitter that understands multiword makes (e.g. Alfa Romeo)
-    words = detail.find('title').get_text().split(" ",2) # pull out year & make; remaining string is model
-    listing['model_year'] = int(words[0])
-    listing['make'] = words[1]
-    listing['model'] = words[2]
+
+    s = detail.find('title').text
+    (listing['model_year'],
+     listing['make'],
+     listing['model']) = regularize_year_make_model(s)
 
     listing['local_id'] = detail.find(id="ContactCarId")['value']
     listing['stock_no'] = listing['local_id'] # no separate stock#
@@ -235,6 +265,7 @@ def lc_parse_listing(listing, entry, detail):
             words = detail.find('h1').text.split(" ", 2)
         else:
             words = entry.find('h2').text.split(" ", 2)
+            #xyzzy
         listing['model_year'] = int(words[0])
         listing['make'] = words[1]
         listing['model'] = words[2]
@@ -253,7 +284,9 @@ def lc_parse_listing(listing, entry, detail):
             return False
 
     # cvclassics has no stock#/inventory ID; use the unique URL element
-    listing['local_id'] = listing['listing_href'].split('/')[-1].replace('.html','')
+    # note that this will be wonky for item(s) that are 'coming soon'
+    # (no detail page exists yet)
+    listing['local_id'] = listing['listing_href'].rstrip('/').split('/')[-1].replace('.html','')
     listing['stock_no'] = listing['local_id'] # no separate stock#
 
     # no real patterns to mine on the details page...
@@ -266,14 +299,36 @@ def lc_parse_listing(listing, entry, detail):
 def specialty_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page
-    listing['listing_text'] = entry.find(class_='intro-text').get_text()
+    listing['listing_text'] = entry.get_text()
 
-    # discarded way to pull the source ID from the inventory page...
-    # listing['local_id'] = str(entry.find(class_='stockno').get_text()).split()[-1]
+    # grab price from the main listings page entry
+    if entry.find(class_='vehicle-price-label'):
+        price_string = entry.find(class_='vehicle-price-label').text
+    else:
+        price_string = ''
+    listing['price'] = regularize_price(price_string)
 
-    # pull the rest of the fields from the detail page
-    # NOTES:
-    # most elements are coming from a table with rows of the form:
+    # grab year/make/model
+    if entry.find(class_='vehicle-heading'):
+        s = entry.find(class_='vehicle-heading').text
+    else:
+        s = ''
+    (listing['model_year'],
+     listing['make'],
+     listing['model']) = regularize_year_make_model(s)
+
+    s = ''
+    if entry.find(class_='vehicle-stock'):
+        s = entry.find(class_='vehicle-stock').text
+        if '#' in s:
+            junk, s = s.split('#')
+    listing['local_id'] = s
+    listing['stock_no'] = listing['local_id'] # no separate stock#
+
+    # NOTE: we got everything from the inventory page;
+    # not currently using the detail page at all
+    # specialty used to have nice elements like the below on the detail
+    # page but doesn't any more:
     # <tr>
     #   <td><h3>Stock: </h3></td>
     #   <td>F13011</td>
@@ -282,16 +337,6 @@ def specialty_parse_listing(listing, entry, detail):
     # the second td has the value (raw, not in an h3)
     # the h3 in there seems to toast next_sibling/next_element, but find_next_sibling('td') works
     
-    listing['model_year'] = detail.find('td',text='Year: ').find_next_sibling('td').text 
-    listing['make'] = detail.find('td',text='Make: ').find_next_sibling('td').text 
-    listing['model'] = detail.find('td',text='Model: ').find_next_sibling('td').text
-    listing['local_id'] = detail.find('td',text='Stock: ').find_next_sibling('td').text
-    listing['stock_no'] = listing['local_id'] # no separate stock#
-
-    # price is different:
-    price_string = str(detail.find('h2').text).split(':')[1]
-    listing['price'] = regularize_price(price_string)
-
     return True
 
 # ============================================================================
@@ -316,6 +361,7 @@ def specialty_parse_listing(listing, entry, detail):
 def pull_dealer_inventory(dealer):
 
     list_of_listings = []
+    last_local_id = None
 
     # the 300 parm should mean that all car listings are in one page & there
     # will be a next page link; our standard pagination loop should cope
@@ -355,10 +401,14 @@ def pull_dealer_inventory(dealer):
             listing['source_textid'] = dealer['textid']
             listing['pic_href'] = urlparse.urljoin(full_inv_url,str(entry.find('img').attrs['src']))
 
-            # often the first (likely only) href in the block is the detail page
+            # try to find the URL of the detail listing page
             detail = None # if we don't find one, we can pass down this None
-            detail_url_elt = entry.find('a')
-            if detail_url_elt != None:
+            if entry.get('href'):
+                # the found item may itself be an <a> with an href to the detail page
+                detail_url = entry.get('href')
+            elif entry.find('a'):
+                detail_url_elt = entry.find('a')
+                # or the first (likely only) href in the block is the detail page
                 detail_url = detail_url_elt.get('href')
             else:
                 # or alternately, there may be an onclick property we can grab?
@@ -407,6 +457,14 @@ def pull_dealer_inventory(dealer):
             # call the dealer-specific method
             # GEE TODO need to define some sort of error-handling protocol...
             ok = dealer['parse_listing_func'](listing, entry, detail)
+            if ok:
+                # check for common errors / signs of trouble
+                if listing['local_id'] == last_local_id:
+                    # not getting clean, unique local_ids from this dealer's page
+                    logging.warning('Duplicate local_ids [{0}] from {1} inventory',
+                                    (last_local_id, dealer['textid']))
+                    ok = False
+                last_local_id = listing['local_id']
             if ok:
                 list_of_listings.append(listing)
                 logging.debug('pulled listing: ' + json.dumps(listing))
@@ -562,8 +620,8 @@ specialty = {
     'textid' : 'specialty',
     'base_url' : 'http://www.specialtysales.com',
     'inventory_url' : '/inventory?per_page=300',
-    'extract_car_list_func' : lambda s: s.find_all(class_='carid'),
-    'listing_from_list_item_func' : lambda s: s.parent,
+    'extract_car_list_func' : lambda s: s.find_all(class_='vehicle-entry'),
+    'listing_from_list_item_func' : lambda s: s,
     'parse_listing_func' : specialty_parse_listing
     }
 
