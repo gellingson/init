@@ -1,4 +1,7 @@
 #!/opt/local/bin/python
+#
+# import.py
+#
 # this is the main import script for grabbing inventory from various sources
 
 import sys
@@ -12,6 +15,19 @@ import logging
 import MySQLdb as db
 from bs4 import BeautifulSoup
 
+# ============================================================================
+# CONSTANTS
+# ============================================================================
+
+# GEE TODO refine this: what headers do we want to send?
+# some sites don't want to offer up inventory without any headers.
+# Not sure why, but let's impersonate some real browser and such to get through
+hdrs = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+              'Accept-Encoding': 'none',
+              'Accept-Language': 'en-US,en;q=0.8',
+              'Connection': 'keep-alive'}
 
 # ============================================================================
 # UTILITY METHODS
@@ -69,8 +85,8 @@ def test_inventory():
     test_listing['listing_text'] = 'This is a fake thunderbird listing'
     test_listing['pic_href'] = 'http://www.google.com'
     test_listing['listing_href'] = 'http://www.yahoo.com'
-    test_listing['source'] = 'dbtest'
-    test_listing['source_id'] = '1'
+    test_listing['source_textid'] = 'dbtest'
+    test_listing['local_id'] = '1'
     test_listing['stock_no'] = 'stock1234'
 
     # GEE debug
@@ -100,8 +116,8 @@ def carbuffs_parse_listing(listing, entry, detail):
     listing['model'] = words[2]
 
     # carbuffs has no stock#/inventory ID; use the unique URL element
-    listing['source_id'] = listing['listing_href'].split('inventory')[1].replace("'","")
-    listing['stock_no'] = listing['source_id'] # no separate stock#
+    listing['local_id'] = listing['listing_href'].split('inventory')[1].replace("'","")
+    listing['stock_no'] = listing['local_id'] # no separate stock#
 
     # common name/value patterns in details page:
     #<li><strong>Car model year:</strong> 1963</li>
@@ -133,8 +149,8 @@ def cvclassics_parse_listing(listing, entry, detail):
     listing['model'] = words[2]
 
     # cvclassics has no stock#/inventory ID; use the unique URL element
-    listing['source_id'] = listing['listing_href'].split('/')[-1].replace('.html','')
-    listing['stock_no'] = listing['source_id'] # no separate stock#
+    listing['local_id'] = listing['listing_href'].split('/')[-1].replace('.html','')
+    listing['stock_no'] = listing['local_id'] # no separate stock#
 
     # no real patterns to mine on the details page.
     # but hey, at least it has the price! (unlike the inventory page)
@@ -160,8 +176,8 @@ def fj_parse_listing(listing, entry, detail):
     listing['make'] = words[1]
     listing['model'] = words[2]
 
-    listing['source_id'] = detail.find(id="ContactCarId")['value']
-    listing['stock_no'] = listing['source_id'] # no separate stock#
+    listing['local_id'] = detail.find(id="ContactCarId")['value']
+    listing['stock_no'] = listing['local_id'] # no separate stock#
 
     # many interesting items are in an "alpha-inner-bottom' div, but for now just grab price
     # tabular format with labels & values in two td elements, e.g.:
@@ -237,8 +253,8 @@ def lc_parse_listing(listing, entry, detail):
             return False
 
     # cvclassics has no stock#/inventory ID; use the unique URL element
-    listing['source_id'] = listing['listing_href'].split('/')[-1].replace('.html','')
-    listing['stock_no'] = listing['source_id'] # no separate stock#
+    listing['local_id'] = listing['listing_href'].split('/')[-1].replace('.html','')
+    listing['stock_no'] = listing['local_id'] # no separate stock#
 
     # no real patterns to mine on the details page...
 
@@ -253,7 +269,7 @@ def specialty_parse_listing(listing, entry, detail):
     listing['listing_text'] = entry.find(class_='intro-text').get_text()
 
     # discarded way to pull the source ID from the inventory page...
-    # listing['source_id'] = str(entry.find(class_='stockno').get_text()).split()[-1]
+    # listing['local_id'] = str(entry.find(class_='stockno').get_text()).split()[-1]
 
     # pull the rest of the fields from the detail page
     # NOTES:
@@ -269,8 +285,8 @@ def specialty_parse_listing(listing, entry, detail):
     listing['model_year'] = detail.find('td',text='Year: ').find_next_sibling('td').text 
     listing['make'] = detail.find('td',text='Make: ').find_next_sibling('td').text 
     listing['model'] = detail.find('td',text='Model: ').find_next_sibling('td').text
-    listing['source_id'] = detail.find('td',text='Stock: ').find_next_sibling('td').text
-    listing['stock_no'] = listing['source_id'] # no separate stock#
+    listing['local_id'] = detail.find('td',text='Stock: ').find_next_sibling('td').text
+    listing['stock_no'] = listing['local_id'] # no separate stock#
 
     # price is different:
     price_string = str(detail.find('h2').text).split(':')[1]
@@ -306,7 +322,7 @@ def pull_dealer_inventory(dealer):
 
     try:
         full_inv_url = urlparse.urljoin(dealer['base_url'], dealer['inventory_url'])
-        logging.info('Pulling ' + dealer['name'] + ' inventory from ' + full_inv_url + '....')
+        logging.info('Pulling ' + dealer['textid'] + ' inventory from ' + full_inv_url + '....')
         req = urllib2.Request(full_inv_url, headers=hdrs)
         page = urllib2.urlopen(req)
     except urllib2.HTTPError as error:
@@ -336,7 +352,7 @@ def pull_dealer_inventory(dealer):
 
             # try standard grabs; then call the dealer-specific method for
             # overrides & improvements
-            listing['source'] = dealer['name']
+            listing['source_textid'] = dealer['textid']
             listing['pic_href'] = urlparse.urljoin(full_inv_url,str(entry.find('img').attrs['src']))
 
             # often the first (likely only) href in the block is the detail page
@@ -414,7 +430,7 @@ def pull_dealer_inventory(dealer):
             break
         # END LOOP over all inventory pages
 
-    logging.info('Loaded ' + str(len(list_of_listings)) + ' cars from ' + dealer['name'])
+    logging.info('Loaded ' + str(len(list_of_listings)) + ' cars from ' + dealer['textid'])
     return list_of_listings
 
 
@@ -440,24 +456,22 @@ def all_norcal_inventory():
 def db_insert_or_update_listing(con, listing):
     db_listing = {}
     c = con.cursor(db.cursors.DictCursor) # get result as a dict rather than a list for prettier interaction
-    rows = c.execute("""select * from listing where source= %s and source_id = %s""", (listing['source'], listing['source_id'],))
+    rows = c.execute("""select * from listing where source_textid= %s and local_id = %s""", (listing['source_textid'], listing['local_id'],))
     if rows == 0:
         # no matching listing -- insert
         ins = con.cursor(db.cursors.DictCursor)
         ins.execute(
             """insert into listing
-(status, model_year, make, model, price, listing_text, pic_href, listing_href, source, source_id, stock_no, listing_date, removal_date, last_update) values
+(status, model_year, make, model, price, listing_text, pic_href, listing_href, source_textid, local_id, stock_no, listing_date, removal_date, last_update) values
 (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP)""",
-            (listing['status'],listing['model_year'],listing['make'],listing['model'],listing['price'],listing['listing_text'],listing['pic_href'],listing['listing_href'],listing['source'],listing['source_id'],listing['stock_no'],))
+            (listing['status'],listing['model_year'],listing['make'],listing['model'],listing['price'],listing['listing_text'],listing['pic_href'],listing['listing_href'],listing['source_textid'],listing['local_id'],listing['stock_no'],))
 
         # re-execute the same fetch which will now grab the new record
         c2 = con.cursor(db.cursors.DictCursor)
-        c2.execute("""select * from listing where source= %s and source_id = %s""", (listing['source'], listing['source_id'],))
+        c2.execute("""select * from listing where source_textid= %s and local_id = %s""", (listing['source_textid'], listing['local_id'],))
         db_listing = c2.fetchone()
 
-        # GEE debug
-        print("item" + str(db_listing['id']) + db_listing['make'])
-        print("inserted record id={}: {} {} {}".format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
+        logging.debug("inserted record id={}: {} {} {}".format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
 
     elif rows == 1:
         # matching listing already -- do we need to update?
@@ -467,7 +481,7 @@ def db_insert_or_update_listing(con, listing):
             up = con.cursor(db.cursors.DictCursor)
             up.execute("""update listing set price = %s, last_update = CURRENT_TIMESTAMP where id = %s""", (listing['price'],db_listing['id']))
         # else listing is up to date; no update required
-        print("updated record id=%d: %s %s %s", (db_listing['id'],listing['model_year'],listing['make'], listing['model']))
+        logging.debug("found (updated) record id=%d: %s %s %s", (db_listing['id'],listing['model_year'],listing['make'], listing['model']))
     else:
         # WTF - multiple rows?
         print "YIKES! Multiple matching rows already in the listing table?"
@@ -484,8 +498,8 @@ def db_insert_or_update_listing(con, listing):
 def text_store_listing(list_dir, listing):
     # store car listing file in subdir by source (not the best, heh -- temporary, should really be some more reliable sharding mechanism)
     # and with the id (our internal id) as the filename root
-    make_sure_path_exists(list_dir + '/' + listing['source'])
-    pathname=str(list_dir + '/' + listing['source'] + '/' + str(listing['id']) + '.html')
+    make_sure_path_exists(list_dir + '/' + listing['source_textid'])
+    pathname=str(list_dir + '/' + listing['source_textid'] + '/' + str(listing['id']) + '.html')
     list_file=open(pathname,"w")
     list_file.write(json.dumps(listing))
     list_file.close()
@@ -497,23 +511,15 @@ def text_store_listing(list_dir, listing):
 # ============================================================================
 # DATA STRUCTURES
 # ============================================================================
-
-# GEE TODO refine this: what headers do we want to send?
-# some sites don't want to offer up inventory without any headers.
-# Not sure why, but let's impersonate some real browser and such to get through
-hdrs = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-              'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-              'Accept-Encoding': 'none',
-              'Accept-Language': 'en-US,en;q=0.8',
-              'Connection': 'keep-alive'}
+# heh - can't put these up in constants because they reference funcs not yet defined
+# and python doesn't really do forward declarations
 
 # map of dealerships, URLs, functions
 # GEE TODO move this to a db table, etc etc
 #
 
 carbuffs = {
-    'name' : 'carbuffs',
+    'textid' : 'carbuffs',
     'base_url' : 'http://carbuffs.com',
     'inventory_url' : '/inventory',
     'extract_car_list_func' : lambda s: s.find_all(class_='car-cont'),
@@ -521,7 +527,7 @@ carbuffs = {
     'parse_listing_func' : carbuffs_parse_listing
     }
 cvclassics = {
-    'name' : 'cvclassics',
+    'textid' : 'cvclassics',
     'base_url' : 'http://www.centralvalleyclassics.com',
     'inventory_url' : '/cars/carsfs.html',
     'extract_car_list_func' : lambda s: s.find_all('img',alt=re.compile('Click')), # Yuck!
@@ -529,7 +535,7 @@ cvclassics = {
     'parse_listing_func' : cvclassics_parse_listing
     }
 fj = {
-    'name' : 'fj',
+    'textid' : 'fj',
     'base_url' : 'http://www.fantasyjunction.com',
     'inventory_url' : '/inventory',
     'extract_car_list_func' : lambda s: s.find_all(class_='list-entry pkg list-entry-link'),
@@ -537,7 +543,7 @@ fj = {
     'parse_listing_func' : fj_parse_listing
     }
 lcc = {
-    'name' : 'lcc',
+    'textid' : 'lcc',
     'base_url' : 'http://www.leftcoastclassics.com',
     'inventory_url' : '/LCCofferings.html', # not sure why URLs are not parallel?
     'extract_car_list_func' : lambda s: s.find_all('h3'), # Yuck!
@@ -545,7 +551,7 @@ lcc = {
     'parse_listing_func' : lc_parse_listing # shared parser for the 2 sets of cars
     }
 lce = {
-    'name' : 'lce',
+    'textid' : 'lce',
     'base_url' : 'http://www.leftcoastexotics.com',
     'inventory_url' : '/cars-for-sale.html', # not sure why URLs are not parallel?
     'extract_car_list_func' : lambda s: s.find_all('h3'), # Yuck!
@@ -553,7 +559,7 @@ lce = {
     'parse_listing_func' : lc_parse_listing # shared parser for the 2 sets of cars
     }
 specialty = {
-    'name' : 'specialty',
+    'textid' : 'specialty',
     'base_url' : 'http://www.specialtysales.com',
     'inventory_url' : '/inventory?per_page=300',
     'extract_car_list_func' : lambda s: s.find_all(class_='carid'),
@@ -579,9 +585,10 @@ dealers = {
 write_to_db = False
 write_to_file = False
 requested_sites = False
-log_level = 'DEBUG'
+log_level = 'INFO'
 con = False # declare scope of db connection
 
+# GEE TODO switch to proper pythonic arg processing (argparse)
 # check for args tellings us what to do with what we retrieve
 for arg in sys.argv:
     if arg == '-db':
@@ -618,10 +625,12 @@ for arg in sys.argv:
         if write_to_db:
             id = db_insert_or_update_listing(con, listing)
         else: # temporary -- use something other than db id as filename
-            id = listing['source_id']
+            id = listing['local_id']
         if write_to_file:
             listing['id'] = id # put it in the hash
             text_store_listing('/tmp/listings', listing)
+    if write_to_db:
+        con.commit()
 
 if not requested_sites:
     print "Usage: [-db] [-file] [--log_level=FOO] site site site..."

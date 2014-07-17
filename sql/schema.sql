@@ -7,6 +7,9 @@
 #
 # THIS WILL DESTROY ALL EXISTING VERSIONS OF THESE TABLES, LOSING ALL DATA!!
 #
+# (well actually, we move the current tables to _backup versions, but we
+# overwrite the backups, so... do it 2x and all is lost!)
+#
 # Reference data population will be in subscripts; this just creates structures.
 #
 # At this point there is not much need for upgrade scripts; we can
@@ -33,10 +36,10 @@
 # persistence-related features (like identifying new listings, or when to drop
 # listings off of a feed)
 #
-# if we want to be relational, obviously source should be a FK to a site list, etc. That will
-# if we are going to pretend to NoSQL this then, well, ...
+# has both id and textid for source (text) for now since our tables of sources
+# may not be complete yet
 #
-# note also no attempt yet to support deduping
+# note also no real attempt yet to support deduping
 #
 # status chars:
 # F for sale
@@ -47,23 +50,26 @@
 #
 # for RSS we do not need anything more, I think. If I want to support/track have-seen or sublists for a user
 # on the server side then we would need a table that joined a user and listings somehow.
-drop table listing;
+drop table listing_backup;
+rename table listing to listing_backup;
 create table listing (
-id	   		 smallint unsigned not null auto_increment,
-status		 char(1),
-model_year 	 year,
-make		 varchar(255),
-model 		 varchar(255),
-price		 numeric(12,2),
-listing_text varchar(2048),
-pic_href	 varchar(2048),
-listing_href varchar(2048),
-source		 varchar(255),
-source_id	 varchar(255),
-stock_no	 varchar(255),
-listing_date DATETIME,
-removal_date DATETIME,
-last_update  DATETIME,
+id	   		   smallint unsigned not null auto_increment,
+status		   char(1),
+model_year 	   year,
+make		   varchar(255),
+model 		   varchar(255),
+price		   numeric(12,2),
+listing_text   varchar(2048),
+pic_href	   varchar(2048),
+listing_href   varchar(2048),
+source_type    char,
+source_id	   smallint,
+source_textid  varchar(255),
+local_id	   varchar(255),
+stock_no	   varchar(255),
+listing_date   DATETIME,
+removal_date   DATETIME,
+last_update    DATETIME,
 primary key (id)
 );
 
@@ -73,14 +79,15 @@ primary key (id)
 # GEE TODO what about name changes/nicknames/synonyms,
 # e.g. GM/GMC or Alfa/Alfa Romeo or Honda/Datsun?
 #
-drop table make;
+drop table make_backup;
+rename table make to make_backup;
 create table make(
 id                smallint unsigned not null auto_increment,
 text_id      	  varchar(255),
 canonical_name 	  varchar(255),
-first_model_year  number,
-last_model_year   number,
-acquired_by       number,
+first_model_year  int(4),
+last_model_year   int(4),
+acquired_by       int(4),
 last_update       DATETIME,
 primary key (id),
 key text_id (text_id)
@@ -91,14 +98,16 @@ key text_id (text_id)
 # Make & model combos; will have exactly 1 entry for this combination.
 # GEE TODO: what about synonyms (e.g. vette/corvette or mx-5/miata)?
 #
-drop table makemodel;
+drop table makemodel_backup;
+rename table makemodel to makemodel_backup;
 create table makemodel(
 id                      smallint unsigned not null auto_increment,
 text_id      	        varchar(255),
-make_id                 number,
+make_id                 smallint,
 canonical_model_name    varchar(255),
-first_model_year        number,
-last_model_year         number,
+first_model_year        int(4),
+last_model_year         int(4),
+last_update       DATETIME,
 primary key (id),
 key text_id (text_id)
 );
@@ -112,11 +121,12 @@ key text_id (text_id)
 # 	 derived merged copy to run from
 # b) I'm not in love with the carqueryapi schema and want to isolate us
 #
-drop table makemodelyear;
+drop table makemodelyear_backup;
+rename table makemodelyear to makemodelyear_backup;
 create table makemodelyear(
 id                smallint unsigned not null auto_increment,
-make_id number,
-makemodel_id number,
+make_id smallint,
+makemodel_id smallint,
 make_text_id varchar(32) NOT NULL,
 makemodel_text_id varchar(64) NOT NULL,
 model_trim varchar(64) NOT NULL,
@@ -154,5 +164,85 @@ model_sold_in_us tinyint(4) DEFAULT NULL,
 model_co2 int(6) DEFAULT NULL,
 model_make_display varchar(32) DEFAULT NULL,
 primary key (id),
-index makemodelyear (make_id, makemodel_id, model_year),
+index makemodelyear (make_id, makemodel_id, model_year)
+);
+
+# DEALERSHIP
+#
+#
+#
+# declaring flags here for now (hmm, I need some sort of DO layer!)
+#
+# SPECIALTY (commonly carries classic, exotic, or other unique inventory)
+# CLASSIC
+# EXOTIC
+# ACTIVE (open; not known to be out of business)
+# INDEXING (participating in normal indexing activities)
+# 
+# TODO: denormalize last_import?
+
+drop table dealership_backup;
+rename table dealership to dealership_backup;
+create table dealership(
+id                smallint unsigned not null auto_increment,
+flags bit(64),
+primary_dealership_id int default NULL,
+textid varchar(32) NOT NULL,
+full_name varchar(1024) NOT NULL,
+base_url varchar(1024),
+extract_car_list_func varchar(1024),
+listing_from_list_item_func varchar(1024),
+parse_listing_func varchar(1024),
+inventory_url varchar(1024),
+address_line1 varchar(255),
+address_line2 varchar(255),
+city varchar(255),
+state varchar(255),
+zip varchar(255),
+phone int(15),
+owner_info varchar(255),
+license_info varchar(255),
+owner_account_id smallint,
+primary key (id)
+);
+
+drop table classified_backup;
+rename table classified to classified_backup;
+create table classified(
+id                smallint unsigned not null auto_increment,
+flags bit(64),
+primary_dealership_id int default NULL,
+textid varchar(32) NOT NULL,
+full_name varchar(1024) NOT NULL,
+base_url varchar(1024),
+extract_car_list_func varchar(1024),
+listing_from_list_item_func varchar(1024),
+parse_listing_func varchar(1024),
+inventory_url varchar(1024),
+owner_account_id smallint,
+primary key (id)
+);
+
+drop table dealership_activity_log_backup;
+rename table dealership_activity_log to dealership_activity_log_backup;
+create table dealership_activity_log(
+id                smallint unsigned not null auto_increment,
+dealership_id smallint,
+activity_timpestamp datetime,
+action_code varchar(32),
+message varchar(1024),
+primary key (id)
+);
+
+
+# source_id has values [d=dealership, c=classified, ...?]
+drop table inventory_import_log_backup;
+rename table inventory_import_log to inventory_import_log_backup;
+create table inventory_import_log(
+id                smallint unsigned not null auto_increment,
+source_type  char(1),
+source_id    smallint,
+import_timestamp datetime,
+message varchar(1024),
+primary key (id)
 );
