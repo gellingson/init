@@ -48,9 +48,11 @@ def regularize_price(price_string):
     if price_string == None:
         price = -1
     else:
+        price_string = price_string.encode('ascii','ignore')
         # strip out 'Price:' or similar if included
-        if ':' in price_string:
+        if ':' in price_string: # then take the part after the colon
             junk, price_string = price_string.split(':')
+        price_string = re.sub('[a-zA-Z]','', price_string) # strip out any letters that might remain...
         try:
             price = int(re.sub('[\$,]', '', price_string))
         except ValueError:
@@ -215,8 +217,35 @@ def carbuffs_parse_listing(listing, entry, detail):
     return True
 
 
-# cvclassics_parse_listing
+def ccw_parse_listing(listing, entry, detail):
+
+    # get some stuff from the inventory page
+    (listing['model_year'],
+    listing['make'],
+    listing['model']) = regularize_year_make_model(entry.find('strong').text)
+
+    listing['listing_text'] = '' # no short text available, only longer text from detail page
+
+    # pull the rest of the fields from the detail page
+
+    return True
+
+
+# cfc_parse_listing
 #
+def cfc_parse_listing(listing, entry, detail):
+
+    # get some stuff from the inventory page
+    (listing['model_year'],
+    listing['make'],
+    listing['model']) = regularize_year_make_model(entry.find('a').text)
+
+    listing['listing_text'] = '' # no crisp text, just long text
+
+    return True
+
+
+# cvclassics_parse_listing
 #
 def cvclassics_parse_listing(listing, entry, detail):
 
@@ -510,7 +539,6 @@ def pull_dealer_inventory(dealer):
             # try standard grabs; then call the dealer-specific method for
             # overrides & improvements
             listing['source_textid'] = dealer['textid']
-            listing['pic_href'] = urlparse.urljoin(full_inv_url,str(entry.find('img').attrs['src']))
 
             # try to find the URL of the detail listing page
             detail = None # if we don't find one, we can pass down this None
@@ -552,11 +580,18 @@ def pull_dealer_inventory(dealer):
                     # load it again -- probably need some flag for this
                     listing['listing_href'] = full_inv_url
                 else:
-                    listing['listing_href'] = urlparse.urljoin(full_inv_url, detail_url)
+                    listing['listing_href'] = urlparse.urljoin(full_inv_url, urllib2.quote(detail_url))
                     logging.debug('detail page: ' + listing['listing_href'])
                     req = urllib2.Request(listing['listing_href'], headers=hdrs)
                     detail_page = urllib2.urlopen(req)
                     detail = BeautifulSoup(detail_page)
+
+            if entry.find('img'):
+                listing['pic_href'] = urlparse.urljoin(full_inv_url, str(entry.find('img').attrs['src']))
+            elif detail.find('img'):
+                listing['pic_href'] = urlparse.urljoin(full_inv_url, str(detail.find('img').attrs['src']))
+            else:
+                listing['pic_href'] = None
 
             # many sites have no stock#/inventory ID; default to the unique URL element
             # note that this will be wonky for item(s) that are 'coming soon'
@@ -574,6 +609,13 @@ def pull_dealer_inventory(dealer):
                 listing['status'] = 'P' # 'P' -> Sale Pending
             else:
                 listing['status'] = 'F' # 'F' -> For Sale
+
+            # $ followed by a number is likely to be a price :-)
+            # look first in the entry on the inventory page
+            listing['price'] = regularize_price(entry.find(text=re.compile('\$[0-9]')))
+            # try detail page if we didn't get one from the inventory page
+            if listing['price'] == -1:
+                listing['price'] = regularize_price(detail.find(text=re.compile('\$[0-9]')))
 
             # call the dealer-specific method
             # GEE TODO need to define some sort of error-handling protocol...
@@ -705,6 +747,16 @@ carbuffs = {
     'listing_from_list_item_func' : lambda s: s,
     'parse_listing_func' : carbuffs_parse_listing
     }
+# ccw site has NO useful markup; best plan I can come up with to ID a car entry
+# is to look for <img> tag where src does NOT start with 'New-Site'
+ccw = {
+    'textid' : 'ccw',
+    'base_url' : 'http://www.classiccarswest.com',
+    'inventory_url' : '/Inventory.html',
+    'extract_car_list_func' : lambda s: s.find_all('img',src=re.compile('^([^N][^e][^w])')),
+    'listing_from_list_item_func' : lambda s: s.parent.parent.parent,
+    'parse_listing_func' : ccw_parse_listing
+    }
 cvclassics = {
     'textid' : 'cvclassics',
     'base_url' : 'http://www.centralvalleyclassics.com',
@@ -712,6 +764,14 @@ cvclassics = {
     'extract_car_list_func' : lambda s: s.find_all('img',alt=re.compile('Click')), # Yuck!
     'listing_from_list_item_func' : lambda s: s.parent.parent.parent, # Yuck again!
     'parse_listing_func' : cvclassics_parse_listing
+    }
+cfc = {
+    'textid' : 'cfc',
+    'base_url' : 'http://checkeredflagclassics.com',
+    'inventory_url' : '/',
+    'extract_car_list_func' : lambda s: s.find_all('li'),
+    'listing_from_list_item_func' : lambda s: s,
+    'parse_listing_func' : cfc_parse_listing
     }
 dawydiak = {
     'textid' : 'dawydiak',
@@ -793,6 +853,8 @@ vip = {
 # GEE TODO investigate using OrderedDict
 dealers = {
     'carbuffs' : carbuffs,
+    'ccw' : ccw,
+    'cfc' : cfc,
     'cvclassics' : cvclassics,
     'dawydiak' : dawydiak,
     'dawydiakp' : dawydiakp,
