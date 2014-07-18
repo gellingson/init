@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/opt/local/bin/python
 #
 # import.py
 #
@@ -7,12 +7,12 @@
 import sys
 import re
 import json
-import urllib.request, urllib.error, urllib.parse
-import urllib.parse
+import urllib2
+import urlparse
 import os
 import errno
 import logging
-import pymysql as db
+import MySQLdb as db
 from bs4 import BeautifulSoup
 
 # ============================================================================
@@ -48,8 +48,9 @@ def regularize_price(price_string):
     if price_string == None:
         price = -1
     else:
+        price_string = price_string.encode('ascii','ignore')
         # strip out 'Price:' or similar if included
-        if u':' in price_string: # then take the part after the colon
+        if ':' in price_string: # then take the part after the colon
             junk, price_string = price_string.split(':')
         price_string = re.sub('[a-zA-Z]','', price_string) # strip out any letters that might remain...
         try:
@@ -198,11 +199,12 @@ def carbuffs_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page
     listing['listing_text'] = entry.find(class_="car-excerpt").text
-
+    #xyzzy
     # pull the rest of the fields from the detail page
-    (listing['model_year'],
-    listing['make'],
-    listing['model']) = regularize_year_make_model(detail.find(class_='car-name').text)
+    words = detail.find(class_='car-name').text.encode('ascii','ignore').split(" ", 2)
+    listing['model_year'] = int(words[0])
+    listing['make'] = words[1]
+    listing['model'] = words[2]
 
     # common name/value patterns in details page:
     #<li><strong>Car model year:</strong> 1963</li>
@@ -334,14 +336,13 @@ def lc_parse_listing(listing, entry, detail):
     # get some entries that are not really car listings. Detect them here and
     # return False...
     if entry.name != 'tr':
-        logging.debug('skipping putative entry because it is not in a <tr> (was a {})'.format(entry.name))
         return False
 
     # as with cvc, there is no useful tagging....
     # we just have to make the best of it
 
     # get the short listing text from the inventory page
-    listing['listing_text'] = entry.find('h3').text
+    listing['listing_text'] = entry.find('h3').text.encode('ascii','ignore')
 
     # price is only on the inventory page, not on the detail page (!)
     # and it's often missing (text will just be CALL, SOLD, etc)
@@ -363,18 +364,26 @@ def lc_parse_listing(listing, entry, detail):
     # then I will just return False. Heh, and sometimes the detail HAS no h1!
     try:
         if detail and detail.find('h1'):
-            s = detail.find('h1').text
+            words = detail.find('h1').text.split(" ", 2)
         else:
-            s = entry.find('h2').text
-
-        (listing['model_year'],
-             listing['make'],
-             listing['model']) = regularize_year_make_model(s)
-
-        # removed a hacky bit here since I don't think it chains correctly off the revised code above, and I hope I don't need it!
-
-    except ValueError: # should happen only if there is no h1 and then no h2
-        return False
+            words = entry.find('h2').text.split(" ", 2)
+            #xyzzy
+        listing['model_year'] = int(words[0])
+        listing['make'] = words[1]
+        listing['model'] = words[2]
+    except ValueError:
+        try:
+            if detail:
+                # GEE TODO HACKY HACKY HACKY
+                words = listing['listing_href'].split('/')[-2] # trailing / in URL
+                words.split("-", 2)
+                listing['model_year'] = int(words[0])
+                listing['make'] = words[1]
+                listing['model'] = words[2]
+            else:
+                return False
+        except ValueError:
+            return False
 
     # no real patterns to mine on the details page...
 
@@ -498,11 +507,11 @@ def pull_dealer_inventory(dealer):
     # will be a next page link; our standard pagination loop should cope
 
     try:
-        full_inv_url = urllib.parse.urljoin(dealer['base_url'], dealer['inventory_url'])
+        full_inv_url = urlparse.urljoin(dealer['base_url'], dealer['inventory_url'])
         logging.info('Pulling ' + dealer['textid'] + ' inventory from ' + full_inv_url + '....')
-        req = urllib.request.Request(full_inv_url, headers=hdrs)
-        page = urllib.request.urlopen(req)
-    except urllib.error.HTTPError as error:
+        req = urllib2.Request(full_inv_url, headers=hdrs)
+        page = urllib2.urlopen(req)
+    except urllib2.HTTPError as error:
         logging.error('Unable to load inventory page ' + full_inv_url + ': HTTP ' + str(error.code) + ' ' + error.reason)
         return list_of_listings
 
@@ -519,9 +528,8 @@ def pull_dealer_inventory(dealer):
         # each listing is in a <li> block that contains a <class="carid"> entry
 
         listings = dealer['extract_car_list_func'](soup)
-        logging.info('Number of car listings found: {}'.format(len(listings)))
+        print('Number of car listings found: {}'.format(len(listings)))
         for item in listings:
-            ok = True
             listing = {} # build a listing dict for this car
 
             # for some sites the full entry is actually a parent or sibling
@@ -559,7 +567,7 @@ def pull_dealer_inventory(dealer):
             if detail_url:
                 detail_url=detail_url.lstrip()
                 # is it an http reference? Sometimes there is a phone URL...
-                scheme = urllib.parse.urlsplit(detail_url).scheme
+                scheme = urlparse.urlsplit(detail_url).scheme
                 # oops -- apparent bug, or at least difference in practical effect
                 # between safari and urlsplit. urlsplit doesn't recognize
                 # tel:8005551212
@@ -568,31 +576,20 @@ def pull_dealer_inventory(dealer):
                 if (detail_url[:4] == 'tel:'):
                     scheme = 'tel'
                 if (scheme and scheme != 'http' and scheme != 'https'):
-                    # uh... let's skip this one if we can't link to it as http
-                    logging.info('found non-http detail URL: {}'.format(detail_url))
-                    listing['listing_href'] = detail_url # just to prevent barfs
-                    ok = False
+                    # uh... point back to the main inventory page but DON'T
+                    # load it again -- probably need some flag for this
+                    listing['listing_href'] = full_inv_url
                 else:
-                    try:
-                        # GEE TODO: occasionally detail_url is NOT escaped properly
-                        # (e.g. contains spaces), but calling urllib.parse.quote()
-                        # on it quotes chars that shouldn't be quoted. What to do?
-                        listing['listing_href'] = urllib.parse.urljoin(full_inv_url, detail_url)
-                        logging.debug('detail page: ' + listing['listing_href'])
-                        req = urllib.request.Request(listing['listing_href'], headers=hdrs)
-                        detail_page = urllib.request.urlopen(req)
-                        detail = BeautifulSoup(detail_page)
-                    except urllib.error.HTTPError as error:
-                        logging.error('Unable to load detail page ' +
-                                      listing['listing_href'] + ': HTTP ' +
-                                      str(error.code) + ' ' + error.reason)
-                        ok = False
+                    listing['listing_href'] = urlparse.urljoin(full_inv_url, urllib2.quote(detail_url))
+                    logging.debug('detail page: ' + listing['listing_href'])
+                    req = urllib2.Request(listing['listing_href'], headers=hdrs)
+                    detail_page = urllib2.urlopen(req)
+                    detail = BeautifulSoup(detail_page)
 
-            # look for an image in the entry
             if entry.find('img'):
-                listing['pic_href'] = urllib.parse.urljoin(full_inv_url, str(entry.find('img').attrs['src']))
-            elif detail and detail.find('img'): # failover to 1st detail img
-                listing['pic_href'] = urllib.parse.urljoin(full_inv_url, str(detail.find('img').attrs['src']))
+                listing['pic_href'] = urlparse.urljoin(full_inv_url, str(entry.find('img').attrs['src']))
+            elif detail.find('img'):
+                listing['pic_href'] = urlparse.urljoin(full_inv_url, str(detail.find('img').attrs['src']))
             else:
                 listing['pic_href'] = None
 
@@ -604,12 +601,11 @@ def pull_dealer_inventory(dealer):
 
             # see if the listing is marked as sold?
             # GEE TODO improve this; using uppercase intentionally as a cheat
-            if entry.find(text=re.compile('SOLD')):
-                # used to also check detail but that was getting too many false
-                # positives due to 'VIEW CARS SOLD' link or similar on the page
+            if (entry.find(text=re.compile('SOLD')) or
+                detail and detail.find(text=re.compile('SOLD'))):
                 listing['status'] = 'S' # 'S' -> Sold
             elif (entry.find(text=re.compile('SALE PENDING')) or
-                (detail and detail.find(text=re.compile('SALE PENDING')))):
+                detail and detail.find(text=re.compile('SALE PENDING'))):
                 listing['status'] = 'P' # 'P' -> Sale Pending
             else:
                 listing['status'] = 'F' # 'F' -> For Sale
@@ -618,17 +614,18 @@ def pull_dealer_inventory(dealer):
             # look first in the entry on the inventory page
             listing['price'] = regularize_price(entry.find(text=re.compile('\$[0-9]')))
             # try detail page if we didn't get one from the inventory page
-            if listing['price'] == -1 and detail:
+            if listing['price'] == -1:
                 listing['price'] = regularize_price(detail.find(text=re.compile('\$[0-9]')))
 
             # call the dealer-specific method
             # GEE TODO need to define some sort of error-handling protocol...
-            ok = (ok and dealer['parse_listing_func'](listing, entry, detail))
+            ok = dealer['parse_listing_func'](listing, entry, detail)
             if ok:
                 # check for common errors / signs of trouble
                 if listing['local_id'] == last_local_id:
                     # not getting clean, unique local_ids from this dealer's page
-                    logging.warning('Duplicate local_ids [{}] from {} inventory'.format(last_local_id, dealer['textid']))
+                    logging.warning('Duplicate local_ids [{0}] from {1} inventory',
+                                    (last_local_id, dealer['textid']))
                     ok = False
                 last_local_id = listing['local_id']
             if ok:
@@ -645,9 +642,9 @@ def pull_dealer_inventory(dealer):
         next_ref = soup.find('a', text=re.compile("[Nn]ext"))
         if next_ref:
             # build the full URL (it may be relative to current URL)
-            full_inv_url = urllib.parse.urljoin(full_inv_url, next_ref.get('href'))
-            req = urllib.request.Request(full_inv_url, headers=hdrs)
-            page = urllib.request.urlopen(req)
+            full_inv_url = urlparse.urljoin(full_inv_url, next_ref.get('href').encode('ascii','ignore'))
+            req = urllib2.Request(full_inv_url, headers=hdrs)
+            page = urllib2.urlopen(req)
             # GEE TODO - check that this is really a listings page and has
             # different listings, ie detect and avoid infinite loops
         else:
@@ -699,24 +696,13 @@ def db_insert_or_update_listing(con, listing):
 
     elif rows == 1:
         # matching listing already -- do we need to update?
+        # GEE TODO full update check; for now just checking for price change
         db_listing = c.fetchone()
-        update_required = False
-        for field in listing.keys():
-            if str(listing[field]) != str(db_listing[field]):
-                logging.info('value for {} changed from <{}> to <{}>'.format(field, db_listing[field], listing[field]))
-                update_required = True
-        if update_required:
+        if listing['price'] != db_listing['price']:
             up = con.cursor(db.cursors.DictCursor)
-            up.execute("""update listing set status = %s, model_year = %s, make = %s, model = %s, price = %s, listing_text = %s, pic_href = %s, listing_href = %s, source_textid = %s, stock_no = %s, last_update = CURRENT_TIMESTAMP where id = %s""",
-                       (listing['status'], listing['model_year'], listing['make'],
-                        listing['model'], listing['price'], listing['listing_text'],
-                        listing['pic_href'], listing['listing_href'],
-                        listing['source_textid'], listing['stock_no'],
-                        db_listing['id']))
-            logging.debug('found record id={}: {} {} {} (updated)'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
-        else: # else listing is up to date; no update required
-            logging.debug('found record id={}: {} {} {} (no update required)'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
-            
+            up.execute("""update listing set price = %s, last_update = CURRENT_TIMESTAMP where id = %s""", (listing['price'],db_listing['id']))
+        # else listing is up to date; no update required
+        logging.debug('found (updated) record id={}: {} {} {}'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
     else:
         # WTF - multiple rows?
         print("YIKES! Multiple matching rows already in the listing table?")
@@ -739,7 +725,8 @@ def text_store_listing(list_dir, listing):
     list_file.write(json.dumps(listing))
     list_file.close()
 
-    logging.debug("wrote listing id {} ({} {} {}) to file {}".format(listing['id'], listing['model_year'],listing['make'], listing['model'], pathname))
+    # GEE debug
+    print("wrote listing id {} ({} {} {}) to file {}".format(listing['id'], listing['model_year'],listing['make'], listing['model'], pathname))
     return True
 
 # ============================================================================
@@ -802,7 +789,6 @@ dawydiakp = {
     'listing_from_list_item_func' : lambda s: s.parent,
     'parse_listing_func' : dawydiak_parse_listing
     }
-# GEE TODO: should also handle FJ's off-site inventory
 fj = {
     'textid' : 'fj',
     'base_url' : 'http://www.fantasyjunction.com',
@@ -938,4 +924,4 @@ for arg in sys.argv:
 
 if not requested_sites:
     print ("Usage: [-db] [-file] [--log_level=FOO] site site site...")
-    print(("... where valid sites are: test, norcal, " + ", ".join(list(dealers.keys()))))
+    print ("... where valid sites are: test, norcal, " + ", ".join(dealers.keys()))
