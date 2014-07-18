@@ -48,6 +48,9 @@ def regularize_price(price_string):
     if price_string == None:
         price = -1
     else:
+        # strip out 'Price:' or similar if included
+        if ':' in price_string:
+            junk, price_string = price_string.split(':')
         try:
             price = int(re.sub('[\$,]', '', price_string))
         except ValueError:
@@ -79,7 +82,7 @@ def regularize_year_make_model(year_make_model_string):
             except ValueError:
                 words.insert(0, None) # Stick in a None for year
             while (len(words) < 3):
-                append(words, None) # pad out...
+                words.append(None) # pad out...
             return words
     else:
         return (None, None, None)
@@ -154,10 +157,35 @@ def new_parse_listing(listing, entry, detail):
 
     # pull the rest of the fields from the detail page
 
-    listing['local_id'] = ''
-    listing['stock_no'] = listing['local_id'] # no separate stock#
-
     listing['price'] = regularize_price('')
+
+    return True
+
+
+# autorevo_parse_listing
+#
+# developed to load VIP motors, and hopefully also works with other dealers
+# who use autorevo for their inventory listings.
+#
+def autorevo_parse_listing(listing, entry, detail):
+
+    # get some stuff from the inventory page
+    (listing['model_year'],
+    listing['make'],
+    listing['model']) = regularize_year_make_model(entry.find('h1').text)
+
+    try:
+        listing['price'] = regularize_price(entry.find(class_='vehicleMainPriceRow').text)
+    except AttributeError:
+        listing['price'] = -1
+        pass
+
+    # doesn't have listing text on inventory page
+    try:
+        listing['listing_text'] = detail.find(class_='innerDescriptionText').find('p').text
+    except AttributeError:
+        listing['listing_text'] = ''
+        pass
 
     return True
 
@@ -175,10 +203,6 @@ def carbuffs_parse_listing(listing, entry, detail):
     listing['model_year'] = int(words[0])
     listing['make'] = words[1]
     listing['model'] = words[2]
-
-    # carbuffs has no stock#/inventory ID; use the unique URL element
-    listing['local_id'] = listing['listing_href'].split('inventory')[1].replace("'","")
-    listing['stock_no'] = listing['local_id'] # no separate stock#
 
     # common name/value patterns in details page:
     #<li><strong>Car model year:</strong> 1963</li>
@@ -208,10 +232,6 @@ def cvclassics_parse_listing(listing, entry, detail):
     listing['model']) = regularize_year_make_model(strings[0])
 
     listing['listing_text'] = strings[1]
-
-    # cvclassics has no stock#/inventory ID; use the unique URL element
-    listing['local_id'] = listing['listing_href'].split('/')[-1].replace('.html','')
-    listing['stock_no'] = listing['local_id'] # no separate stock#
 
     # no real patterns to mine on the details page.
     # but hey, at least it has the price! (unlike the inventory page)
@@ -336,13 +356,50 @@ def lc_parse_listing(listing, entry, detail):
         except ValueError:
             return False
 
-    # cvclassics has no stock#/inventory ID; use the unique URL element
-    # note that this will be wonky for item(s) that are 'coming soon'
-    # (no detail page exists yet)
-    listing['local_id'] = listing['listing_href'].rstrip('/').split('/')[-1].replace('.html','')
-    listing['stock_no'] = listing['local_id'] # no separate stock#
-
     # no real patterns to mine on the details page...
+
+    return True
+
+
+# def mhc_parse_listing
+#
+# GEE TODO: this page only loads the first 50 cars and then uses js to pull
+# more and do "infinite scrolling". Needt o find a way to get the rest!
+#
+def mhc_parse_listing(listing, entry, detail):
+
+    # get some stuff from the inventory page
+    (listing['model_year'],
+    listing['make'],
+    listing['model']) = regularize_year_make_model(entry.find('h2').text)
+
+    # GEE TODO: some don't have any description, but others do (on the detail page)
+    listing['listing_text'] = '' 
+
+    # pull the rest of the fields from the detail page
+
+    listing['price'] = regularize_price(entry.find('span').text)
+
+    return True
+
+
+# sfs_parse_listing
+#
+def sfs_parse_listing(listing, entry, detail):
+
+    # get some stuff from the inventory page
+    (listing['model_year'],
+    listing['make'],
+    listing['model']) = regularize_year_make_model(entry.find('h2').text)
+
+    listing['listing_text'] = entry.find('h3').text
+
+    if entry.find('h6'):
+        listing['price'] = regularize_price(entry.find('h6').text)
+    else:
+        listing['price'] = -1
+
+    # pull the rest of the fields from the detail page
 
     return True
 
@@ -391,6 +448,7 @@ def specialty_parse_listing(listing, entry, detail):
     # the h3 in there seems to toast next_sibling/next_element, but find_next_sibling('td') works
     
     return True
+
 
 # ============================================================================
 # PRIMARY IMPORT METHODS
@@ -466,7 +524,11 @@ def pull_dealer_inventory(dealer):
             else:
                 # or alternately, there may be an onclick property we can grab?
                 # the onclick property could be on entry or a subentity
-                detail_url_attr = entry.attrs['onclick']
+                detail_url_attr = None
+                try:
+                    detail_url_attr = entry.attrs['onclick']
+                except KeyError:
+                    pass
                 if detail_url_attr == None:
                     detail_url_elt = entry.find(onclick=True)
                     if detail_url_elt != None:
@@ -495,6 +557,12 @@ def pull_dealer_inventory(dealer):
                     req = urllib2.Request(listing['listing_href'], headers=hdrs)
                     detail_page = urllib2.urlopen(req)
                     detail = BeautifulSoup(detail_page)
+
+            # many sites have no stock#/inventory ID; default to the unique URL element
+            # note that this will be wonky for item(s) that are 'coming soon'
+            # (no detail page exists yet)
+            listing['local_id'] = listing['listing_href'].rstrip('/').split('/')[-1].replace('.html','')
+            listing['stock_no'] = listing['local_id'] # no separate stock_no
 
             # see if the listing is marked as sold?
             # GEE TODO improve this; using uppercase intentionally as a cheat
@@ -685,6 +753,22 @@ lce = {
     'listing_from_list_item_func' : lambda s: s.parent.parent, # h3 under td under tr
     'parse_listing_func' : lc_parse_listing # shared parser for the 2 sets of cars
     }
+mhc = {
+    'textid' : 'mhc',
+    'base_url' : 'http://www.myhotcars.com',
+    'inventory_url' : '/inventory.htm',
+    'extract_car_list_func' : lambda s: s.find_all(class_='invebox'),
+    'listing_from_list_item_func' : lambda s: s,
+    'parse_listing_func' : mhc_parse_listing
+    }
+sfs = {
+    'textid' : 'sfs',
+    'base_url' : 'http://sanfranciscosportscars.com',
+    'inventory_url' : '/cars-for-sale.html',
+    'extract_car_list_func' : lambda s: s.find_all('h2'),
+    'listing_from_list_item_func' : lambda s: s.parent,
+    'parse_listing_func' : sfs_parse_listing
+    }
 specialty = {
     'textid' : 'specialty',
     'base_url' : 'http://www.specialtysales.com',
@@ -693,6 +777,18 @@ specialty = {
     'listing_from_list_item_func' : lambda s: s,
     'parse_listing_func' : specialty_parse_listing
     }
+vip = {
+    'textid' : 'vip',
+    'base_url' : 'http://www.vipmotors.us',
+    'inventory_url' : 'http://vipmotors.autorevo.com/vehicles?SearchString=',
+    'extract_car_list_func' : lambda s: s.find_all(class_='inventoryListItem'),
+    'listing_from_list_item_func' : lambda s: s,
+    'parse_listing_func' : autorevo_parse_listing
+    }
+# ^^^
+# Note that the page on VIP's main site is just a js that calls out to autorevo
+# the VIP literally doesn't actually contain listing info so we HAVE to go to
+# the autorevo site
 
 # GEE TODO investigate using OrderedDict
 dealers = {
@@ -703,7 +799,10 @@ dealers = {
     'fj' : fj,
     'lcc' : lcc,
     'lce' : lce,
+    'mhc' : mhc,
+    'sfs' : sfs,
     'specialty' : specialty,
+    'vip' : vip,
     }
 
 # ============================================================================
