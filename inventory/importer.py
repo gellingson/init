@@ -1,10 +1,11 @@
 #!/usr/local/bin/python3
 #
-# import.py
+# importer.py
 #
 # this is the main import script for grabbing inventory from various sources
 
 import sys
+import argparse
 import re
 import json
 import urllib.request, urllib.error, urllib.parse
@@ -43,7 +44,8 @@ hdrs = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML
 #
 # take a price string, strip out any dollar signs and commas, convert to an int
 # TODO: this is US-format-only right now & doesn't handle decimals or other garbage yet
-#
+# ... or currencies!
+
 def regularize_price(price_string):
     if price_string == None:
         price = -1
@@ -179,14 +181,12 @@ def autorevo_parse_listing(listing, entry, detail):
         listing['price'] = regularize_price(entry.find(class_='vehicleMainPriceRow').text)
     except AttributeError:
         listing['price'] = -1
-        pass
 
     # doesn't have listing text on inventory page
     try:
         listing['listing_text'] = detail.find(class_='innerDescriptionText').find('p').text
     except AttributeError:
         listing['listing_text'] = ''
-        pass
 
     return True
 
@@ -471,7 +471,7 @@ def specialty_parse_listing(listing, entry, detail):
 
 
 # ============================================================================
-# PRIMARY IMPORT METHODS
+# PRIMARY INVENTORY PULLING METHODS
 # ============================================================================
 
 # pull_dealer_inventory()
@@ -703,7 +703,9 @@ def db_insert_or_update_listing(con, listing):
         update_required = False
         for field in listing.keys():
             if str(listing[field]) != str(db_listing[field]):
-                logging.info('value for {} changed from <{}> to <{}>'.format(field, db_listing[field], listing[field]))
+                # GEE TODO: fix that
+                # GEE TODO heh, currency handling generally (!!)
+                logging.debug('value for {} changed from <{}> to <{}>'.format(field, db_listing[field], listing[field]))
                 update_required = True
         if update_required:
             up = con.cursor(db.cursors.DictCursor)
@@ -885,57 +887,72 @@ dealers = {
 # MAIN
 # ============================================================================
 
-# check args to decide what to do; default is nothing (except printing usage)
-write_to_db = False
-write_to_file = False
-requested_sites = False
-log_level = 'INFO'
-con = False # declare scope of db connection
+def process_command_line():
+    # initialize the parser object:
+    parser = argparse.ArgumentParser(description='Imports car listings')
+    parser.add_argument('--db', action='store_const',
+                        const=True, default=False, help='write to db tables')
+    parser.add_argument('--file', action='store_const',
+                        const=True, default=False, help='write to files')
+    parser.add_argument('--log_level', default='INFO',
+                        choices=('DEBUG','INFO','WARNING','ERROR', 'CRITICAL'),
+                        help='set the logging level')
+    parser.add_argument('command',
+                        choices=('list','import'),
+                        help='list all sources which can be imported and exit')
+    parser.add_argument('sources', nargs='*', help='the source(s) to pull from')
 
-# GEE TODO switch to proper pythonic arg processing (argparse)
-# check for args tellings us what to do with what we retrieve
-for arg in sys.argv:
-    if arg == '-db':
-        write_to_db = True
-    if arg == '-file':
-        write_to_file = True
-    if arg.startswith('--log_level='):
-        log_level = arg.partition('=')[2]
+    return parser.parse_args()
 
-# set up logging
-logging.basicConfig(level=log_level.upper())
+def main():
+    args = process_command_line()
+    logging.basicConfig(level=args.log_level.upper())
 
-# then take a second pass through the args and pull in the listings that are requested
-for arg in sys.argv:
+    if args.command == 'list':
+        # GEE TODO in the future this would be from a db listing
+        # and would also contain non-dealer sources
+        print('test [special test file of 1 record]')
+        print('norcal [special aggregation of norcal dealerships]')
+        for key in dealers.keys():
+            print(key)
+    elif args.command == 'import':
+        pass # fall through to code below the else
+    else: # uh, shouldn't be possible?
+        logging.error('oops -- command {} not recognized'.format(args.command))
+
+    con = False # declare scope of db connection
     listings = []
 
-    if arg == 'test':
-        requested_sites=True
-        listings = test_inventory()
-    if arg in sorted(dealers.keys()):
-        requested_sites=True
-        listings = pull_dealer_inventory(dealers[arg])
-    if arg == 'norcal':
-        requested_sites=True
-        listings = all_norcal_inventory()
-    # add if statement for each additional site here
+    for source in args.sources:
+        if source == 'test':
+            listings = test_inventory()
+        elif source == 'norcal':
+            listings = all_norcal_inventory()
+        elif source in dealers.keys():
+            listings = pull_dealer_inventory(dealers[source])
 
-    if write_to_db:
+    if args.db:
         con = db.connect('localhost', 'carsdbuser', 'car4U', 'carsdb')
         # GEE TODO: test db connection success here (since we are not just doing 'with con:' as db usage is conditional)
         # with con:
 
     for listing in listings:
-        if write_to_db:
+        if args.db:
             id = db_insert_or_update_listing(con, listing)
         else: # temporary -- use something other than db id as filename
             id = listing['local_id']
-        if write_to_file:
+        if args.file:
             listing['id'] = id # put it in the hash
             text_store_listing('/tmp/listings', listing)
-    if write_to_db:
+
+    # GEE TODO: delete/flag-as-removed listings that no longer exist/came down
+
+    if args.db:
         con.commit()
 
-if not requested_sites:
-    print ("Usage: [-db] [-file] [--log_level=FOO] site site site...")
-    print(("... where valid sites are: test, norcal, " + ", ".join(list(dealers.keys()))))
+    return True
+    
+if __name__ == "__main__":
+    status = main()
+    sys.exit(status)
+

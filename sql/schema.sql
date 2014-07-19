@@ -53,17 +53,17 @@
 drop table listing_backup;
 rename table listing to listing_backup;
 create table listing (
-id	   		   smallint unsigned not null auto_increment,
+id	   		   int unsigned not null auto_increment,
 status		   char(1),
 model_year 	   year,
 make		   varchar(255),
 model 		   varchar(255),
-price		   numeric(12,2),
+price		   int,
 listing_text   varchar(2048),
 pic_href	   varchar(2048),
 listing_href   varchar(2048),
 source_type    char,
-source_id	   smallint,
+source_id	   int,
 source_textid  varchar(255),
 local_id	   varchar(255),
 stock_no	   varchar(255),
@@ -82,7 +82,7 @@ primary key (id)
 drop table make_backup;
 rename table make to make_backup;
 create table make(
-id                smallint unsigned not null auto_increment,
+id                int unsigned not null auto_increment,
 text_id      	  varchar(255),
 canonical_name 	  varchar(255),
 first_model_year  int(4),
@@ -101,9 +101,9 @@ key text_id (text_id)
 drop table makemodel_backup;
 rename table makemodel to makemodel_backup;
 create table makemodel(
-id                      smallint unsigned not null auto_increment,
+id                      int unsigned not null auto_increment,
 text_id      	        varchar(255),
-make_id                 smallint,
+make_id                 int,
 canonical_model_name    varchar(255),
 first_model_year        int(4),
 last_model_year         int(4),
@@ -124,9 +124,9 @@ key text_id (text_id)
 drop table makemodelyear_backup;
 rename table makemodelyear to makemodelyear_backup;
 create table makemodelyear(
-id                smallint unsigned not null auto_increment,
-make_id smallint,
-makemodel_id smallint,
+id                int unsigned not null auto_increment,
+make_id int,
+makemodel_id int,
 make_text_id varchar(32) NOT NULL,
 makemodel_text_id varchar(64) NOT NULL,
 model_trim varchar(64) NOT NULL,
@@ -184,7 +184,7 @@ index makemodelyear (make_id, makemodel_id, model_year)
 drop table dealership_backup;
 rename table dealership to dealership_backup;
 create table dealership(
-id                smallint unsigned not null auto_increment,
+id                int unsigned not null auto_increment,
 flags bit(64),
 primary_dealership_id int default NULL,
 textid varchar(32) NOT NULL,
@@ -202,14 +202,14 @@ zip varchar(255),
 phone int(15),
 owner_info varchar(255),
 license_info varchar(255),
-owner_account_id smallint,
+owner_account_id int,
 primary key (id)
 );
 
 drop table classified_backup;
 rename table classified to classified_backup;
 create table classified(
-id                smallint unsigned not null auto_increment,
+id                int unsigned not null auto_increment,
 flags bit(64),
 primary_dealership_id int default NULL,
 textid varchar(32) NOT NULL,
@@ -219,15 +219,15 @@ extract_car_list_func varchar(1024),
 listing_from_list_item_func varchar(1024),
 parse_listing_func varchar(1024),
 inventory_url varchar(1024),
-owner_account_id smallint,
+owner_account_id int,
 primary key (id)
 );
 
 drop table dealership_activity_log_backup;
 rename table dealership_activity_log to dealership_activity_log_backup;
 create table dealership_activity_log(
-id                smallint unsigned not null auto_increment,
-dealership_id smallint,
+id                int unsigned not null auto_increment,
+dealership_id int,
 activity_timpestamp datetime,
 action_code varchar(32),
 message varchar(1024),
@@ -239,9 +239,9 @@ primary key (id)
 drop table inventory_import_log_backup;
 rename table inventory_import_log to inventory_import_log_backup;
 create table inventory_import_log(
-id                smallint unsigned not null auto_increment,
+id                int unsigned not null auto_increment,
 source_type  char(1),
-source_id    smallint,
+source_id    int,
 import_timestamp datetime,
 message varchar(1024),
 primary key (id)
