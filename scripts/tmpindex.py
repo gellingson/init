@@ -21,11 +21,12 @@ logging.basicConfig(level='DEBUG')
 
 con = db.connect('localhost', 'carsdbuser', 'car4U', 'carsdb')
 outf = open('/tmp/listings/index.html', 'w')
-listing_fmt = """<div><a href='{0}'><img src='{1}'><b>{2} {3} {4}</b> {5}'</a></div>\n"""
+outf.write("""<table>""")
+listing_fmt = """<tr><td><a href='{0}'><img src='{1}' width='200'></a></td><td><a href='{0}'><b>{2} {3} {4}</b></a></td><td><a href='{0}'>{5}</a></td><td><a href='{0}'>{6}</a></td></tr>\n"""
     
 db_listing = {}
 c = con.cursor(db.cursors.DictCursor) # get result as a dict rather than a list for prettier interaction
-rows = c.execute("""select * from listing where status = 'F'""")
+rows = c.execute("""select * from listing where status = 'F' order by model_year, make, model""")
 rows_read = 0
 while rows_read < rows:
     db_listing = c.fetchone()
@@ -34,6 +35,8 @@ while rows_read < rows:
                                   db_listing['model_year'],
                                   db_listing['make'],
                                   db_listing['model'],
+                                  db_listing['price'] if db_listing['price'] > 0 else 'Price upon request',
                                   db_listing['listing_text']))
     rows_read = rows_read + 1
+outf.write('</table>')
 outf.write('<div><div>{0} cars total in db.'.format(rows))
