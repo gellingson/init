@@ -211,7 +211,7 @@ rename table classified to classified_backup;
 create table classified(
 id                int unsigned not null auto_increment,
 flags bit(64),
-primary_dealership_id int default NULL,
+primary_classified_id int default NULL,
 textid varchar(32) NOT NULL,
 full_name varchar(1024) NOT NULL,
 base_url varchar(1024),
@@ -235,7 +235,7 @@ primary key (id)
 );
 
 
-# source_id has values [d=dealership, c=classified, ...?]
+# source_type has values [d=dealership, c=classified, ...?]
 drop table inventory_import_log_backup;
 rename table inventory_import_log to inventory_import_log_backup;
 create table inventory_import_log(

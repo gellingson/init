@@ -26,11 +26,11 @@
 #
 # See git for history.
 
-create user 'carsdbadmin' identified by 'carsdbowner';
+create user carsdbadmin@localhost identified by 'cars4Me';
 
 grant all privileges on *.* to carsdbadmin@localhost;
 
-create user 'carsdbuser' identified by 'carsdbusage';
+create user carsdbuser@localhost identified by 'car4U';
 
 grant select, insert, update, delete on carsdb.* to carsdbuser@localhost;
 
