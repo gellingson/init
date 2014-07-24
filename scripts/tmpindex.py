@@ -1,4 +1,4 @@
-#!/opt/local/bin/python
+#!/usr/local/bin/python3
 #
 # tempindex.pu
 #
@@ -8,18 +8,16 @@
 import sys
 import re
 import json
-import urllib2
-import urlparse
 import os
 import errno
 import logging
-import MySQLdb as db
+import pymysql as db
 from bs4 import BeautifulSoup
 
 # set up logging
 logging.basicConfig(level='DEBUG')
 
-con = db.connect('localhost', 'carsdbuser', 'car4U', 'carsdb')
+con = db.connect('localhost', 'carsdbuser', 'car4U', 'carsdb', charset='utf8')
 outf = open('/tmp/listings/index.html', 'w')
 outf.write("""<table>""")
 listing_fmt = """<tr><td><a href='{0}'><img src='{1}' width='200'></a></td><td><a href='{0}'><b>{2} {3} {4}</b></a></td><td><a href='{0}'>{5}</a></td><td><a href='{0}'>{6}</a></td></tr>\n"""
