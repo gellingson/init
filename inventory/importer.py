@@ -4,17 +4,25 @@
 #
 # this is the main import script for grabbing inventory from various sources
 
+# builtin modules used
 import sys
 import argparse
 import re
 import json
 import urllib.request, urllib.error, urllib.parse
-import urllib.parse
 import os
 import errno
 import logging
-import pymysql as db
+
+# third party modules used
+from bunch import Bunch
 from bs4 import BeautifulSoup
+import ebaysdk
+from ebaysdk.exception import ConnectionError
+from ebaysdk.finding import Connection as ebaysdk_finding
+import pymysql as db
+
+# OGL modules used (none yet)
 
 # ============================================================================
 # CONSTANTS
@@ -29,6 +37,23 @@ hdrs = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML
               'Accept-Encoding': 'none',
               'Accept-Language': 'en-US,en;q=0.8',
               'Connection': 'keep-alive'}
+
+boring_makes = ['Dodge','Chrysler', 'Ram', 'Jeep',
+                'Honda', 'Acura', 'Toyota', 'Lexus', 'Scion', 'Nissan', 'Infiniti',
+                'Mazda', 'Subaru', 'Isuzu', 'Mitsubishi',
+                'Chevrolet','Chevy', 'Pontiac', 'Saturn', 'Cadillac', 'Buick',
+                'GM','General','GMC',
+                'Ford','Mercury',
+                'BMW', 'Mini', 'Mercedes', 'Mercedes-Benz', 'MB', 'Volkswagen', 'VW', 'Audi',
+                'Fiat', 'Volvo', 'Land Rover',
+                'Hyundai', 'Kia', 'Suzuki']
+
+interesting_models = ['Viper',
+                      'NSX', 'MR2', 'MR-2', 'Supra', 'LFA', '300zx', 'Skyline', 'GTR',
+                      'MX5', 'MX-5', 'Miata', 'MX-5 Miata', 'rx7', 'STI', 'Evolution', 'Evo',
+                      'Corvette', 'Grand National', 
+                      'Boss', 'Shelby', 'GT',
+                      'M3', 'M5', 'M6', 'SLS', 'AMG', 'R8']
 
 # ============================================================================
 # UTILITY METHODS
@@ -57,7 +82,10 @@ def regularize_price(price_string):
         try:
             price = int(re.sub('[\$,]', '', price_string))
         except ValueError:
-            price = -1
+            try:
+                price = int(float(re.sub('[\$,]', '', price_string)))
+            except ValueError:
+                price = -1
     return price
 
 
@@ -104,14 +132,49 @@ def make_sure_path_exists(path):
     return True
 
 
+# is_car_interesting()
+#
+# crummy kludge to filter to cars we want for now vs ones we don't
+#
+def is_car_interesting(listing):
+    if listing['model_year'] and int(listing['model_year']) <= 1975:
+        return True # automatically interesting
+    # GEE TODO: case of comparisons & substrings make this.... interesting
+    if listing['make'] not in boring_makes: # wow is this inefficient - need make/model db stuff
+        return True
+    if listing['model'] in interesting_models: # pull particular models back in
+        return True
+    if listing['price'] > 100000: # Prima facia evidence of interesting status? :)
+        return True
+    return False
+
+# soup_from_file()
+#
+# intended for interactive use anyway; quickly soupify a file for testing.
+#
 def soup_from_file(path):
     with open(path) as file:
         return BeautifulSoup(file)
 
     
+# soup_from_file()
+#
+# intended for interactive use anyway; quickly soupify a file for testing.
 # GEE TODO: write this
+#
 def soup_from_url(url):
-    return None
+    try:
+        req = urllib.request.Request(url, headers=hdrs)
+        page = urllib.request.urlopen(req)
+    except urllib.error.HTTPError as error:
+        logging.error('Unable to load inventory page ' + url + ': HTTP ' + str(error.code) + ' ' + error.reason)
+        return None
+
+    if page.getcode() != 200:
+        logging.error('Failed to pull an inventory page for ' + url + ' with HTTP response code ' + str(page.getcode()))
+        return None
+
+    return BeautifulSoup(page)
 
 
 # test_inventory()
@@ -122,7 +185,7 @@ def soup_from_url(url):
 #
 def test_inventory():
     # 
-    test_listing = {}
+    test_listing = Bunch()
     test_listing['status'] = 'T' # T -> test data (will exclude from website listings)
     test_listing['model_year'] = '1955'
     test_listing['make'] = 'Ford'
@@ -522,7 +585,7 @@ def pull_dealer_inventory(dealer):
         logging.info('Number of car listings found: {}'.format(len(listings)))
         for item in listings:
             ok = True
-            listing = {} # build a listing dict for this car
+            listing = Bunch # build a listing dict/bunch for this car
 
             # for some sites the full entry is actually a parent or sibling
             # or similar permutation of the list item we just grabbed
@@ -655,6 +718,107 @@ def pull_dealer_inventory(dealer):
         # END LOOP over all inventory pages
 
     logging.info('Loaded ' + str(len(list_of_listings)) + ' cars from ' + dealer['textid'])
+    return list_of_listings
+
+
+# pull_ebay_inventory()
+#
+# Pulls ebay listings via the ebay python sdk over the ebay finding api
+#
+# Accepts some input about what to pull
+# (at least temporarily, we don't want everything ebay lists)
+#
+def pull_ebay_inventory(area='Local', car_type='Interesting'):
+
+    list_of_listings = []
+
+    api = ebaysdk_finding(debug=False, appid=None, config_file='../conf/ebay.yaml',warnings=True)
+    # GEE TODO check 'area' parameter before adding MaxDistance filter
+    api_request = {
+        'categoryId': 6001,
+        'GLOBAL-ID': 100,
+        'buyerPostalCode': 95112,
+#        'keywords': u'Corvette',
+        'itemFilter': [
+            {'name': 'MaxDistance',
+             'value': 150 }
+            ],
+        'affiliate': {'trackingId': 1},
+        'sortOrder': 'CountryDescending',
+        'paginationInput': {
+            'entriesPerPage': 100,
+            'pageNumber': 1}
+        }
+
+    # GEE note: motors-specific itemFilters or other forms of search limitation
+    # are undocumented (maybe retrievable through some other API verb but..?)
+    # so I'm going to pull everything within 150 miles for now and then pass
+    # them through a keep/discard filter to keep the db size under control
+
+    while True:
+        response = api.execute('findItemsAdvanced', api_request)
+        r = response.dict()
+        if r['ack'] != 'Success':
+            logging.error('eBay reports failure: {}'.format(json.dumps(response)))
+            break
+        logging.info('Number of car listings found: {}'.format(r['searchResult']['_count']))
+        for item in r['searchResult']['item']:
+            ok = True
+            logging.debug('eBay ITEM: {}'.format(item['itemId']))
+            listing = {} # build a listing dict for this car
+            listing['source_textid'] = 'ebay'
+            for attr in item['attribute']:
+                if attr['name'] == 'Year':
+                    listing['model_year'] = attr['value'][:4]
+            listing['make'] = item['title'].split(':')[0].strip()
+            listing['model'] = item['primaryCategory']['categoryName'] # alternatively could often get more info from title
+            try:
+                listing['pic_href'] = item['galleryURL']
+            except KeyError:
+                listing['pic_href'] = 'N/A'
+            listing['listing_href'] = item['viewItemURL']
+            listing['local_id'] = item['itemId']
+            listing['stock_no'] = item['itemId']
+            listing['status'] = 'F' # 'F' -> For Sale
+            listing['listing_text'] = item['title']
+
+            # GEE TODO: this is ignoring ebay price weirdness and currency
+            try:
+                listing['price'] = regularize_price(item['sellingStatus']['buyItNowPrice']['value']) 
+            except:                
+                listing['price'] = regularize_price(item['sellingStatus']['currentPrice']['value']) 
+
+            # validate model_year
+            try:
+                junk = int(listing['model_year'])
+            except ValueError:
+                logging.warning('bad year [{}] for item {}'.format(listing['model_year'], listing['local_id']))
+                listing['model_year'] = '1900'
+
+            if (ok and car_type == 'Interesting'):
+                ok = is_car_interesting(listing)
+
+            if ok:
+                list_of_listings.append(listing)
+                logging.debug('pulled listing: ' + json.dumps(listing))
+            else:
+                logging.debug('skipped listing: ' + json.dumps(listing)) # debug nor warn b/c we're throwing out lots of stuff
+
+            # END LOOP over listings on the page
+
+        # is there another page of listings?
+        current_page = int(r['paginationOutput']['pageNumber'])
+        total_pages = int(r['paginationOutput']['totalPages'])
+        logging.info('Loaded page {} of {}'.format(current_page, total_pages))
+        if current_page < total_pages:
+            api_request['paginationInput']['pageNumber'] = current_page + 1
+            response = api.execute('findItemsAdvanced', api_request)
+        else:
+            break
+        # END LOOP over all inventory pages
+
+    logging.info('Loaded ' + str(len(list_of_listings)) + ' cars from ebay')
+    
     return list_of_listings
 
 
@@ -890,10 +1054,10 @@ dealers = {
 def process_command_line():
     # initialize the parser object:
     parser = argparse.ArgumentParser(description='Imports car listings')
-    parser.add_argument('--db', action='store_const',
-                        const=True, default=False, help='write to db tables')
-    parser.add_argument('--file', action='store_const',
-                        const=True, default=False, help='write to files')
+    parser.add_argument('--nodb', dest='db', action='store_const',
+                        const=False, default=True, help='skip writes to db tables')
+    parser.add_argument('--nofiles', dest='file', action='store_const',
+                        const=False, default=True, help='skip writes to files')
     parser.add_argument('--log_level', default='INFO',
                         choices=('DEBUG','INFO','WARNING','ERROR', 'CRITICAL'),
                         help='set the logging level')
@@ -926,13 +1090,15 @@ def main():
     for source in args.sources:
         if source == 'test':
             listings = test_inventory()
+        elif source == 'ebay':
+            listings = pull_ebay_inventory()
         elif source == 'norcal':
             listings = all_norcal_inventory()
         elif source in dealers.keys():
             listings = pull_dealer_inventory(dealers[source])
 
     if args.db:
-        con = db.connect('localhost', 'carsdbuser', 'car4U', 'carsdb')
+        con = db.connect('localhost', 'carsdbuser', 'car4U', 'carsdb', charset='utf8')
         # GEE TODO: test db connection success here (since we are not just doing 'with con:' as db usage is conditional)
         # with con:
 
