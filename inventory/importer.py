@@ -76,8 +76,8 @@ def regularize_price(price_string):
         price = -1
     else:
         # strip out 'Price:' or similar if included
-        if u':' in price_string: # then take the part after the colon
-            junk, price_string = price_string.split(':')
+        if ':' in price_string: # then take the part after the colon
+            (junk, junk, price_string) = price_string.rpartition(':')
         price_string = re.sub('[a-zA-Z]','', price_string) # strip out any letters that might remain...
         try:
             price = int(re.sub('[\$,]', '', price_string))
@@ -342,7 +342,8 @@ def dawydiak_parse_listing(listing, entry, detail):
     # get some stuff from the inventory page
 
     listing['listing_text'] = entry.find(class_='introlist').text
-    listing['price'] = regularize_price(entry.find(class_='dscprice').text)
+    if entry.find(class_='dscprice'):
+        listing['price'] = regularize_price(entry.find(class_='dscprice').text)
 
     # pull the rest of the fields from the detail page
     listing['model_year'] = detail.find('dt',text=re.compile('Year:')).parent.dd.text
@@ -585,7 +586,7 @@ def pull_dealer_inventory(dealer):
         logging.info('Number of car listings found: {}'.format(len(listings)))
         for item in listings:
             ok = True
-            listing = Bunch # build a listing dict/bunch for this car
+            listing = Bunch() # build a listing dict/bunch for this car
 
             # for some sites the full entry is actually a parent or sibling
             # or similar permutation of the list item we just grabbed
@@ -725,8 +726,17 @@ def pull_dealer_inventory(dealer):
 #
 # Pulls ebay listings via the ebay python sdk over the ebay finding api
 #
-# Accepts some input about what to pull
+# Accepts some input about what to pull & what not to
 # (at least temporarily, we don't want everything ebay lists)
+#
+# NOTES:
+# Must chunk queries into 10K items (100 items each x 100 pages) or ebay
+# will give an error on page 101. eBay queries on the website are a messed
+# up pile o' crap, so hopefully these APIs will give better results
+#
+# For now, 'local' = 150 miles of 95112 and 'interesting' filters as
+# described in the named method, but it's a NOP since we're already
+# limiting the current query to <= 1975 in order to avoid the 10K limit
 #
 def pull_ebay_inventory(area='Local', car_type='Interesting'):
 
@@ -738,34 +748,41 @@ def pull_ebay_inventory(area='Local', car_type='Interesting'):
         'categoryId': 6001,
         'GLOBAL-ID': 100,
         'buyerPostalCode': 95112,
-#        'keywords': u'Corvette',
         'itemFilter': [
-            {'name': 'MaxDistance',
-             'value': 150 }
             ],
+        'aspectFilter': [],
         'affiliate': {'trackingId': 1},
         'sortOrder': 'CountryDescending',
         'paginationInput': {
-            'entriesPerPage': 100,
+            'entriesPerPage': 150,
             'pageNumber': 1}
         }
 
-    # GEE note: motors-specific itemFilters or other forms of search limitation
-    # are undocumented (maybe retrievable through some other API verb but..?)
-    # so I'm going to pull everything within 150 miles for now and then pass
-    # them through a keep/discard filter to keep the db size under control
+    if area=='Local':
+        api_request['itemFilter'].append({'name': 'MaxDistance',
+                                          'value': 150 })
+
+    # GEE TODO: temporary workaround for 10K limit; should iterate through years
+    # in batches or something.
+    for year in range(1900,1975):
+        api_request['aspectFilter'].append({'aspectName': 'Model Year',
+                                            'aspectValueName': year})
 
     while True:
         response = api.execute('findItemsAdvanced', api_request)
         r = response.dict()
         if r['ack'] != 'Success':
-            logging.error('eBay reports failure: {}'.format(json.dumps(response)))
+            # Hmm, when I get an error back from eBay the response can't be JSON dumped
+            # for some reason. This command barfs saying it isn't JSON serializable:
+            # print(response.json().dump())
+            print(response.json())
+            logging.error('eBay reports failure: {}'.format(response))
             break
         logging.info('Number of car listings found: {}'.format(r['searchResult']['_count']))
         for item in r['searchResult']['item']:
             ok = True
             logging.debug('eBay ITEM: {}'.format(item['itemId']))
-            listing = {} # build a listing dict for this car
+            listing = Bunch() # build a listing bunch/dict for this car
             listing['source_textid'] = 'ebay'
             for attr in item['attribute']:
                 if attr['name'] == 'Year':
