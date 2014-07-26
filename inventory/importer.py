@@ -20,6 +20,7 @@ from bs4 import BeautifulSoup
 import ebaysdk
 from ebaysdk.exception import ConnectionError
 from ebaysdk.finding import Connection as ebaysdk_finding
+from elasticsearch import Elasticsearch
 import pymysql as db
 
 # OGL modules used (none yet)
@@ -908,6 +909,19 @@ def db_insert_or_update_listing(con, listing):
     return db_listing['id']
 
 
+# index_listing
+#
+# adds a listing to the carbyr elasticsearch index
+# es seems to automatically handle duplicates by id, so relying on that for now
+#
+# only indexing the fields, NOT sucking in the full listing detail pages
+# (but we could, if we added the page text to the listing dict)
+#
+def index_listing(es, listing):
+    es.index(index="carbyr-index", doc_type="listing-type", id=listing.id, body=listing)
+    return True
+
+
 # text_store_listing
 #
 # stores a text file (suitable for text indexing) of the given listing
@@ -1073,6 +1087,8 @@ def process_command_line():
     parser = argparse.ArgumentParser(description='Imports car listings')
     parser.add_argument('--nodb', dest='db', action='store_const',
                         const=False, default=True, help='skip writes to db tables')
+    parser.add_argument('--index', dest='index', action='store_const',
+                        const=True, default=False, help='indexes the listings')
     parser.add_argument('--nofiles', dest='file', action='store_const',
                         const=False, default=True, help='skip writes to files')
     parser.add_argument('--log_level', default='INFO',
@@ -1119,11 +1135,17 @@ def main():
         # GEE TODO: test db connection success here (since we are not just doing 'with con:' as db usage is conditional)
         # with con:
 
+    if args.index:
+        es = Elasticsearch()
+
     for listing in listings:
         if args.db:
             id = db_insert_or_update_listing(con, listing)
+            listing.id = id
         else: # temporary -- use something other than db id as filename
             id = listing['local_id']
+        if args.index:
+            index_listing(es, listing)
         if args.file:
             listing['id'] = id # put it in the hash
             text_store_listing('/tmp/listings', listing)
