@@ -1,0 +1,28 @@
+{% load staticfiles %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'listings/style.css' %}" />
+
+<h1> Finding you the best cars for sale...</h1>
+
+{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+<form action="{% url 'listings:index' %}" method="get">
+  {% csrf_token %}
+  <input type="text" name="search_string" />
+  <label for="search_string"> Enter search here (vanilla elasticsearch right now)</label><br />
+  <input type="submit" value="Search" />
+</form>
+
+{% if listings %}
+  <table>
+	{% for item in listings %}
+    <tr>
+      <td><a href='{{ item.listing_href }}'><img src='{{ item.pic_href }}' width='200'></a></td>
+      <td><a href='{{ item.listing_href }}'><b>{{ item.model_year }} {{ item.make }} {{ item.model}} {{ item.price }}</b></a></td>
+      <td><a href='{{ item.listing_href }}'><b>{{ item.listing_text }}</b></a></td>
+    </tr>
+	{% endfor %}
+  </table>
+{% else %}
+  <p>Specify search criteria to find cars....</p>
+{% endif %}
