@@ -28,5 +28,4 @@ def index(request):
         listings = Listing.objects.all()
     context = {'listings': listings}
     return render(request, 'listings/index.html', context)
-#    response = "You're looking at the listings app."
-#    return HttpResponse(response)
+
