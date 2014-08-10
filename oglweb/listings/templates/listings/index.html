@@ -16,7 +16,7 @@
 
   <body>
 	<div class="navbar navbar-default navbar-fixed-top" role="navigation">
-	  <div class="container container-nav">
+	  <div class="container">
 		<div class="navbar-header">
 		  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
 			<span class="sr-only">Toggle navigation</span>
@@ -33,7 +33,6 @@
 		</div><!--/.navbar-collapse -->
 	  </div>
 	</div>
-
 	<div class="container">
 	  <div class="page-header">
 		<h1> Carbyr: find your next car...</h1>
@@ -50,6 +49,9 @@
 		  <!--label for="search_string"> Enter search here (vanilla elasticsearch right now)</label><br /-->
 		  <!--input type="submit" value="Search" /-->
 		</form>
+		<div><!-- considered class="center-block" but it didn't work -->
+		  <p class="text-info note">showing: latest interesting cars</p>
+		</div>
 	  </div>
 	  <div class="listings">
 
@@ -57,12 +59,13 @@
 		  {% for item in listings %}
 		    <div class="row">
 			  <a href='{{ item.listing_href }}'>
-				<div class="col-md-3"><img class="listpic" src='{{ item.pic_href }}'></div>
+				<div class="col-md-3"><img class="img-responsive img-rounded" src='{{ item.pic_href }}'></div>
 				<div class="col-md-3">
 				  <p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
 				  <p><strong>{{ item.price }}</strong></p>
 				</div>
-				<div class="col-md-6">{{ item.listing_text }}</div>
+				<div class="col-md-5">{{ item.listing_text }}</div>
+				<div class="col-md-1">x</div>
 			  </a>
 			</div>
 		  {% endfor %}
