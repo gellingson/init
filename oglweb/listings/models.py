@@ -24,6 +24,9 @@ class Classified(models.Model):
     parse_listing_func = models.CharField(max_length=1024, blank=True)
     inventory_url = models.CharField(max_length=1024, blank=True)
     owner_account_id = models.IntegerField(blank=True, null=True)
+    custom_pull_func = models.CharField(max_length=1024, blank=True)
+    def __str__(self):
+        return self.full_name
 
     class Meta:
         managed = False

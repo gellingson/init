@@ -54,8 +54,9 @@ drop table listing_backup;
 rename table listing to listing_backup;
 create table listing (
 id	   		   int unsigned not null auto_increment,
+flags		   bit(64) NOT NULL,
 status		   char(1),
-model_year 	   year,
+model_year 	   varchar(4),
 make		   varchar(255),
 model 		   varchar(255),
 price		   int,
@@ -185,7 +186,7 @@ drop table dealership_backup;
 rename table dealership to dealership_backup;
 create table dealership(
 id                int unsigned not null auto_increment,
-flags bit(64),
+flags bit(64) NOT NULL,
 primary_dealership_id int default NULL,
 textid varchar(32) NOT NULL,
 full_name varchar(1024) NOT NULL,
@@ -210,11 +211,12 @@ drop table classified_backup;
 rename table classified to classified_backup;
 create table classified(
 id                int unsigned not null auto_increment,
-flags bit(64),
+flags bit(64) NOT NULL,
 primary_classified_id int default NULL,
 textid varchar(32) NOT NULL,
 full_name varchar(1024) NOT NULL,
 base_url varchar(1024),
+custom_pull_func varchar(1024),
 extract_car_list_func varchar(1024),
 listing_from_list_item_func varchar(1024),
 parse_listing_func varchar(1024),
