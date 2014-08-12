@@ -173,11 +173,11 @@ index makemodelyear (make_id, makemodel_id, model_year)
 #
 # declaring flags here for now (hmm, I need some sort of DO layer!)
 #
-# SPECIALTY (commonly carries classic, exotic, or other unique inventory)
-# CLASSIC
-# EXOTIC
-# ACTIVE (open; not known to be out of business)
-# INDEXING (participating in normal indexing activities)
+# 1 ACTIVE (open; not known to be out of business)
+# 2 INDEXING (participating in normal indexing activities)
+# 4 SPECIALTY (commonly carries classic, exotic, or other unique inventory)
+# 8 CLASSIC
+# 16 EXOTIC
 # 
 # TODO: denormalize last_import?
 

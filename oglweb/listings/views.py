@@ -21,7 +21,7 @@ def index(request):
         pass
     if search_string:
         es = Elasticsearch()
-        search_resp = es.search(index='carbyr-index', doc_type='listing-type', q=search_string)
+        search_resp = es.search(index='carbyr-index', doc_type='listing-type', size=50, q=search_string)
         for item in search_resp['hits']['hits']:
             listings.append(item['_source'])
     else:

@@ -50,6 +50,8 @@ class Dealership(models.Model):
     owner_info = models.CharField(max_length=255, blank=True)
     license_info = models.CharField(max_length=255, blank=True)
     owner_account_id = models.IntegerField(blank=True, null=True)
+    def __str__(self):
+        return self.full_name
 
     class Meta:
         managed = False
@@ -98,6 +100,8 @@ class Listing(models.Model):
     listing_date = models.DateTimeField(blank=True, null=True)
     removal_date = models.DateTimeField(blank=True, null=True)
     last_update = models.DateTimeField(blank=True, null=True)
+    def __str__(self):
+        return "{} {} {} ({}, {})".format(self.model_year, self.make, self.model, self.source_textid, str(self.id))
 
     class Meta:
         managed = False

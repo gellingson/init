@@ -21,6 +21,7 @@ import ebaysdk
 from ebaysdk.exception import ConnectionError
 from ebaysdk.finding import Connection as ebaysdk_finding
 from elasticsearch import Elasticsearch
+from elasticsearch.exceptions import NotFoundError
 import pymysql as db
 
 # OGL modules used (none yet)
@@ -543,8 +544,13 @@ def specialty_parse_listing(listing, entry, detail):
 #
 # pulls inventory from common dealer sites as directed
 #
+# parameters:
+# dealer (textid of the dealer to be imported)
+#
 # returns a list of listings dicts
 #
+# NOTES:
+# 
 # this is a generic puller which accepts (and to perform decently, requires)
 # site-specific helper functions to extract all the listing details.
 #
@@ -581,9 +587,10 @@ def pull_dealer_inventory(dealer):
         soup = BeautifulSoup(page)
 
         # extract all the listings
-        # each listing is in a <li> block that contains a <class="carid"> entry
 
-        listings = dealer['extract_car_list_func'](soup)
+        myfunc = eval(dealer['extract_car_list_func'])
+        
+        listings = myfunc(soup)
         logging.info('Number of car listings found: {}'.format(len(listings)))
         for item in listings:
             ok = True
@@ -591,7 +598,8 @@ def pull_dealer_inventory(dealer):
 
             # for some sites the full entry is actually a parent or sibling
             # or similar permutation of the list item we just grabbed
-            entry = dealer['listing_from_list_item_func'](item)
+            myfunc = eval(dealer['listing_from_list_item_func'])
+            entry = myfunc(item)
 
             # try standard grabs; then call the dealer-specific method for
             # overrides & improvements
@@ -688,7 +696,7 @@ def pull_dealer_inventory(dealer):
 
             # call the dealer-specific method
             # GEE TODO need to define some sort of error-handling protocol...
-            ok = (ok and dealer['parse_listing_func'](listing, entry, detail))
+            ok = (ok and globals()[dealer['parse_listing_func']](listing, entry, detail))
             if ok:
                 # check for common errors / signs of trouble
                 if listing['local_id'] == last_local_id:
@@ -729,6 +737,10 @@ def pull_dealer_inventory(dealer):
 #
 # Accepts some input about what to pull & what not to
 # (at least temporarily, we don't want everything ebay lists)
+#
+# parameters:
+# area: 'Limit' => limits to local area (see notes)
+# car_type: 'Interesting' => limits to "interesting" cars (see notes)
 #
 # NOTES:
 # Must chunk queries into 10K items (100 items each x 100 pages) or ebay
@@ -840,6 +852,68 @@ def pull_ebay_inventory(area='Local', car_type='Interesting'):
     return list_of_listings
 
 
+# import_from_dealer
+#
+# Imports inventory from a dealership, overwriting (adding/updating) as needed
+#
+# parameters:
+# con: db connection (None if no db access is possible/requested)
+# es: indexing connection (None if no indexing is possible/requested)
+#
+# Notes:
+#
+# This is basically a wrapper around pull_dealer_inventory() that handles the
+# persistence details of the pulled inventory. Assumes that a dealership's
+# inventory is small enough to pull & update within a single db commit
+# (and then this method commits)
+#
+def import_from_dealer(con, es, dealer, file=False):
+
+    # get the active listings stored in the db for this dealer
+    old_db_listing_hash = {}
+    if con:
+        c = con.cursor(db.cursors.DictCursor)
+        rows = c.execute("""select * from listing where source_textid= %s and status = 'F'""",
+                         (dealer['textid']))
+        for listing in c.fetchall():
+            logging.debug('existing record with (id, local_id) of ({}, {})'.format(listing['id'], listing['local_id']))
+            old_db_listing_hash[listing['local_id']] = listing
+
+    # get the current listings on the dealer's website inventory
+    listings = pull_dealer_inventory(dealer)
+
+    for listing in listings:
+        if con:
+            id = db_insert_or_update_listing(con, listing, old_db_listing_hash)
+            listing.id = id
+        else: # temporary -- use something other than db id as filename
+            id = listing['local_id']
+        if es:
+            index_listing(es, listing)
+        if file:
+            listing['id'] = id # put it in the hash
+            text_store_listing('/tmp/listings', listing)
+
+    if con:
+        # now mark all the listings that were in the db but not the website
+        # inventory as closed
+        for local_id, db_listing in old_db_listing_hash.items():
+            if 'found' in db_listing:
+                pass
+            else:
+                db_listing['status'] = 'R' # Removed, reason unknown
+                if es:
+                    index_listing(es, db_listing) # will remove based on status
+                c = con.cursor(db.cursors.DictCursor)
+                rows = c.execute("""update listing set status = %s, last_update = CURRENT_TIMESTAMP where id = %s""",
+                                 (db_listing['status'], db_listing['id']))
+
+        # and commit
+        con.commit()
+
+    return True
+
+
 # all_norcal_inventory()
 #
 # Pull inventory from all the norcal sites we've written importers before
@@ -857,35 +931,26 @@ def all_norcal_inventory():
 
 # db_insert_or_update_listing
 #
-# note: returns the database ID of the listing (if it succeeded -- will raise exception otherwise, I guess)
+# NOTES:
+# returns the database ID of the listing (all other cases raise exceptions)
 #
-def db_insert_or_update_listing(con, listing):
+# updates the old_db_listing_hash entry by setting 'found' property, thus
+# permitting easy deletion of records no longer found in current inventory
+#
+def db_insert_or_update_listing(con, listing, old_db_listing_hash = {}):
     db_listing = {}
-    c = con.cursor(db.cursors.DictCursor) # get result as a dict rather than a list for prettier interaction
-    rows = c.execute("""select * from listing where source_textid= %s and local_id = %s""", (listing['source_textid'], listing['local_id'],))
-    if rows == 0:
-        # no matching listing -- insert
-        ins = con.cursor(db.cursors.DictCursor)
-        ins.execute(
-            """insert into listing
-(status, model_year, make, model, price, listing_text, pic_href, listing_href, source_textid, local_id, stock_no, listing_date, removal_date, last_update) values
-(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP)""",
-            (listing['status'],listing['model_year'],listing['make'],listing['model'],listing['price'],listing['listing_text'],listing['pic_href'],listing['listing_href'],listing['source_textid'],listing['local_id'],listing['stock_no'],))
+    logging.debug('checking on existence of listing {}'.format(listing['local_id']))
+    if listing['local_id'] in old_db_listing_hash:
 
-        # re-execute the same fetch which will now grab the new record
-        c2 = con.cursor(db.cursors.DictCursor)
-        c2.execute("""select * from listing where source_textid= %s and local_id = %s""", (listing['source_textid'], listing['local_id'],))
-        db_listing = c2.fetchone()
-
-        logging.debug('inserted record id={}: {} {} {}'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
-
-    elif rows == 1:
-        # matching listing already -- do we need to update?
-        db_listing = c.fetchone()
+        # matching listing already in the db
+        db_listing = old_db_listing_hash[listing['local_id']]
+        db_listing['found'] = True # mark it as still on the site
+        logging.debug('found: {}'.format(db_listing))
+        # now, do we need to update the record?
         update_required = False
-        for field in listing.keys():
+        for field in ['status','model_year','make','model','price','listing_text','pic_href','listing_href']:
             if str(listing[field]) != str(db_listing[field]):
-                # GEE TODO: fix that
+                # GEE TODO: check that currency isn't borked based on string/number comparison??
                 # GEE TODO heh, currency handling generally (!!)
                 logging.debug('value for {} changed from <{}> to <{}>'.format(field, db_listing[field], listing[field]))
                 update_required = True
@@ -900,10 +965,21 @@ def db_insert_or_update_listing(con, listing):
             logging.debug('found record id={}: {} {} {} (updated)'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
         else: # else listing is up to date; no update required
             logging.debug('found record id={}: {} {} {} (no update required)'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
-            
-    else:
-        # WTF - multiple rows?
-        print("YIKES! Multiple matching rows already in the listing table?")
+
+    else: # no matching listing from the db -- insert
+        ins = con.cursor(db.cursors.DictCursor)
+        ins.execute(
+            """insert into listing
+(status, model_year, make, model, price, listing_text, pic_href, listing_href, source_textid, local_id, stock_no, listing_date, removal_date, last_update) values
+(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP)""",
+            (listing['status'],listing['model_year'],listing['make'],listing['model'],listing['price'],listing['listing_text'],listing['pic_href'],listing['listing_href'],listing['source_textid'],listing['local_id'],listing['stock_no'],))
+
+        # re-execute the same fetch which will now grab the new record
+        c2 = con.cursor(db.cursors.DictCursor)
+        c2.execute("""select * from listing where source_textid= %s and local_id = %s order by last_update desc""",
+                   (listing['source_textid'], listing['local_id'],))
+        db_listing = c2.fetchone()
+        logging.debug('inserted record id={}: {} {} {}'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
 
     # if we get here, we succeeded... I assume
     return db_listing['id']
@@ -912,13 +988,23 @@ def db_insert_or_update_listing(con, listing):
 # index_listing
 #
 # adds a listing to the carbyr elasticsearch index
+# (or removes the listing from the index if the status != 'F')
+#
+# NOTES:
+#
 # es seems to automatically handle duplicates by id, so relying on that for now
 #
 # only indexing the fields, NOT sucking in the full listing detail pages
 # (but we could, if we added the page text to the listing dict)
 #
 def index_listing(es, listing):
-    es.index(index="carbyr-index", doc_type="listing-type", id=listing.id, body=listing)
+    if listing['status'] == 'F':
+        es.index(index="carbyr-index", doc_type="listing-type", id=listing['id'], body=listing)
+    else:
+        try:
+            es.delete(index="carbyr-index", doc_type="listing-type", id=listing['id'])
+        except NotFoundError as err:
+            logging.warning('record with id={} not found during attempted deletion: {}'.format(listing['id'], err))
     return True
 
 
@@ -951,110 +1037,123 @@ def text_store_listing(list_dir, listing):
 
 carbuffs = {
     'textid' : 'carbuffs',
+    'full_name' : 'Car Buffs',
     'base_url' : 'http://carbuffs.com',
     'inventory_url' : '/inventory',
-    'extract_car_list_func' : lambda s: s.find_all(class_='car-cont'),
-    'listing_from_list_item_func' : lambda s: s,
-    'parse_listing_func' : carbuffs_parse_listing
+    'extract_car_list_func' : "lambda s: s.find_all(class_='car-cont')",
+    'listing_from_list_item_func' : "lambda s: s",
+    'parse_listing_func' : "carbuffs_parse_listing"
     }
 # ccw site has NO useful markup; best plan I can come up with to ID a car entry
 # is to look for <img> tag where src does NOT start with 'New-Site'
 ccw = {
     'textid' : 'ccw',
+    'full_name' : 'Classic Cars West',
     'base_url' : 'http://www.classiccarswest.com',
     'inventory_url' : '/Inventory.html',
-    'extract_car_list_func' : lambda s: s.find_all('img',src=re.compile('^([^N][^e][^w])')),
-    'listing_from_list_item_func' : lambda s: s.parent.parent.parent,
-    'parse_listing_func' : ccw_parse_listing
+    'extract_car_list_func' : "lambda s: s.find_all('img',src=re.compile('^([^N][^e][^w])'))",
+    'listing_from_list_item_func' : "lambda s: s.parent.parent.parent",
+    'parse_listing_func' : "ccw_parse_listing"
     }
 cvclassics = {
     'textid' : 'cvclassics',
+    'full_name' : 'Central Valley Classics',
     'base_url' : 'http://www.centralvalleyclassics.com',
     'inventory_url' : '/cars/carsfs.html',
-    'extract_car_list_func' : lambda s: s.find_all('img',alt=re.compile('Click')), # Yuck!
-    'listing_from_list_item_func' : lambda s: s.parent.parent.parent, # Yuck again!
-    'parse_listing_func' : cvclassics_parse_listing
+    'extract_car_list_func' : "lambda s: s.find_all('img',alt=re.compile('Click'))", # Yuck!
+    'listing_from_list_item_func' : "lambda s: s.parent.parent.parent", # Yuck again!
+    'parse_listing_func' : "cvclassics_parse_listing"
     }
 cfc = {
     'textid' : 'cfc',
+    'full_name' : 'Checkered Flag Classics',
     'base_url' : 'http://checkeredflagclassics.com',
     'inventory_url' : '/',
-    'extract_car_list_func' : lambda s: s.find_all('li'),
-    'listing_from_list_item_func' : lambda s: s,
-    'parse_listing_func' : cfc_parse_listing
+    'extract_car_list_func' : "lambda s: s.find_all('li')",
+    'listing_from_list_item_func' : "lambda s: s",
+    'parse_listing_func' : "cfc_parse_listing"
     }
 dawydiak = {
     'textid' : 'dawydiak',
+    'full_name' : 'Cars Dawydiak',
     'base_url' : 'http://www.carsauto.com',
     'inventory_url' : '/other-inventory.htm?limit=500&order_by=&d=backw',
-    'extract_car_list_func' : lambda s: s.find_all(class_='in-lst-buttoned-nm'),
-    'listing_from_list_item_func' : lambda s: s.parent,
-    'parse_listing_func' : dawydiak_parse_listing
+    'extract_car_list_func' : "lambda s: s.find_all(class_='in-lst-buttoned-nm')",
+    'listing_from_list_item_func' : "lambda s: s.parent",
+    'parse_listing_func' : "dawydiak_parse_listing"
     }
 dawydiakp = {
     'textid' : 'dawydiakp',
+    'full_name' : 'Cars Dawydiak',
     'base_url' : 'http://www.carsauto.com',
     'inventory_url' : '/porsche-inventory.htm?limit=500&order_by=&d=backw',
-    'extract_car_list_func' : lambda s: s.find_all(class_='in-lst-buttoned-nm'),
-    'listing_from_list_item_func' : lambda s: s.parent,
-    'parse_listing_func' : dawydiak_parse_listing
+    'extract_car_list_func' : "lambda s: s.find_all(class_='in-lst-buttoned-nm')",
+    'listing_from_list_item_func' : "lambda s: s.parent",
+    'parse_listing_func' : "dawydiak_parse_listing"
     }
 # GEE TODO: should also handle FJ's off-site inventory
 fj = {
     'textid' : 'fj',
+    'full_name' : 'Fantasy Junction',
     'base_url' : 'http://www.fantasyjunction.com',
     'inventory_url' : '/inventory',
-    'extract_car_list_func' : lambda s: s.find_all(class_='list-entry pkg list-entry-link'),
-    'listing_from_list_item_func' : lambda s: s,
-    'parse_listing_func' : fj_parse_listing
+    'extract_car_list_func' : "lambda s: s.find_all(class_='list-entry pkg list-entry-link')",
+    'listing_from_list_item_func' : "lambda s: s",
+    'parse_listing_func' : "fj_parse_listing"
     }
 lcc = {
     'textid' : 'lcc',
+    'full_name' : 'Left Coast Classics',
     'base_url' : 'http://www.leftcoastclassics.com',
     'inventory_url' : '/LCCofferings.html', # not sure why URLs are not parallel?
-    'extract_car_list_func' : lambda s: s.find_all('h3'), # Yuck!
-    'listing_from_list_item_func' : lambda s: s.parent.parent, # h3 under td under tr
-    'parse_listing_func' : lc_parse_listing # shared parser for the 2 sets of cars
+    'extract_car_list_func' : "lambda s: s.find_all('h3')", # Yuck!
+    'listing_from_list_item_func' : "lambda s: s.parent.parent", # h3 under td under tr
+    'parse_listing_func' : "lc_parse_listing" # shared parser for the 2 sets of cars
     }
 lce = {
     'textid' : 'lce',
+    'full_name' : 'Left Coast Exotics',
     'base_url' : 'http://www.leftcoastexotics.com',
     'inventory_url' : '/cars-for-sale.html', # not sure why URLs are not parallel?
-    'extract_car_list_func' : lambda s: s.find_all('h3'), # Yuck!
-    'listing_from_list_item_func' : lambda s: s.parent.parent, # h3 under td under tr
-    'parse_listing_func' : lc_parse_listing # shared parser for the 2 sets of cars
+    'extract_car_list_func' : "lambda s: s.find_all('h3')", # Yuck!
+    'listing_from_list_item_func' : "lambda s: s.parent.parent", # h3 under td under tr
+    'parse_listing_func' : "lc_parse_listing" # shared parser for the 2 sets of cars
     }
 mhc = {
     'textid' : 'mhc',
+    'full_name' : 'My Hot Cars',
     'base_url' : 'http://www.myhotcars.com',
     'inventory_url' : '/inventory.htm',
-    'extract_car_list_func' : lambda s: s.find_all(class_='invebox'),
-    'listing_from_list_item_func' : lambda s: s,
-    'parse_listing_func' : mhc_parse_listing
+    'extract_car_list_func' : "lambda s: s.find_all(class_='invebox')",
+    'listing_from_list_item_func' : "lambda s: s",
+    'parse_listing_func' : "mhc_parse_listing"
     }
 sfs = {
     'textid' : 'sfs',
+    'full_name' : 'San Francisco Sportscars',
     'base_url' : 'http://sanfranciscosportscars.com',
     'inventory_url' : '/cars-for-sale.html',
-    'extract_car_list_func' : lambda s: s.find_all('h2'),
-    'listing_from_list_item_func' : lambda s: s.parent,
-    'parse_listing_func' : sfs_parse_listing
+    'extract_car_list_func' : "lambda s: s.find_all('h2')",
+    'listing_from_list_item_func' : "lambda s: s.parent",
+    'parse_listing_func' : "sfs_parse_listing"
     }
 specialty = {
     'textid' : 'specialty',
+    'full_name' : 'Specialty Auto Sales',
     'base_url' : 'http://www.specialtysales.com',
     'inventory_url' : '/inventory?per_page=300',
-    'extract_car_list_func' : lambda s: s.find_all(class_='vehicle-entry'),
-    'listing_from_list_item_func' : lambda s: s,
-    'parse_listing_func' : specialty_parse_listing
+    'extract_car_list_func' : "lambda s: s.find_all(class_='vehicle-entry')",
+    'listing_from_list_item_func' : "lambda s: s",
+    'parse_listing_func' : "specialty_parse_listing"
     }
 vip = {
     'textid' : 'vip',
+    'full_name' : 'VIP Motors',
     'base_url' : 'http://www.vipmotors.us',
     'inventory_url' : 'http://vipmotors.autorevo.com/vehicles?SearchString=',
-    'extract_car_list_func' : lambda s: s.find_all(class_='inventoryListItem'),
-    'listing_from_list_item_func' : lambda s: s,
-    'parse_listing_func' : autorevo_parse_listing
+    'extract_car_list_func' : "lambda s: s.find_all(class_='inventoryListItem')",
+    'listing_from_list_item_func' : "lambda s: s",
+    'parse_listing_func' : "autorevo_parse_listing"
     }
 # ^^^
 # Note that the page on VIP's main site is just a js that calls out to autorevo
@@ -1086,74 +1185,75 @@ def process_command_line():
     # initialize the parser object:
     parser = argparse.ArgumentParser(description='Imports car listings')
     parser.add_argument('--nodb', dest='db', action='store_const',
-                        const=False, default=True, help='skip writes to db tables')
-    parser.add_argument('--index', dest='index', action='store_const',
-                        const=True, default=False, help='indexes the listings')
-    parser.add_argument('--nofiles', dest='file', action='store_const',
-                        const=False, default=True, help='skip writes to files')
+                        const=False, default=True, help='skip writing the listings to db tables')
+    parser.add_argument('--noindex', dest='index', action='store_const',
+                        const=False, default=True, help='skip indexing the listings')
+    parser.add_argument('--files', dest='file', action='store_const',
+                        const=True, default=False, help='writes listings to files in /tmp')
     parser.add_argument('--log_level', default='INFO',
                         choices=('DEBUG','INFO','WARNING','ERROR', 'CRITICAL'),
                         help='set the logging level')
-    parser.add_argument('command',
+    parser.add_argument('action',
                         choices=('list','import'),
-                        help='list all sources which can be imported and exit')
-    parser.add_argument('sources', nargs='*', help='the source(s) to pull from')
+                        help='action: list sources which can be imported and exit, or import from those sources')
+    parser.add_argument('sources', nargs='*', help='the source(s) to pull from if action=import')
 
     return parser.parse_args()
 
+
 def main():
     args = process_command_line()
+
+    # start logging
     logging.basicConfig(level=args.log_level.upper())
 
-    if args.command == 'list':
-        # GEE TODO in the future this would be from a db listing
-        # and would also contain non-dealer sources
-        print('test [special test file of 1 record]')
-        print('norcal [special aggregation of norcal dealerships]')
-        for key in dealers.keys():
-            print(key)
-    elif args.command == 'import':
-        pass # fall through to code below the else
-    else: # uh, shouldn't be possible?
-        logging.error('oops -- command {} not recognized'.format(args.command))
-
-    con = False # declare scope of db connection
-    listings = []
-
-    for source in args.sources:
-        if source == 'test':
-            listings = test_inventory()
-        elif source == 'ebay':
-            listings = pull_ebay_inventory()
-        elif source == 'norcal':
-            listings = all_norcal_inventory()
-        elif source in dealers.keys():
-            listings = pull_dealer_inventory(dealers[source])
+    con = None # declare scope of db connection
+    es = None # and the indexing connection
+    dealerships = {}
 
     if args.db:
         con = db.connect('localhost', 'carsdbuser', 'car4U', 'carsdb', charset='utf8')
         # GEE TODO: test db connection success here (since we are not just doing 'with con:' as db usage is conditional)
-        # with con:
+
+        # ... and go ahead and fetch the sources from the db here for simplicity
+        c = con.cursor(db.cursors.DictCursor)
+        rows = c.execute("""select * from dealership where (flags & 2) != 0""")
+        # GEE TODO there has to be a more efficient way to do this, but I
+        # get an odd error if I do this:
+        # 
+        for dealer in c.fetchall():
+            dealerships[dealer['textid']] = dealer
+    else:
+        dealerships = dealers; # use built-in/non-db dealership list
 
     if args.index:
         es = Elasticsearch()
 
-    for listing in listings:
-        if args.db:
-            id = db_insert_or_update_listing(con, listing)
-            listing.id = id
-        else: # temporary -- use something other than db id as filename
-            id = listing['local_id']
-        if args.index:
-            index_listing(es, listing)
-        if args.file:
-            listing['id'] = id # put it in the hash
-            text_store_listing('/tmp/listings', listing)
+    # now do what the user requested (the action)
+    if args.action == 'list':
+        for dealer in dealerships:
+            print('{} [{}]'.format(dealer['textid'], dealer['full_name']))
 
-    # GEE TODO: delete/flag-as-removed listings that no longer exist/came down
+        # GEE TODO: db reads & associated list of non-dealership sources
 
-    if args.db:
-        con.commit()
+        # GEE TODO: remove these non-db sources, or clearly label as test-only
+        print('test [special test file of 1 record]')
+        print('norcal [special aggregation of norcal dealerships]')
+        print('db_dealers [all dealers in the database]')
+
+    elif args.action == 'import':
+        for source in args.sources:
+            if source in dealerships:
+                import_from_dealer(con, es, dealerships[source])
+            elif source == 'ebay':
+                import_from_ebay(con, es)
+            elif source == 'norcal':
+                for dealer in dealerships:
+                    import_from_dealer(con, es, dealer)
+            else:
+                logging.error('request of import from unknown source: {}'.format(source))
+    else: # uh, shouldn't be possible?
+        logging.error('oops -- action {} not recognized'.format(args.action))
 
     return True
     
