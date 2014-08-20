@@ -47,6 +47,11 @@
 # S sold
 # R removed (maybe sold, maybe not)
 # T test record, ignore for most cases
+# X removed, not a valid listing [generally means admin-flagged as importing script error, fraud, etc]
+#
+# markers chars:
+#
+# P pending deletion (used during reconciliation of existing and current listing sets for a source)
 #
 # for RSS we do not need anything more, I think. If I want to support/track have-seen or sublists for a user
 # on the server side then we would need a table that joined a user and listings somehow.
@@ -54,8 +59,8 @@ drop table listing_backup;
 rename table listing to listing_backup;
 create table listing (
 id	   		   int unsigned not null auto_increment,
-flags		   bit(64) NOT NULL,
-status		   char(1),
+markers        varchar(24),
+status		   char(1) NOT NULL,
 model_year 	   varchar(4),
 make		   varchar(255),
 model 		   varchar(255),
@@ -172,21 +177,30 @@ index makemodelyear (make_id, makemodel_id, model_year)
 #
 #
 #
-# declaring flags here for now (hmm, I need some sort of DO layer!)
+# statuses: (hmm, I need some sort of DO layer!)
 #
-# 1 ACTIVE (open; not known to be out of business)
-# 2 INDEXING (participating in normal indexing activities)
-# 4 SPECIALTY (commonly carries classic, exotic, or other unique inventory)
-# 8 CLASSIC
-# 16 EXOTIC
-# 
+# I ACTIVE & INDEXING (open; not known to be out of business)
+# A ALIVE (we think) but NOT indexing for some reason, possibly temporary
+# D DEAD (out of business, we think)
+# E EVIL (flagged as not a place to do business with)
+#
+# Markers (e.g. inventory types) (can have multiple letters as appropriate):
+# S SPECIALTY (commonly carries classic, exotic, or other unique inventory)
+# C CLASSIC
+# X EXOTIC
+# H High listing quality
+# L Low listing quality
+# I high Integrity/quality dealership
+# Y shadY seeming dealership
+
 # TODO: denormalize last_import?
 
 drop table dealership_backup;
 rename table dealership to dealership_backup;
 create table dealership(
 id                int unsigned not null auto_increment,
-flags bit(64) NOT NULL,
+status           char(1) not null,
+markers          varchar(24),
 primary_dealership_id int default NULL,
 textid varchar(32) NOT NULL,
 full_name varchar(1024) NOT NULL,
@@ -211,7 +225,8 @@ drop table classified_backup;
 rename table classified to classified_backup;
 create table classified(
 id                int unsigned not null auto_increment,
-flags bit(64) NOT NULL,
+status           char(1) not null,
+markers          varchar(24),
 primary_classified_id int default NULL,
 textid varchar(32) NOT NULL,
 full_name varchar(1024) NOT NULL,
@@ -248,3 +263,22 @@ import_timestamp datetime,
 message varchar(1024),
 primary key (id)
 );
+
+# non_canonical_make
+#
+# if we see make.upper() = non_canonical_name, replace with
+# canonical_name, and
+# - consume any following words in the consume_words string if they lead the presumed-model string
+#      for example: if "alfa" [canonical Alfa Romeo] consume "romeo"
+# - push any words in the push_words onto the front of hte presumed-model string
+#      for example: if "vette" [canonical Chevrolet] push "corvette"
+drop table non_canonical_make_backup;
+rename table non_canonical_make to non_canonical_make_backup;
+create table non_canonical_make(
+id                int unsigned not null auto_increment,
+non_canonical_name  varchar(1024),
+canonical_name		varchar(1024),
+consume_words		varchar(1024),
+push_words			varchar(1024),
+primary key (id),
+index ncn(non_canonical_name));
