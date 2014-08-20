@@ -25,10 +25,15 @@ logging.basicConfig(level='INFO')
 con = db.connect('localhost', 'carsdbuser', 'car4U', 'carsdb', charset='utf8')
 
 es = Elasticsearch()
-es.indices.delete(index="carbyr-index")
+try:
+    es.indices.delete(index="carbyr-index")
+except elasticsearch.exceptsions.NotFoundError:
+    logging.warning('Index not found while attempting to drop it')
+
 
 c = con.cursor(db.cursors.DictCursor) # get result as a dict rather than a list for prettier interaction
 rows = c.execute("""select * from listing where status = 'F'""")
 logging.info('found {} rows'.format(str(rows)))
 for db_listing in c.fetchall():
+    db_listing['flags'] = 0
     index_resp = es.index(index="carbyr-index", doc_type="listing-type", id=db_listing['id'], body=db_listing)
