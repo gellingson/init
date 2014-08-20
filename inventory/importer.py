@@ -3,6 +3,9 @@
 # importer.py
 #
 # this is the main import script for grabbing inventory from various sources
+#
+# NOTES:
+# GEE TODO currency handling
 
 # builtin modules used
 import sys
@@ -27,7 +30,40 @@ import pymysql as db
 # OGL modules used (none yet)
 
 # ============================================================================
-# CONSTANTS
+# CLASSES
+# ============================================================================
+
+# class Listing
+#
+# GEE TODO: finish this class and start using it :)
+# could harcode a field list or not import from Dict, BUT we want to use
+# buildit PyMYSQL row-as-dict reads so... ?
+#
+class Listing(Bunch):
+    """A simple class that extends Dict/Bunch to describe a listing"""
+    def __init__(self):
+        self.id = None
+        self.markers = None
+        self.status = None
+        self.model_year = None
+        self.make = None
+        self.model = None
+        self.price = None
+        self.listing_text = None
+        self.pic_href = None
+        self.listing_href = None
+        self.source_type = None
+        self.source_id = None
+        self.source_textid = None
+        self.local_id = None
+        self.stock_no = None
+        self.listing_date = None
+        self.removal_date = None
+        self.last_update = None
+        
+
+# ============================================================================
+# CONSTANTS AND GLOBALS
 # ============================================================================
 
 # GEE TODO refine this: what headers do we want to send?
@@ -40,15 +76,17 @@ hdrs = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML
               'Accept-Language': 'en-US,en;q=0.8',
               'Connection': 'keep-alive'}
 
-boring_makes = ['Dodge','Chrysler', 'Ram', 'Jeep',
+boring_makes = ['Dodge','Chrysler', 'Ram', 'RAM', 'Jeep',
                 'Honda', 'Acura', 'Toyota', 'Lexus', 'Scion', 'Nissan', 'Infiniti',
                 'Mazda', 'Subaru', 'Isuzu', 'Mitsubishi',
-                'Chevrolet','Chevy', 'Pontiac', 'Saturn', 'Cadillac', 'Buick',
+                'Chevrolet','Chevy', 'Pontiac', 'Saturn', 'Cadillac', 'Buick', 'Oldsmobile',
                 'GM','General','GMC',
-                'Ford','Mercury',
-                'BMW', 'Mini', 'Mercedes', 'Mercedes-Benz', 'MB', 'Volkswagen', 'VW', 'Audi',
-                'Fiat', 'Volvo', 'Land Rover',
-                'Hyundai', 'Kia', 'Suzuki']
+                'Ford','Mercury', 'Lincoln',
+                'BMW', 'Mini', 'MINI', 'Mercedes', 'Mercedes-Benz', 'MB',
+                'Volkswagen', 'VW', 'Audi',
+                'Fiat', 'Volvo', 'Land Rover', 'Range Rover', 'Saab',
+                'Hyundai', 'Kia', 'Suzuki',
+                'Smart']
 
 interesting_models = ['Viper',
                       'NSX', 'MR2', 'MR-2', 'Supra', 'LFA', '300zx', 'Skyline', 'GTR',
@@ -57,12 +95,33 @@ interesting_models = ['Viper',
                       'Boss', 'Shelby', 'GT',
                       'M3', 'M5', 'M6', 'SLS', 'AMG', 'R8']
 
+# will populate via associated method
+# GEE TODO: yes, I should be using OOP (sigh)
+non_canonical_makes = {}
+
 # ============================================================================
 # UTILITY METHODS
 # ============================================================================
 
-# GEE TODO: deal properly with unicode/charset issues.
-# should (can?) we switch to python 3 to get utf-8 default charset rather than ascii?
+# populate_non_canonical_makes
+#
+# populates a hash of non-canonical makes
+#
+# NOTES:
+#
+# Yeah, yeah, this is a hack. But it works for now :).
+#
+def populate_non_canonical_makes(con):
+    c = con.cursor(db.cursors.DictCursor)
+    rows = c.execute("""select * from non_canonical_make""")
+    for ncm in c.fetchall():
+        if ncm['consume_words']:
+            ncm['consume_words'] = ncm['consume_words'].split(" ")
+        if ncm['push_words']:
+            ncm['push_words'] = ncm['push_words'].split(" ")
+        non_canonical_makes[ncm['non_canonical_name']] = ncm
+    return True
+
 
 # regularize methods will take a string input that may be "messy" or vary a bit
 # from site to site and regularize/standardize it
@@ -76,7 +135,7 @@ interesting_models = ['Viper',
 def regularize_price(price_string):
     if price_string == None:
         price = -1
-    else:
+    elif isinstance(price_string, str):
         # strip out 'Price:' or similar if included
         if ':' in price_string: # then take the part after the colon
             (junk, junk, price_string) = price_string.rpartition(':')
@@ -88,6 +147,12 @@ def regularize_price(price_string):
                 price = int(float(re.sub('[\$,]', '', price_string)))
             except ValueError:
                 price = -1
+    else: # was passed something other than a string (int, float, ...?)
+        # lets try force-converting it; if that fails then....
+        try:
+            price = int(price_string) # which isn't a string
+        except: # eat any error here
+            price = -1
     return price
 
 
@@ -123,24 +188,65 @@ def regularize_year_make_model(year_make_model_string):
                     year = 2000 + num
                 if year: # only look for makemodel in the remaining words
                     if len(words) > word:
-                        makemodel = words[word+1:]
+                        makemodel = words[(word+1):]
                 break
             except ValueError:
                 pass # that wasn't it... no harm, no foul
 
         if not year: # then we see no year in the offered string
             # this means we're not doing well and will probably trash this
-            # anyway, but in case not/for now, 1st word = make, rest is model
-            # (the RIGHT answer would be to check for meaningful make info)
-            make = words[0]
-            if len(words) > 1:
-                model = ' '.join(words[1:])
+            # anyway, but let's see what we get when we look for a make
+            for word in range (0, len(words)-1):
+                try:
+                    s = words[0].strip("'`\"") # strip likely junk (e.g. '67)
+                    ncm = non_canonical_makes[s.upper()]
+                    make = ncm['canonical_name']
+                    # apply the ncm's deltas, then take the rest as model
+                    modellist = []
+                    if word == len(words)-1: # this is the end of the string
+                        modellist = []
+                    else:
+                        modellist =  words[(word+1):]
+                    # GEE TODO handle multiple words here; for now just the first
+                    if ncm['consume_words'] and modellist and modellist[0] in ncm['consume_words']:
+                        modellist.pop(0) # throw it away
+                    if ncm['push_words']:
+                        modellist = ncm['push_words'] + modellist
+                    # GEE TODO: check if the push word(s) are already there (e.g. 'vette corvette stingray')
+                    model = ' '.join(modellist)
+                    break
+                except KeyError:
+                    pass # that wasn't it... no harm, no foul
+            # if the for loop finishes without finding a make, then screw it...
+            # leave stuff blank
+                
+            makemodel = words # use the whole list-of-words from the string
+
         elif year and makemodel: # we did find both year and remaining string
             # jackpot!
             # GEE TODO: apply the real make/model regularization here
             make = makemodel[0]
-            if len(makemodel) > 1:
-                model = ' '.join(makemodel[1:])
+            try:
+                model_list = []
+                modelstem = []
+                ncm = non_canonical_makes[make.upper()]
+                make = ncm['canonical_name']
+                makemodel.pop(0) # throw away the noncanonical
+                # GEE TODO handle multiple words here; for now just the first
+                if ncm['consume_words'] and makemodel and makemodel[0] in ncm['consume_words']:
+                    makemodel.pop(0) # throw it away
+                if ncm['push_words']:
+                    modelstem = ncm['push_words']
+                    # GEE TODO: check if the push word(s) are already there (e.g. 'vette corvette stingray')
+                else:
+                    modelstem = []
+                model_list = modelstem + makemodel
+            except KeyError as e:
+                # didn't find it; assume we're OK with make as given
+                make = make.title() # initcap it
+                if len(makemodel) > 1:
+                    model_list = makemodel[1:]
+            model = ' '.join(model_list)
         else: # found a potential year string but no make/model after it
             # this is likely a false positive; let's chuck even the year
             # and tell the caller we found nothing
@@ -169,14 +275,14 @@ def make_sure_path_exists(path):
 # crummy kludge to filter to cars we want for now vs ones we don't
 #
 def is_car_interesting(listing):
-    if listing['model_year'] and int(listing['model_year']) <= 1975:
+    if int(listing['model_year']) > 1800 and int(listing['model_year']) <= 1975:
         return True # automatically interesting
     # GEE TODO: case of comparisons & substrings make this.... interesting
     if listing['make'] not in boring_makes: # wow is this inefficient - need make/model db stuff
         return True
     if listing['model'] in interesting_models: # pull particular models back in
         return True
-    if listing['price'] > 100000: # Prima facia evidence of interesting status? :)
+    if int(listing['price']) > 100000: # Prima facia evidence of interesting status? :)
         return True
     return False
 
@@ -248,8 +354,8 @@ def new_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
     (listing['model_year'],
-    listing['make'],
-    listing['model']) = regularize_year_make_model('')
+     listing['make'],
+     listing['model']) = regularize_year_make_model('')
 
     listing['listing_text'] = ''
 
@@ -269,8 +375,8 @@ def autorevo_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
     (listing['model_year'],
-    listing['make'],
-    listing['model']) = regularize_year_make_model(entry.find('h1').text)
+     listing['make'],
+     listing['model']) = regularize_year_make_model(entry.find('h1').text)
 
     try:
         listing['price'] = regularize_price(entry.find(class_='vehicleMainPriceRow').text)
@@ -296,8 +402,8 @@ def carbuffs_parse_listing(listing, entry, detail):
 
     # pull the rest of the fields from the detail page
     (listing['model_year'],
-    listing['make'],
-    listing['model']) = regularize_year_make_model(detail.find(class_='car-name').text)
+     listing['make'],
+     listing['model']) = regularize_year_make_model(detail.find(class_='car-name').text)
 
     # common name/value patterns in details page:
     #<li><strong>Car model year:</strong> 1963</li>
@@ -314,8 +420,8 @@ def ccw_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
     (listing['model_year'],
-    listing['make'],
-    listing['model']) = regularize_year_make_model(entry.find('strong').text)
+     listing['make'],
+     listing['model']) = regularize_year_make_model(entry.find('strong').text)
 
     listing['listing_text'] = '' # no short text available, only longer text from detail page
 
@@ -330,8 +436,8 @@ def cfc_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
     (listing['model_year'],
-    listing['make'],
-    listing['model']) = regularize_year_make_model(entry.find('a').text)
+     listing['make'],
+     listing['model']) = regularize_year_make_model(entry.find('a').text)
 
     listing['listing_text'] = '' # no crisp text, just long text
 
@@ -350,8 +456,8 @@ def cvc_parse_listing(listing, entry, detail):
     strings = entry.find_all(text=True)
 
     (listing['model_year'],
-    listing['make'],
-    listing['model']) = regularize_year_make_model(strings[0])
+     listing['make'],
+     listing['model']) = regularize_year_make_model(strings[0])
 
     listing['listing_text'] = strings[1]
 
@@ -399,10 +505,11 @@ def fj_parse_listing(listing, entry, detail):
 
     # pull the rest of the fields from the detail page
 
-    s = detail.find('title').text
-    (listing['model_year'],
-     listing['make'],
-     listing['model']) = regularize_year_make_model(s)
+    if (detail.find('title')):
+        s = detail.find('title').text
+        (listing['model_year'],
+         listing['make'],
+         listing['model']) = regularize_year_make_model(s)
 
     listing['local_id'] = detail.find(id="ContactCarId")['value']
     listing['stock_no'] = listing['local_id'] # no separate stock#
@@ -466,8 +573,8 @@ def lc_parse_listing(listing, entry, detail):
             s = entry.find('h2').text
 
         (listing['model_year'],
-             listing['make'],
-             listing['model']) = regularize_year_make_model(s)
+         listing['make'],
+         listing['model']) = regularize_year_make_model(s)
 
         # removed a hacky bit here since I don't think it chains correctly off the revised code above, and I hope I don't need it!
 
@@ -488,8 +595,8 @@ def mhc_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
     (listing['model_year'],
-    listing['make'],
-    listing['model']) = regularize_year_make_model(entry.find('h2').text)
+     listing['make'],
+     listing['model']) = regularize_year_make_model(entry.find('h2').text)
 
     # GEE TODO: some don't have any description, but others do (on the detail page)
     listing['listing_text'] = '' 
@@ -507,8 +614,8 @@ def sfs_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
     (listing['model_year'],
-    listing['make'],
-    listing['model']) = regularize_year_make_model(entry.find('h2').text)
+     listing['make'],
+     listing['model']) = regularize_year_make_model(entry.find('h2').text)
 
     listing['listing_text'] = entry.find('h3').text
 
@@ -626,6 +733,12 @@ def pull_dealer_inventory(dealer):
         for item in listings:
             ok = True
             listing = Bunch() # build a listing dict/bunch for this car
+            listing.markers = None
+            listing.model_year = None
+            listing.make = None
+            listing.model = None
+            listing.price = None
+            listing.listing_text = None
 
             # for some sites the full entry is actually a parent or sibling
             # or similar permutation of the list item we just grabbed
@@ -634,7 +747,9 @@ def pull_dealer_inventory(dealer):
 
             # try standard grabs; then call the dealer-specific method for
             # overrides & improvements
-            listing['source_textid'] = dealer['textid']
+            listing.source_type = 'D'
+            listing.source_id = dealer.id
+            listing.source_textid = dealer.textid
 
             # try to find the URL of the detail listing page
             detail = None # if we don't find one, we can pass down this None
@@ -819,6 +934,8 @@ def pull_classified_inventory(classified, inventory_marker):
 # (at least temporarily, we don't want everything ebay lists)
 #
 # parameters:
+# classified: the classified site we are to pull (ebay motors in this case)
+# inventory_marker: a marker used to chunk the work; opaque to caller
 # area: 'Local' => limits to local area (see notes)
 # car_type: 'Interesting' => limits to "interesting" cars (see notes)
 #
@@ -835,8 +952,8 @@ def pull_classified_inventory(classified, inventory_marker):
 # For now, 'local' = 150 miles of 95112 and 'interesting' filters as
 # described in the named method
 #
-# GEE TODO: should probably return a page at a time rather than the
-# entire (single) query's worth of results as a blob (using inventory_marker)
+# GEE TODO: chunking by years may not be entirely sufficient to avoid the 10K
+# limit (and gives us some pretty big work bundles). Should get more granular.
 #
 def pull_ebay_inventory(classified, inventory_marker, area='Local', car_type='Interesting'):
 
@@ -896,7 +1013,10 @@ def pull_ebay_inventory(classified, inventory_marker, area='Local', car_type='In
             ok = True
             logging.debug('eBay ITEM: {}'.format(item['itemId']))
             listing = Bunch() # build a listing bunch/dict for this car
-            listing['source_textid'] = 'ebay'
+            listing.markers = None
+            listing.source_type = 'C'
+            listing.source_id = classified.id
+            listing.source_textid = classified.textid
             try:
                 for attr in item['attribute']:
                     if attr['name'] == 'Year':
@@ -963,6 +1083,179 @@ def pull_ebay_inventory(classified, inventory_marker, area='Local', car_type='In
     return list_of_listings, inventory_marker
 
 
+# pull_3taps_inventory()
+#
+# Pulls listings (for some source/classified) via the 3taps api
+#
+# This method is for all 3taps sources; the classified param tells which one
+#
+# Accepts some input about what to pull & what not to
+#(at least temporarily, we don't want everything 3taps lists)
+#
+# parameters:
+# classified: the classified site we are to pull
+# inventory_marker: a marker used to chunk the work; opaque to caller
+# area: 'Local' => limits to local area (see notes)
+# car_type: 'Interesting' => limits to "interesting" cars (see notes)
+#
+# returns:
+# list_of_listings: a set of listings (could be partial or entire set)
+# inventory_marker: pagination/subset marker (will be None if done)
+#
+# NOTES:
+#
+# 3taps provides polling with an anchor, so unlike with other sites we don't
+# have to reload all the active listings each time. Yay! Much simpler this way.
+#
+# We also get data already broken into useful json. Unfortunately we sometimes
+# get less richness (e.g. very small thumbs or only partial text).
+
+# We also have to decide (on a site-by-site basis) whether to load the detail
+# pages or just use the 3taps data and avoid hitting the originating site.
+#
+# 3taps doesn't seem to offer control over the chunking of the polling results;
+# it returns chunks of 1000 listings. We'll chunk that way too for simplicity.
+#
+# For now, 'local' = ???? GEE TODO ???? and 'interesting' filters as
+# described in the named method
+#
+# GEE TODO (in this and other methods): switch action on 'interesting' from
+# discarding to suitable tagging
+#
+# GEE TODO clean up the classified (and dealer) db entries/table structures
+# for now, this method goes in custom_pull_method and the anchor goes in
+# the extract_car_list_func field
+#
+def pull_3taps_inventory(classified, inventory_marker, area='Local', car_type='Interesting'):
+
+    list_of_listings = []
+
+    # for 3taps we want to keep the anchor in the classified record (which
+    # ultimately means in the db) but we will also feed it through the
+    # inventory_marker param as a mechanism for flow control only. Since
+    # this routine only pulls records and doesn't touch the db, we will
+    # update the classified record but trust the caller to update the db
+
+    if inventory_marker:
+        pass # run from the passed-in point
+    else:
+        # caller doesn't specify; start from the anchor in classified
+        inventory_marker = classified.extract_car_list_func # see TODO - anchor is in temporary storage location
+
+    logging.info('Pulling inventory from 3taps for {} starting with marker {}'.format(classified.textid, inventory_marker))
+
+    # no dedicated python sdk, but simple enough JSON APIs to call directly
+    url = 'http://polling.3taps.com/poll?auth_token=a7e282009ed50537b7f3271b753c803a&category=VAUT&retvals=id,account_id,source,category,location,external_id,external_url,heading,body,timestamp,timestamp_deleted,expires,language,price,currency,images,annotations,deleted,flagged_status,state,status'
+    url_params = ['&source={}'.format(classified.textid.upper())]
+    url_params.append('&anchor={}'.format(inventory_marker))
+    if area == 'Local':
+        logging.debug('limiting to local cars')
+        # GEE TODO: note that the anchor will be invalidated if we switch back and forth between local and not
+        url_params.append('&location.state=USA-CA')
+    else:
+        logging.debug('NOT limiting to local cars')
+
+    url = url + ''.join(url_params)
+    logging.debug('inventory URL is: {}'.format(url))
+
+    try:
+        req = urllib.request.Request(url, headers=hdrs)
+        page = urllib.request.urlopen(req)
+        bytestream = page.read()
+        r = json.loads(bytestream.decode())
+    except urllib.error.HTTPError as error:
+        logging.error('Unable to poll 3taps at ' + url + ': HTTP ' + str(error.code) + ' ' + error.reason)
+        return None, None
+    
+    if page.getcode() != 200:
+        logging.error('Failed to poll 3taps at ' + url + ' with HTTP response code ' + str(page.getcode()))
+        logging.error('Full error page:'.format(bytestream.decode()))
+        return None, None
+
+    if not r['success']:
+        logging.error('3taps reports failure: {}'.format(json.dumps(r)))
+        return None, None
+
+    if len(r['postings']) == 0:
+        logging.warning('3taps returned a set of zero records')
+        return None, None
+
+    logging.info('Number of car listings found: {}'.format(len(r['postings'])))
+    for item in r['postings']:
+        ok = True
+        item = Bunch(item) # for convenience
+        logging.debug('3taps ITEM: {}'.format(item.id))
+        listing = Bunch() # build a listing bunch/dict for this car
+        listing.markers = None
+        listing.source_type = 'C'
+        listing.source_id = classified.id
+        listing.source_textid = classified.textid
+        if classified.textid == 'carsd':
+            # join up then pull apart year/make/model as easiest way to get my other improvements
+            (listing.model_year,
+             listing.make,
+             listing.model) = regularize_year_make_model(' '.join([item.annotations['year'],
+                                                                   item.annotations['make'],
+                                                                   item.annotations['model']]))
+        else:
+            # GEE TODO: contact 3taps about potential improved annotation (make/model/year)?
+            (listing.model_year,
+             listing.make,
+             listing.model) = regularize_year_make_model(item.heading)
+        try:
+            listing.pic_href = item.images[0]['full']
+        except (KeyError, IndexError) as e:
+            listing.pic_href = 'N/A'
+        listing.listing_href = item.external_url
+        listing.local_id = item.external_id # use the source identifier to minimize dupes
+        listing.stock_no = item.id # keep the 3taps ID around too (at least the latest one)
+        # GEE TODO: examine & use flagging info
+        if item.status == 'for_sale' and item.deleted == False:
+            listing.status = 'F' # 'F' -> For Sale
+        else:
+            listing.status = 'R' # 'R' -> Removed, unknown reason
+
+        listing.listing_text = item.heading
+
+        #try:
+        #    listing.price = regularize_price(item.annotations['price']) 
+        #except ValueError:
+        listing.price = regularize_price(item.price)
+
+        # validate model_year
+        try:
+            junk = int(listing['model_year'])
+        except ValueError:
+            logging.warning('bad year [{}] for item {}'.format(listing['model_year'], listing['local_id']))
+            listing['model_year'] = '1'
+
+        if (ok and car_type == 'Interesting'):
+            ok = is_car_interesting(listing)
+
+        if ok:
+            list_of_listings.append(listing)
+            logging.debug('pulled listing: ' + json.dumps(listing))
+        else:
+            logging.debug('skipped listing: ' + json.dumps(listing)) # debug not warn b/c we're throwing out lots of stuff
+
+        # END LOOP over listings in the feed pull
+
+    logging.info('Loaded {} cars from 3taps for {}'.format(str(len(list_of_listings)), classified.textid))
+
+    # update the classified record with the new 3taps anchor AND
+    # send the same value back as the inventory marker.
+    classified.update_car_list_func = r['anchor']
+    inventory_marker = r['anchor']
+
+    # note: 3taps doesn't tell us when/if we are caught up -- we just won't see
+    # a full set of new records. We could have a few that came in while we're
+    # running but lets NOT endlessly cycle on that....
+    if len(r['postings']) < 500: # arbitrary number
+        inventory_marker = None # signal that we are done!
+
+    return list_of_listings, inventory_marker
+
+
 # import_from_dealer
 #
 # Imports inventory from a dealership, overwriting (adding/updating) as needed
@@ -984,7 +1277,7 @@ def import_from_dealer(con, es, dealer, file=False):
     old_db_listing_hash = {}
     if con:
         c = con.cursor(db.cursors.DictCursor)
-        rows = c.execute("""select * from listing where source_textid= %s and status = 'F'""",
+        rows = c.execute("""select * from listing where source_textid= %s""",
                          (dealer['textid']))
         for listing in c.fetchall():
             logging.debug('existing record with (id, local_id) of ({}, {})'.format(listing['id'], listing['local_id']))
@@ -1044,12 +1337,17 @@ def import_from_dealer(con, es, dealer, file=False):
 #
 def import_from_classified(con, es, classified):
 
-    # mark the active listings stored in the db for this classified
-    c = con.cursor(db.cursors.DictCursor)
-    rows = c.execute("""update listing set flags = flags|1 where source_textid= %s and status = 'F'""",
+    # 3taps provides polling w/ only new/updated records in the stream, so
+    # we explicitly get deletes/expirations/etc. All other sites we need
+    # to treat disappearance of the listing as cause for cancellation
+
+    if classified.custom_pull_func != 'pull_3taps_inventory':
+        # mark the active listings stored in the db for this classified
+        c = con.cursor(db.cursors.DictCursor)
+        rows = c.execute("""update listing set markers = concat(ifnull(markers,''), 'P') where source_textid= %s and status = 'F'""",
                          (classified['textid']))
-    logging.debug('Painted {} existing records for classified site {}'.format(rows, classified['full_name']))
-    con.commit()
+        logging.debug('Painted {} existing records for classified site {}'.format(rows, classified['full_name']))
+        con.commit()
 
     inventory_marker = None
     done = False
@@ -1057,7 +1355,8 @@ def import_from_classified(con, es, classified):
 
         listings = []
 
-        # get the current active listings (inventory on the classified's website
+        # get the current active inventory of website listings
+        # or, in the case of 3taps, the deltas since the last polling
         # note the special-casing for some sites that have their own method
 
         if classified['custom_pull_func']:
@@ -1066,42 +1365,54 @@ def import_from_classified(con, es, classified):
             listings, inventory_marker = pull_classified_inventory(classified, inventory_marker)
 
         # now put the located records in the db & index
-        for listing in listings:
-            listing.id = db_insert_or_update_listing(con, listing)
-            index_listing(es, listing)
-        
-        # and commit the block of listings
-        con.commit()
+        if listings:
+            for listing in listings:
+                listing.id = db_insert_or_update_listing(con, listing)
+                index_listing(es, listing)
+
+            # and commit the block of listings
+            con.commit()
+            logging.debug('committed a block of listings for {}'.format(classified.textid))
 
         # check if we're done?
         if not inventory_marker:
             done = True
         # END LOOP over blocks of inventory (while not done)
 
-    # now mark all the listings that were in the db but not the website
-    # inventory as closed; note that we have to load each one in order to
-    # remove it from the index
-    # GEE TODO: can I improve this to use an es delete-by-query somehow?
+    if classified.custom_pull_func == 'pull_3taps_inventory':
+        # in the 3taps case we just need to update the anchor that tells what
+        # records we have pulled and thus where to start from next time;
+        # the pull method will already have updated the field in classified
+        logging.debug('Saving the 3taps anchor')
+        c = con.cursor(db.cursors.DictCursor)
+        rows = c.execute("""update classified set extract_car_list_func = %s where id = %s""",
+                         (classified.update_car_list_func, classified.id))
+    else:
+        # now mark all the listings that were in the db but not the website
+        # inventory as closed; note that we have to load each one in order to
+        # remove it from the index
+        # GEE TODO: can I improve this to use an es delete-by-query somehow?
 
-    logging.info('Removing listings that have been taken down since the last pull')
-    c = con.cursor(db.cursors.DictCursor)
-    rows = c.execute("""select id from listing where source_textid = %s and flags&1 != 0""",
-                     (classified['textid']))
-    result = c.fetchmany()
-    while result:
-        for listing_id in result:
-            try:
-                es.delete(index="carbyr-index", doc_type="listing-type", id=listing_id)
-            except NotFoundError as err:
-                logging.warning('record with id={} not found during attempted deletion: {}'.format(listing_id, err))
+        logging.info('Removing listings that have been taken down since the last pull')
+        c = con.cursor(db.cursors.DictCursor)
+        rows = c.execute("""select id from listing where source_textid = %s and instr(markers,'P') != 0""",
+                         (classified['textid']))
         result = c.fetchmany()
+        while result:
+            for listing_id in result:
+                try:
+                    es.delete(index="carbyr-index", doc_type="listing-type", id=listing_id)
+                except NotFoundError as err:
+                    logging.warning('record with id={} not found during attempted deletion: {}'.format(listing_id, err))
+            result = c.fetchmany()
 
-    # mark them all in the db in one query to avoid per-record round-trips
-    c = con.cursor(db.cursors.DictCursor)
-    rows = c.execute("""update listing set status = 'R', flags = flags^1, last_update = CURRENT_TIMESTAMP where source_textid = %s and flags&1 != 0""",
-                     (classified['textid']))
-    # and commit
-    con.commit()
+        # mark them all in the db in one query to avoid per-record round-trips
+        c = con.cursor(db.cursors.DictCursor)
+        rows = c.execute("""update listing set status = 'R', markers=replace(markers,'P',''), last_update = CURRENT_TIMESTAMP where source_textid = %s and instr(markers,'P') != 0""",
+                         (classified['textid']))
+
+    con.commit() # aaaaaand commit!
+    logging.info('Completed inventory pull for {}'.format(classified.textid))
 
     return True
 
@@ -1142,17 +1453,32 @@ def match_from_db(con, listing):
 
 # db_insert_or_update_listing
 #
-# NOTES:
+# parameters:
+# con: db connection (None if no db access is possible/requested)
+# listing: the current listing
+# existing_inventory: hash of this dealer's existing/previous inventory
+#
 # returns the database ID of the listing (all other cases raise exceptions)
 #
-# updates the old_db_listing_hash entry by setting 'found' property, thus
-# permitting easy deletion of records no longer found in current inventory
+# NOTES:
 #
-def db_insert_or_update_listing(con, listing, old_db_listing_hash = {}):
+# this method coordinates with the caller in one of two methods for catching
+# and deleting records no longer found in current inventory:
+#
+# if an existing_inventory hash is passed, it is searched for matches and any
+# matching record is marked so that the caller can identify matched records;
+#      -or-
+# if no hash is passed, this method searches the db for potential matches and
+# ensures matched records are updated in the db (removes pending-delete marker)
+#
+# also: if there is a matching record, the new record overrides most fields
+# but will NOT override a status of 'X' (removed, not-a-valid-listing).
+#
+def db_insert_or_update_listing(con, listing, existing_inventory = {}):
     db_listing = {}
     logging.debug('checking on existence of listing {}'.format(listing['local_id']))
-    if old_db_listing_hash:
-        db_listing = match_from_hash(listing, old_db_listing_hash)
+    if existing_inventory:
+        db_listing = match_from_hash(listing, existing_inventory)
     else:
         db_listing = match_from_db(con, listing)
 
@@ -1162,41 +1488,65 @@ def db_insert_or_update_listing(con, listing, old_db_listing_hash = {}):
         # NOTE: in the using-hash case this actually modifies the hash,
         # which may be used by the caller for cleanup of old records
         # NOTE2: in the non-hash case we must force an update to remove
-        # the pending-delete flag :(
+        # the pending-delete marker :(
         logging.debug('found: {}'.format(db_listing))
-        # now, do we need to update the record?
         update_required = False
-        for field in ['status','model_year','make','model','price','listing_text','pic_href','listing_href']:
-            if str(listing[field]) != str(db_listing[field]):
-                # GEE TODO: check that currency isn't borked based on string/number comparison??
-                # GEE TODO heh, currency handling generally (!!)
-                logging.debug('value for {} changed from <{}> to <{}>'.format(field, db_listing[field], listing[field]))
-                update_required = True
+        if db_listing['status'] == 'X':
+            # remove the pending-delete marker but make no other changes
+            update_required = True
+            if db_listing['markers']:
+                db_listing['markers'] == db_listing['markers'].translate({ord(i):None for i in 'P'})
+        else:
+            for field in ['markers','status','model_year','make','model','price','listing_text','pic_href','listing_href']:
+                if str(listing[field]) != str(db_listing[field]):
+                    logging.debug('value for {} changed from <{}> to <{}>'.format(field, db_listing[field], listing[field]))
+                    db_listing[field] = listing[field]
+                    update_required = True
         if update_required:
             up = con.cursor(db.cursors.DictCursor)
-            up.execute("""update listing set status = %s, model_year = %s, make = %s, model = %s, price = %s, listing_text = %s, pic_href = %s, listing_href = %s, source_textid = %s, stock_no = %s, flags = %s, last_update = CURRENT_TIMESTAMP where id = %s""",
-                       (listing['status'], listing['model_year'], listing['make'],
-                        listing['model'], listing['price'], listing['listing_text'],
-                        listing['pic_href'], listing['listing_href'],
-                        listing['source_textid'], listing['stock_no'], 0, # GEE TODO fix flags update!
+            up.execute("""update listing set
+status = %s, markers = %s,
+model_year = %s, make = %s, model = %s,
+price = %s, listing_text = %s,
+pic_href = %s, listing_href = %s,
+source_type = %s, source_id = %s, source_textid = %s,
+stock_no = %s,
+last_update = CURRENT_TIMESTAMP where id = %s""",
+                       (db_listing['status'], db_listing['markers'],
+                        db_listing['model_year'], db_listing['make'], db_listing['model'],
+                        db_listing['price'], db_listing['listing_text'],
+                        db_listing['pic_href'], db_listing['listing_href'],
+                        db_listing['source_type'], db_listing['source_id'], db_listing['source_textid'],
+                        db_listing['stock_no'], 
                         db_listing['id']))
-            logging.debug('found record id={}: {} {} {} (updated)'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
-        else: # else listing is up to date; no update required EXCEPT to remove flags
+            logging.debug('found record id={}: {} {} {} (updated)'.format(db_listing['id'], db_listing['model_year'], db_listing['make'], db_listing['model']))
+        else: # else listing is up to date; no update required
             logging.debug('found record id={}: {} {} {} (no update required)'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
-            if not old_db_listing_hash:
-                up = con.cursor(db.cursors.DictCursor)
-                # intentionally do NOT update last_update since the listing has not changed
-                up.execute("""update listing set flags = flags^1 where id = %s and flags&1 != 0""",
-                           (db_listing['id']))
-                
-    else: # no matching listing from the db -- insert
+
+    else: # no matching listing in the previously-existing inventory -- insert
         ins = con.cursor(db.cursors.DictCursor)
-        # GEE TODO: fix the hardcoded 0 for flags
         ins.execute(
             """insert into listing
-(status, flags, model_year, make, model, price, listing_text, pic_href, listing_href, source_textid, local_id, stock_no, listing_date, removal_date, last_update) values
-(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP)""",
-            (listing['status'], '0', listing['model_year'],listing['make'],listing['model'],listing['price'],listing['listing_text'],listing['pic_href'],listing['listing_href'],listing['source_textid'],listing['local_id'],listing['stock_no'],))
+(status, markers,
+model_year, make, model,
+price, listing_text,
+pic_href, listing_href,
+source_type, source_id, source_textid,
+local_id, stock_no,
+listing_date, removal_date, last_update) values
+(%s, %s,
+%s, %s, %s,
+%s, %s,
+%s, %s,
+%s, %s, %s,
+%s, %s,
+CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP)""",
+            (listing['status'], listing['markers'],
+             listing['model_year'], listing['make'], listing['model'],
+             listing['price'], listing['listing_text'],
+             listing['pic_href'], listing['listing_href'],
+             listing['source_type'], listing['source_id'],listing['source_textid'],
+             listing['local_id'], listing['stock_no'],))
 
         # re-execute the same fetch which will now grab the new record
         c2 = con.cursor(db.cursors.DictCursor)
@@ -1444,13 +1794,15 @@ def main():
         # ... and go ahead and fetch the sources from the db here for simplicity
         # GEE TODO: once I retire the non-db path this can be turned into query-by-source-name for the import case
         c = con.cursor(db.cursors.DictCursor)
-        rows = c.execute("""select * from dealership where (flags & 2) != 0""")
+        rows = c.execute("""select * from dealership where status = 'I'""")
         for dealer in c.fetchall():
-            dealerships[dealer['textid']] = dealer
+            dealerships[dealer['textid']] = Bunch(dealer)
         c = con.cursor(db.cursors.DictCursor)
-        rows = c.execute("""select * from classified where (flags & 2) != 0""")
+        rows = c.execute("""select * from classified where status = 'I'""")
         for classified in c.fetchall():
-            classifieds[classified['textid']] = classified
+            classifieds[classified['textid']] = Bunch(classified)
+        # read in all the non-canonical makes into a hash for easy & quick ref
+        populate_non_canonical_makes(con)
     else:
         dealerships = dealers; # use built-in/non-db dealership list
         # classifieds will remain NULL -- non-db func does not exist for any of them
@@ -1489,4 +1841,3 @@ def main():
 if __name__ == "__main__":
     status = main()
     sys.exit(status)
-
