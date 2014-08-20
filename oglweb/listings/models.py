@@ -14,17 +14,19 @@ from django.utils import timezone
 
 class Classified(models.Model):
     id = models.IntegerField(primary_key=True)  # AutoField?
-    flags = models.TextField(blank=True)  # This field type is a guess.
+    status = models.CharField(max_length=1)
+    markers = models.CharField(max_length=24, blank=True)
     primary_classified_id = models.IntegerField(blank=True, null=True)
     textid = models.CharField(max_length=32)
     full_name = models.CharField(max_length=1024)
     base_url = models.CharField(max_length=1024, blank=True)
+    custom_pull_func = models.CharField(max_length=1024, blank=True)
     extract_car_list_func = models.CharField(max_length=1024, blank=True)
     listing_from_list_item_func = models.CharField(max_length=1024, blank=True)
     parse_listing_func = models.CharField(max_length=1024, blank=True)
     inventory_url = models.CharField(max_length=1024, blank=True)
     owner_account_id = models.IntegerField(blank=True, null=True)
-    custom_pull_func = models.CharField(max_length=1024, blank=True)
+
     def __str__(self):
         return self.full_name
 
@@ -35,7 +37,8 @@ class Classified(models.Model):
 
 class Dealership(models.Model):
     id = models.IntegerField(primary_key=True)  # AutoField?
-    flags = models.TextField(blank=True)  # This field type is a guess.
+    status = models.CharField(max_length=1)
+    markers = models.CharField(max_length=24, blank=True)
     primary_dealership_id = models.IntegerField(blank=True, null=True)
     textid = models.CharField(max_length=32)
     full_name = models.CharField(max_length=1024)
@@ -53,6 +56,7 @@ class Dealership(models.Model):
     owner_info = models.CharField(max_length=255, blank=True)
     license_info = models.CharField(max_length=255, blank=True)
     owner_account_id = models.IntegerField(blank=True, null=True)
+
     def __str__(self):
         return self.full_name
 
@@ -88,7 +92,8 @@ class InventoryImportLog(models.Model):
 class Listing(models.Model):
     id = models.IntegerField(primary_key=True)  # AutoField?
     status = models.CharField(max_length=1, blank=True)
-    model_year = models.TextField(blank=True)  # This field type is a guess.
+    markers = models.CharField(max_length=24, blank=True)
+    model_year = models.CharField(max_length=4, blank=True)
     make = models.CharField(max_length=255, blank=True)
     model = models.CharField(max_length=255, blank=True)
     price = models.IntegerField(blank=True, null=True)
@@ -103,6 +108,7 @@ class Listing(models.Model):
     listing_date = models.DateTimeField(blank=True, null=True)
     removal_date = models.DateTimeField(blank=True, null=True)
     last_update = models.DateTimeField(blank=True, null=True)
+
     def __str__(self):
         return "{} {} {} ({}, {})".format(self.model_year, self.make, self.model, self.source_textid, str(self.id))
 
@@ -227,3 +233,17 @@ class Tbl02Models(models.Model):
     class Meta:
         managed = False
         db_table = 'tbl_02_models'
+
+class NonCanonicalMake(models.Model):
+    id = models.IntegerField(primary_key=True)  # AutoField?
+    non_canonical_name = models.CharField(max_length=1024, blank=True)
+    canonical_name = models.CharField(max_length=1024, blank=True)
+    consume_words = models.CharField(max_length=1024, blank=True)
+    push_words = models.CharField(max_length=1024, blank=True)
+
+    def __str__(self):
+        return "{} -> {} remove: {} add: {}".format(self.non_canonical_name, self.canonical_name, self.consume_words, self.push_words)
+
+    class Meta:
+        managed = False
+        db_table = 'non_canonical_make'

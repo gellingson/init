@@ -8,7 +8,7 @@
 	<meta name="description" content="">
 	<meta name="author" content="">
 
-	<title>Carbyr: more cars, better search</title>
+	<title>Carbyr: enthusiast search</title>
 
 	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/bootstrap.css' %}" />
 	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/listings.css' %}" />
@@ -28,6 +28,7 @@
 		</div>
 		<div class="navbar-collapse collapse">
 		  <ul class="nav navbar-nav navbar-right">
+			<li class="active"><a href="./">About</a></li>
 			<li class="active"><a href="./">Sign In</a></li>
 		  </ul>
 		</div><!--/.navbar-collapse -->
@@ -35,7 +36,7 @@
 	</div>
 	<div class="container">
 	  <div class="page-header">
-		<h1> Carbyr: find your next car...</h1>
+		<h1> Search more listings faster with with Carbyr...</h1>
 		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
 		<form class="" role="form" action="{% url 'listings:index' %}" method="get">
