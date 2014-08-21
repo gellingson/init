@@ -177,7 +177,7 @@ def regularize_year_make_model(year_make_model_string):
         words = year_make_model_string.split(" ")
         for word in range (0, len(words)-1):
             try:
-                s = words[0].strip("'`\"") # strip likely junk (e.g. '67)
+                s = words[word].strip("'`\"") # strip likely junk (e.g. '67)
                 s = s.split('.')[0] # chop any trailing decimal (e.g. 1973.5)
                 num = int(s)
                 if num > 1900 and num < 2020:
@@ -274,9 +274,16 @@ def make_sure_path_exists(path):
 #
 # crummy kludge to filter to cars we want for now vs ones we don't
 #
-def is_car_interesting(listing):
+def is_car_interesting(listing, include_unknown_makes=True):
     if int(listing['model_year']) > 1800 and int(listing['model_year']) <= 1975:
         return True # automatically interesting
+    if not include_unknown_makes:
+        try:
+            discard = non_canonical_makes[listing['make']]
+            # if it's in there, do nothing and continue checks
+        except KeyError as e:
+            return False # something odd -- chuck it
+        
     # GEE TODO: case of comparisons & substrings make this.... interesting
     if listing['make'] not in boring_makes: # wow is this inefficient - need make/model db stuff
         return True
@@ -788,7 +795,7 @@ def pull_dealer_inventory(dealer):
                     scheme = 'tel'
                 if (scheme and scheme != 'http' and scheme != 'https'):
                     # uh... let's skip this one if we can't link to it as http
-                    logging.info('found non-http detail URL: {}'.format(detail_url))
+                    logging.warn('found non-http detail URL: {}'.format(detail_url))
                     listing['listing_href'] = detail_url # just to prevent barfs
                     ok = False
                 else:
@@ -1190,18 +1197,40 @@ def pull_3taps_inventory(classified, inventory_marker, area='Local', car_type='I
         listing.source_type = 'C'
         listing.source_id = classified.id
         listing.source_textid = classified.textid
-        if classified.textid == 'carsd':
-            # join up then pull apart year/make/model as easiest way to get my other improvements
+
+        # GEE TODO: get whitelisted with 3taps for full html/annotation info (make/model/year)?
+        # carsd seems to have consistent year/make/model
+        # autod usually has all three but not always
+        # craig sometimes has year, but usually not the other two
+        # in all cases, let's take the best we can get
+        # (without triggering key errors for missing annotations)
+        model_year = None
+        make = None
+        model = None
+        if 'year' in item.annotations:
+            model_year = item.annotations['year']
+        if 'make' in item.annotations:
+            make = item.annotations['make']
+        if 'model' in item.annotations:
+            model = item.annotations['model']
+        if model_year and make and model:
             (listing.model_year,
              listing.make,
-             listing.model) = regularize_year_make_model(' '.join([item.annotations['year'],
-                                                                   item.annotations['make'],
-                                                                   item.annotations['model']]))
+             listing.model) = regularize_year_make_model(' '.join([model_year, make, model]))
         else:
-            # GEE TODO: contact 3taps about potential improved annotation (make/model/year)?
             (listing.model_year,
              listing.make,
              listing.model) = regularize_year_make_model(item.heading)
+
+            if listing.model_year == 1 and model_year:
+                # then I didn't get any year from the heading
+                # but I can use the model_year from the annotations
+                listing.model_year = model_year
+            elif model_year and (listing.model_year != model_year):
+                # WTF, mismatch? Take the annotation one (more reliable)
+                logging.warn('overriding heading year of {} with annotation year of {}'.format(listing.model_year, model_year))
+                listing.model_year = model_year
+        #logging.info('a: {} {} {} h: {} out: {} {} {}'.format(model_year, make, model, item.heading, listing.model_year, listing.make, listing.model))
         try:
             listing.pic_href = item.images[0]['full']
         except (KeyError, IndexError) as e:
@@ -1230,7 +1259,11 @@ def pull_3taps_inventory(classified, inventory_marker, area='Local', car_type='I
             listing['model_year'] = '1'
 
         if (ok and car_type == 'Interesting'):
-            ok = is_car_interesting(listing)
+            if classified.textid == 'craig':
+                # be tougher on these for now because there is so much junk
+                ok = is_car_interesting(listing, include_unknown_makes=False)
+            else:
+                ok = is_car_interesting(listing)
 
         if ok:
             list_of_listings.append(listing)
@@ -1244,7 +1277,7 @@ def pull_3taps_inventory(classified, inventory_marker, area='Local', car_type='I
 
     # update the classified record with the new 3taps anchor AND
     # send the same value back as the inventory marker.
-    classified.update_car_list_func = r['anchor']
+    classified.extract_car_list_func = r['anchor']
     inventory_marker = r['anchor']
 
     # note: 3taps doesn't tell us when/if we are caught up -- we just won't see
@@ -1384,9 +1417,10 @@ def import_from_classified(con, es, classified):
         # records we have pulled and thus where to start from next time;
         # the pull method will already have updated the field in classified
         logging.debug('Saving the 3taps anchor')
+        logging.info('func, id = {}, {}'.format(classified.extract_car_list_func, classified.id))
         c = con.cursor(db.cursors.DictCursor)
         rows = c.execute("""update classified set extract_car_list_func = %s where id = %s""",
-                         (classified.update_car_list_func, classified.id))
+                         (classified.extract_car_list_func, classified.id))
     else:
         # now mark all the listings that were in the db but not the website
         # inventory as closed; note that we have to load each one in order to

@@ -3,12 +3,12 @@ from listings.models import Classified, Dealership, Listing, NonCanonicalMake
 
 class ClassifiedAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None, {'fields': ['full_name', 'textid', 'base_url', 'inventory_url']}),
+        (None, {'fields': ['full_name', 'textid', 'base_url', 'inventory_url', 'status', 'markers']}),
         ('Functions', {'fields': ['custom_pull_func','extract_car_list_func','listing_from_list_item_func', 'parse_listing_func']})]
 
 class DealershipAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None, {'fields': ['full_name', 'textid', 'base_url', 'inventory_url']}),
+        (None, {'fields': ['full_name', 'textid', 'base_url', 'inventory_url', 'status', 'markers']}),
         ('Functions', {'fields': ['extract_car_list_func','listing_from_list_item_func', 'parse_listing_func']})]
 
 class ListingAdmin(admin.ModelAdmin):
