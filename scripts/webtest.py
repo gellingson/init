@@ -22,7 +22,7 @@ class index:
 class list:
     def GET(self):
         date = time.strftime("%a, %d %b %Y %H:%M:%S +0200")
-        db = web.database(dbn='mysql', user='carsdbuser', pw='car4U', db='carsdb')
+        db = web.database(dbn='mysql', user='carsdbuser', pw='', db='carsdb')
         listings = db.select('listing')
 
         return render.list(posts=listings, date=date)
@@ -30,7 +30,7 @@ class list:
 class feed:
     def GET(self):
         date = time.strftime("%a, %d %b %Y %H:%M:%S +0200")
-        db = web.database(dbn='mysql', user='carsdbuser', pw='car4U', db='carsdb')
+        db = web.database(dbn='mysql', user='carsdbuser', pw='', db='carsdb')
         listings = db.select('listing')
 
         web.header('Content-Type', 'application/xml')

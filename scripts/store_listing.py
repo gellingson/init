@@ -57,7 +57,16 @@ def text_store_listing(listing):
     return True
 
 
-con = db.connect('localhost', 'carsdbuser', 'car4U', 'carsdb')
+con = None
+try:
+    con = db.connect(os.environ['OGL_DB_HOST'],
+                     os.environ['OGL_DB_USERACCOUNT'],
+                     os.environ['OGL_DB_USERACCOUNT_PASSWORD'],
+                     os.environ['OGL_DB'],
+                     charset='utf8')
+except KeyError:
+    print("Please set environment variables for OGL DB connectivity and rerun.")
+            sys.exit(1)
 
 with con:
 

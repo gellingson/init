@@ -22,7 +22,16 @@ import pymysql as db
 
 logging.basicConfig(level='INFO')
 
-con = db.connect('localhost', 'carsdbuser', 'car4U', 'carsdb', charset='utf8')
+con = None
+try:
+    con = db.connect(os.environ['OGL_DB_HOST'],
+                     os.environ['OGL_DB_USERACCOUNT'],
+                     os.environ['OGL_DB_USERACCOUNT_PASSWORD'],
+                     os.environ['OGL_DB'],
+                     charset='utf8')
+except KeyError:
+    print("Please set environment variables for OGL DB connectivity and rerun.")
+            sys.exit(1)
 
 es = Elasticsearch()
 try:

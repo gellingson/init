@@ -198,7 +198,7 @@ def regularize_year_make_model(year_make_model_string):
             # anyway, but let's see what we get when we look for a make
             for word in range (0, len(words)-1):
                 try:
-                    s = words[0].strip("'`\"") # strip likely junk (e.g. '67)
+                    s = words[0].strip("'` *~_\"\t") # strip likely junk
                     ncm = non_canonical_makes[s.upper()]
                     make = ncm['canonical_name']
                     # apply the ncm's deltas, then take the rest as model
@@ -213,7 +213,7 @@ def regularize_year_make_model(year_make_model_string):
                     if ncm['push_words']:
                         modellist = ncm['push_words'] + modellist
                     # GEE TODO: check if the push word(s) are already there (e.g. 'vette corvette stingray')
-                    model = ' '.join(modellist)
+                    model = ' '.join(modellist).strip("'` *~_\"\t")
                     break
                 except KeyError:
                     pass # that wasn't it... no harm, no foul
@@ -225,7 +225,7 @@ def regularize_year_make_model(year_make_model_string):
         elif year and makemodel: # we did find both year and remaining string
             # jackpot!
             # GEE TODO: apply the real make/model regularization here
-            make = makemodel[0]
+            make = makemodel[0].strip("'` *~_\"\t")
             try:
                 model_list = []
                 modelstem = []
@@ -243,10 +243,10 @@ def regularize_year_make_model(year_make_model_string):
                 model_list = modelstem + makemodel
             except KeyError as e:
                 # didn't find it; assume we're OK with make as given
-                make = make.title() # initcap it
+                make = make.title().strip("'` *~_\"\t") # initcap it
                 if len(makemodel) > 1:
                     model_list = makemodel[1:]
-            model = ' '.join(model_list)
+            model = ' '.join(model_list).strip("'` *~_\"\t")
         else: # found a potential year string but no make/model after it
             # this is likely a false positive; let's chuck even the year
             # and tell the caller we found nothing
@@ -1238,6 +1238,12 @@ def pull_3taps_inventory(classified, inventory_marker, area='Local', car_type='I
         listing.listing_href = item.external_url
         listing.local_id = item.external_id # use the source identifier to minimize dupes
         listing.stock_no = item.id # keep the 3taps ID around too (at least the latest one)
+        if not listing.local_id:
+            # some feeds (e.g. autod) *occasionally* lack the local_id;
+            # fall back to stock_no
+            logging.warn('listing for a {} {} {} has no local ID; using 3taps ID {}'.format(listing.model_year, listing.make, listing.model, listing.stock_no))
+            listing.local_id = listing.stock_no
+
         # GEE TODO: examine & use flagging info
         if item.status == 'for_sale' and item.deleted == False:
             listing.status = 'F' # 'F' -> For Sale
@@ -1587,7 +1593,11 @@ CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP)""",
         c2.execute("""select * from listing where source_textid= %s and local_id = %s order by last_update desc""",
                    (listing['source_textid'], listing['local_id'],))
         db_listing = c2.fetchone()
-        logging.debug('inserted record id={}: {} {} {}'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
+        if (db_listing):
+            logging.debug('inserted record id={}: {} {} {}'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
+        else:
+            logging.error('failed to find newly-inserted record: {} {} {} {}'.format(listing['local_id'],listing['model_year'],listing['make'], listing['model']))
+            raise TypeError
 
     # if we get here, we succeeded... I assume
     return db_listing['id']
@@ -1822,7 +1832,16 @@ def main():
     classifieds = {}
 
     if args.db:
-        con = db.connect('localhost', 'carsdbuser', 'car4U', 'carsdb', charset='utf8')
+        try:
+            con = db.connect(os.environ['OGL_DB_HOST'],
+                             os.environ['OGL_DB_USERACCOUNT'],
+                             os.environ['OGL_DB_USERACCOUNT_PASSWORD'],
+                             os.environ['OGL_DB'],
+                             charset='utf8')
+        except KeyError:
+            print("Please set environment variables for OGL DB connectivity and rerun.")
+            sys.exit(1)
+
         # GEE TODO: test db connection success here (since we are not just doing 'with con:' as db usage is conditional)
 
         # ... and go ahead and fetch the sources from the db here for simplicity
