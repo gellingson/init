@@ -9,8 +9,9 @@ https://docs.djangoproject.com/en/dev/howto/deployment/wsgi/
 
 # django wants to access the db through mysqldb, so we have to "monkey patch"
 # in pymysql as if it were mysqldb.
-# GEE question: I don't recall why I needed this under apache wsgi but not
-# under the django test web server?
+# NOTE: setting the monkeypatch here so that web servers (e.g. apache) that do
+# not start up via the django manage.py get the patch. Also set in manage.py.
+
 try:
     import pymysql
     pymysql.install_as_MySQLdb()
