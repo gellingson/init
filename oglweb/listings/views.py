@@ -25,7 +25,7 @@ def index(request):
         for item in search_resp['hits']['hits']:
             listings.append(item['_source'])
     else:
-        listings = Listing.objects.all()
+        listings = Listing.objects.all().order_by('-last_update')
     context = {'listings': listings}
     return render(request, 'listings/index.html', context)
 
