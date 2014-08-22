@@ -62,9 +62,10 @@ WSGI_APPLICATION = 'oglweb.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'carsdb',
-        'USER': 'carsdbadmin',
-        'PASSWORD': 'cars4Me',
+        'HOST': os.environ.get('OGL_DB_HOST','localhost'),
+        'NAME': os.environ.get('OGL_DB','carsdb'),
+        'USER': os.environ.get('OGL_DB_USERACCOUNT','carsdbuser'),
+        'PASSWORD': os.environ.get('OGL_DB_USERACCOUNT_PASSWORD', 'nopassword'),
         'CHARSET': 'utf8', # GEE this may apply only to creating test DBs??
     }
 }
