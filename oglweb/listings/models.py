@@ -26,7 +26,7 @@ class Classified(models.Model):
     parse_listing_func = models.CharField(max_length=1024, blank=True)
     inventory_url = models.CharField(max_length=1024, blank=True)
     owner_account_id = models.IntegerField(blank=True, null=True)
-
+                                                 
     def __str__(self):
         return self.full_name
 
@@ -52,10 +52,12 @@ class Dealership(models.Model):
     city = models.CharField(max_length=255, blank=True)
     state = models.CharField(max_length=255, blank=True)
     zip = models.CharField(max_length=255, blank=True)
-    phone = models.IntegerField(blank=True, null=True)
+    phone = models.CharField(max_length=30, blank=True)
     owner_info = models.CharField(max_length=255, blank=True)
     license_info = models.CharField(max_length=255, blank=True)
     owner_account_id = models.IntegerField(blank=True, null=True)
+    lat = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
+    lon = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
 
     def __str__(self):
         return self.full_name
@@ -108,6 +110,8 @@ class Listing(models.Model):
     listing_date = models.DateTimeField(blank=True, null=True)
     removal_date = models.DateTimeField(blank=True, null=True)
     last_update = models.DateTimeField(blank=True, null=True)
+    lat = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
+    lon = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
 
     def __str__(self):
         return "{} {} {} ({}, {})".format(self.model_year, self.make, self.model, self.source_textid, str(self.id))
@@ -247,3 +251,19 @@ class NonCanonicalMake(models.Model):
     class Meta:
         managed = False
         db_table = 'non_canonical_make'
+
+class Zipcode(models.Model):
+    zip = models.CharField(primary_key=True, max_length=5)
+    city_upper = models.CharField(max_length=100, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state_code = models.CharField(max_length=2, blank=True)
+    state = models.CharField(max_length=100, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+    county_upper = models.CharField(max_length=100, blank=True)
+    county = models.CharField(max_length=100, blank=True)
+    lat = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
+    lon = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'zipcode'

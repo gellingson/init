@@ -9,6 +9,8 @@ class ClassifiedAdmin(admin.ModelAdmin):
 class DealershipAdmin(admin.ModelAdmin):
     fieldsets = [
         (None, {'fields': ['full_name', 'textid', 'base_url', 'inventory_url', 'status', 'markers']}),
+        ('Location', {'fields': ['address_line1','address_line2','city','state','zip','lat','lon']}),
+        ('More', {'fields': ['phone', 'owner_info', 'owner_account_id', 'license_info', 'primary_dealership_id', 'id']}),
         ('Functions', {'fields': ['extract_car_list_func','listing_from_list_item_func', 'parse_listing_func']})]
 
 class ListingAdmin(admin.ModelAdmin):
