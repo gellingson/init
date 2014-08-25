@@ -73,6 +73,8 @@ source_id	   int,
 source_textid  varchar(255),
 local_id	   varchar(255),
 stock_no	   varchar(255),
+lat            float,
+lon            float,
 listing_date   DATETIME,
 removal_date   DATETIME,
 last_update    DATETIME,
@@ -218,6 +220,8 @@ phone int(15),
 owner_info varchar(255),
 license_info varchar(255),
 owner_account_id int,
+lat float,
+lon float,
 primary key (id)
 );
 
@@ -237,6 +241,8 @@ listing_from_list_item_func varchar(1024),
 parse_listing_func varchar(1024),
 inventory_url varchar(1024),
 owner_account_id int,
+lat float,
+lon float,
 primary key (id)
 );
 
@@ -282,3 +288,22 @@ consume_words		varchar(1024),
 push_words			varchar(1024),
 primary key (id),
 index ncn(non_canonical_name));
+
+# zipcodes
+#
+# mirrors the structure from the zipcode file we have on hand
+# hopelessly US for now; should be generalized later
+
+create table zipcode(
+zip varchar(5),
+city_upper varchar(100),
+city varchar(100),
+state_code varchar(2),
+state varchar(100),
+country varchar(100),
+county_upper varchar(100),
+county varchar(100),
+lat float,
+lon float,
+primary key(zip),
+index states(state_code));
