@@ -938,7 +938,8 @@ def pull_ebay_inventory(classified, inventory_marker=None, area='Local', car_typ
     if not inventory_marker:
         inventory_marker = 0 # start with the first batch...
 
-    api = ebaysdk_finding(debug=False, appid=None, config_file='../conf/ebay.yaml',warnings=True)
+    ebay_yaml = os.environ.get('OGL_STAGE', '..') + 'conf/ebay.yaml'
+    api = ebaysdk_finding(debug=False, appid=None, config_file=ebay_yaml, warnings=True)
     api_request = {
         'categoryId': 6001,
         'GLOBAL-ID': 100,
@@ -1378,9 +1379,13 @@ def import_from_classified(classified, con=None, session=None, es=None):
         # note the special-casing for some sites that have their own method
 
         if classified['custom_pull_func']:
-            listings, inventory_marker = globals()[classified['custom_pull_func']](classified, inventory_marker=inventory_marker, session=session)
-        else:
-            listings, inventory_marker = pull_classified_inventory(classified, inventory_marker=inventory_marker, session=session)
+            listings, inventory_marker = globals()[classified['custom_pull_func']](classified,
+                                                                                   inventory_marker=inventory_marker,
+                                                                                   session=session)
+
+            listings, inventory_marker = pull_classified_inventory(classified,
+                                                                   inventory_marker=inventory_marker,
+                                                                   session=session)
 
         # now put the located records in the db & index
         if listings:
