@@ -4,6 +4,7 @@
 # making random ebayapi calls without hacking on a more important script.
 #
 import ebaysdk
+import json
 from ebaysdk.finding import Connection as finding
 from ebaysdk.exception import ConnectionError
 
@@ -44,7 +45,10 @@ def find():
         }
     response = api.execute('findItemsAdvanced', api_request)
     cars = response.json()
-    print(response.json())
+    r = response.dict()
+    for car in r['searchResult']['item']:
+        print('postal code is : {}'.format(car['postalCode']))
+#    print(response.json())
 #    print('{} cars found'.format(cars['_count']))
     return response, cars
 
