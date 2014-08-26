@@ -1,0 +1,100 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="">
+	<meta name="author" content="">
+
+	<title>Carbyr: enthusiast search</title>
+
+	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/bootstrap.css' %}" />
+	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/listings.css' %}" />
+  </head>
+
+  <body>
+	<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	  <div class="container">
+		<div class="navbar-header">
+		  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+			<span class="sr-only">Toggle navigation</span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+		  </button>
+		  <a class="navbar-brand" href="#">Carbyr</a>
+		</div>
+		<div class="navbar-collapse collapse">
+		  <ul class="nav navbar-nav navbar-right">
+			<li class="active"><a href="./">About</a></li>
+			<li class="active"><a href="./">Sign In</a></li>
+		  </ul>
+		</div><!--/.navbar-collapse -->
+	  </div>
+	</div>
+	<div class="container">
+	  <div class="page-header">
+		<h1> Search more listings faster with with Carbyr...</h1>
+		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+		<form class="" role="form" action="{% url 'listings:index' %}" method="get">
+		  {% csrf_token %}
+		  <div class="input-group">
+			<input type="text" placeholder="find me..." class="form-control" name="search_string" />
+			<span class="input-group-btn">
+			  <button type="submit" class="btn btn-success">Search</button>
+			</span>
+		  </div>
+		  <!--label for="search_string"> Enter search here (vanilla elasticsearch right now)</label><br /-->
+		  <!--input type="submit" value="Search" /-->
+		</form>
+		<div><!-- considered class="center-block" but it didn't work -->
+		  <p class="text-info note">showing: {{ search_criteria }}</p>
+		</div>
+	  </div>
+	  <div class="listings">
+
+		{% if listings %}
+		  {% for item in listings %}
+		    <div class="row">
+			  <a href='{{ item.listing_href }}'>
+				<div class="col-md-3"><img class="img-responsive img-rounded" src='{{ item.pic_href }}'></div>
+				<div class="col-md-3">
+				  <p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
+				  <p><strong>{{ item.price }}</strong></p>
+				</div>
+				<div class="col-md-6">{{ item.listing_text }}</div>
+				<!--<div class="col-md-1">x</div>-->
+			  </a>
+			</div>
+		  {% endfor %}
+		{% else %}
+		  <p>No cars... specify (different) search criteria....</p>
+		{% endif %}
+	  </div>
+	</div>
+	<!-- TODO: add this only when a) I have something to put in it, and b) I can dynamically change it to less padding but not 3-bar-collapse on a mobile screen. Also TODO: nix margins on the top nav for mobile
+	<div class="navbar navbar-default navbar-fixed-bottom" role="navigation">
+	  <div class="container container-nav">
+		  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+			<span class="sr-only">Toggle navigation</span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+		  </button>
+		<div class="navbar-collapse collapse">
+		  <ul class="nav navbar-nav navbar-right">
+			<li class="active"><a href="./">RSS</a></li>
+		  </ul>
+		</div>--><!--/.navbar-collapse -->
+	  </div>
+
+    <!-- Bootstrap core JavaScript
+		 ================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<script src="{% static 'listings/js/bootstrap.min.js' %}"></script>
+  </body>
+</html>
