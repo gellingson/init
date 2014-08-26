@@ -31,7 +31,7 @@ try:
                      charset='utf8')
 except KeyError:
     print("Please set environment variables for OGL DB connectivity and rerun.")
-            sys.exit(1)
+    sys.exit(1)
 
 es = Elasticsearch()
 try:
