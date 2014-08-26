@@ -26,41 +26,37 @@ from ebaysdk.finding import Connection as ebaysdk_finding
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 import pymysql as db
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-# OGL modules used (none yet)
+# OGL modules used
+from orm.models import Zipcode
 
-# ============================================================================
-# CLASSES
-# ============================================================================
+# classes (temporary until I switch to using the ORM classes)
 
-# class Listing
-#
-# GEE TODO: finish this class and start using it :)
-# could harcode a field list or not import from Dict, BUT we want to use
-# buildit PyMYSQL row-as-dict reads so... ?
-#
 class Listing(Bunch):
-    """A simple class that extends Dict/Bunch to describe a listing"""
+    def __str__(self):
+        return str(dict(self))
+#        return ' '.join([self.local_id, self.model_year, self.make, self.model, self.lat, self.lon])
+
+    # lets stop silly key errors (and really, we need to switch to a model class)
     def __init__(self):
-        self.id = None
-        self.markers = None
-        self.status = None
-        self.model_year = None
-        self.make = None
-        self.model = None
-        self.price = None
-        self.listing_text = None
-        self.pic_href = None
-        self.listing_href = None
-        self.source_type = None
-        self.source_id = None
-        self.source_textid = None
-        self.local_id = None
-        self.stock_no = None
-        self.listing_date = None
-        self.removal_date = None
-        self.last_update = None
-        
+        self.markers = ''
+        self.source_type = ''
+        self.source_id = ''
+        self.source_textid = ''
+        self.model_year = ''
+        self.make = ''
+        self.model = ''
+        self.price = ''
+        self.local_id = ''
+        self.stock_no = ''
+        self.listing_href = ''
+        self.pic_href = ''
+        self.lat = ''
+        self.lon = ''
+        self.listing_text = ''
+
 
 # ============================================================================
 # CONSTANTS AND GLOBALS
@@ -295,17 +291,16 @@ def is_car_interesting(listing, include_unknown_makes=True):
 
 # soup_from_file()
 #
-# intended for interactive use anyway; quickly soupify a file for testing.
+# intended for interactive use only; quickly soupify a file for testing.
 #
 def soup_from_file(path):
     with open(path) as file:
         return BeautifulSoup(file)
 
     
-# soup_from_file()
+# soup_from_url()
 #
-# intended for interactive use anyway; quickly soupify a file for testing.
-# GEE TODO: write this
+# intended for interactive use only; quickly soupify a file for testing.
 #
 def soup_from_url(url):
     try:
@@ -320,35 +315,6 @@ def soup_from_url(url):
         return None
 
     return BeautifulSoup(page)
-
-
-# test_inventory()
-#
-# creates a bogus listing since this is a test script :)
-#
-# returns a list containing that one bogus listing
-#
-def test_inventory():
-    # 
-    test_listing = Bunch()
-    test_listing['status'] = 'T' # T -> test data (will exclude from website listings)
-    test_listing['model_year'] = '1955'
-    test_listing['make'] = 'Ford'
-    test_listing['model'] = 'Thunderbird'
-    test_listing['price'] = '25000'
-    test_listing['listing_text'] = 'This is a fake thunderbird listing'
-    test_listing['pic_href'] = 'http://www.google.com'
-    test_listing['listing_href'] = 'http://www.yahoo.com'
-    test_listing['source_textid'] = 'dbtest'
-    test_listing['local_id'] = '1'
-    test_listing['stock_no'] = 'stock1234'
-
-    # GEE debug
-    logging.info("listing: " + json.dumps(test_listing))
-
-    # return a list containing this one listing dict
-    list_of_listings = [test_listing]
-    return list_of_listings
 
 
 # ============================================================================
@@ -638,6 +604,9 @@ def sfs_parse_listing(listing, entry, detail):
 
 # specialty_parse_listing
 #
+# GEE TODO: handle the various showroom locations
+# (currently assuming everything is in the pleasanton location)
+#
 def specialty_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page
@@ -706,7 +675,7 @@ def specialty_parse_listing(listing, entry, detail):
 #
 # this was first developed on/for specialty & fantasy junction sites
 #
-def pull_dealer_inventory(dealer):
+def pull_dealer_inventory(dealer, session=None):
 
     list_of_listings = []
     last_local_id = None
@@ -739,13 +708,10 @@ def pull_dealer_inventory(dealer):
         logging.info('Number of car listings found: {}'.format(len(listings)))
         for item in listings:
             ok = True
-            listing = Bunch() # build a listing dict/bunch for this car
-            listing.markers = None
-            listing.model_year = None
-            listing.make = None
-            listing.model = None
-            listing.price = None
-            listing.listing_text = None
+            listing = Listing()
+            listing.source_type = 'D'
+            listing.source_id = dealer.id
+            listing.source_textid = dealer.textid
 
             # for some sites the full entry is actually a parent or sibling
             # or similar permutation of the list item we just grabbed
@@ -754,9 +720,6 @@ def pull_dealer_inventory(dealer):
 
             # try standard grabs; then call the dealer-specific method for
             # overrides & improvements
-            listing.source_type = 'D'
-            listing.source_id = dealer.id
-            listing.source_textid = dealer.textid
 
             # try to find the URL of the detail listing page
             detail = None # if we don't find one, we can pass down this None
@@ -929,7 +892,7 @@ def pull_dealer_inventory(dealer):
 #
 # NOTES: NOT WRITTEN YET; need to understand if this really != dealer method
 #
-def pull_classified_inventory(classified, inventory_marker):
+def pull_classified_inventory(classified, inventory_marker=None, session=None):
     return [], inventory_marker
 
 
@@ -962,7 +925,7 @@ def pull_classified_inventory(classified, inventory_marker):
 # GEE TODO: chunking by years may not be entirely sufficient to avoid the 10K
 # limit (and gives us some pretty big work bundles). Should get more granular.
 #
-def pull_ebay_inventory(classified, inventory_marker, area='Local', car_type='Interesting'):
+def pull_ebay_inventory(classified, inventory_marker=None, area='Local', car_type='Interesting', session=None):
 
     list_of_listings = []
 
@@ -1019,8 +982,7 @@ def pull_ebay_inventory(classified, inventory_marker, area='Local', car_type='In
         for item in r['searchResult']['item']:
             ok = True
             logging.debug('eBay ITEM: {}'.format(item['itemId']))
-            listing = Bunch() # build a listing bunch/dict for this car
-            listing.markers = None
+            listing = Listing()
             listing.source_type = 'C'
             listing.source_id = classified.id
             listing.source_textid = classified.textid
@@ -1046,7 +1008,13 @@ def pull_ebay_inventory(classified, inventory_marker, area='Local', car_type='In
             try:
                 listing['price'] = regularize_price(item['sellingStatus']['buyItNowPrice']['value']) 
             except:                
-                listing['price'] = regularize_price(item['sellingStatus']['currentPrice']['value']) 
+                listing['price'] = regularize_price(item['sellingStatus']['currentPrice']['value'])
+
+            if 'postalCode' in item and session:
+                z = session.query(Zipcode).filter_by(zip = item['postalCode']).first()
+                if z:
+                    listing.lat = z.lat
+                    listing.lon = z.lon
 
             # validate model_year
             try:
@@ -1060,9 +1028,9 @@ def pull_ebay_inventory(classified, inventory_marker, area='Local', car_type='In
 
             if ok:
                 list_of_listings.append(listing)
-                logging.debug('pulled listing: ' + json.dumps(listing))
+                logging.debug('pulled listing: {}'.format(listing))
             else:
-                logging.debug('skipped listing: ' + json.dumps(listing)) # debug not warn b/c we're throwing out lots of stuff
+                logging.debug('skipped listing: {}'.format(listing)) # debug not warn b/c we're throwing out lots of stuff
 
             # END LOOP over listings on the page
 
@@ -1133,7 +1101,7 @@ def pull_ebay_inventory(classified, inventory_marker, area='Local', car_type='In
 # for now, this method goes in custom_pull_method and the anchor goes in
 # the extract_car_list_func field
 #
-def pull_3taps_inventory(classified, inventory_marker, area='Local', car_type='Interesting'):
+def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_type='Interesting', session=None):
 
     list_of_listings = []
 
@@ -1192,12 +1160,11 @@ def pull_3taps_inventory(classified, inventory_marker, area='Local', car_type='I
         ok = True
         item = Bunch(item) # for convenience
         logging.debug('3taps ITEM: {}'.format(item.id))
-        listing = Bunch() # build a listing bunch/dict for this car
-        listing.markers = None
+        listing = Listing()
         listing.source_type = 'C'
         listing.source_id = classified.id
         listing.source_textid = classified.textid
-
+        
         # GEE TODO: get whitelisted with 3taps for full html/annotation info (make/model/year)?
         # carsd seems to have consistent year/make/model
         # autod usually has all three but not always
@@ -1217,11 +1184,11 @@ def pull_3taps_inventory(classified, inventory_marker, area='Local', car_type='I
             (listing.model_year,
              listing.make,
              listing.model) = regularize_year_make_model(' '.join([model_year, make, model]))
-        else:
+        elif 'heading' in item and item.heading: # present and non-empty
             (listing.model_year,
              listing.make,
              listing.model) = regularize_year_make_model(item.heading)
-
+        
             if listing.model_year == 1 and model_year:
                 # then I didn't get any year from the heading
                 # but I can use the model_year from the annotations
@@ -1230,7 +1197,10 @@ def pull_3taps_inventory(classified, inventory_marker, area='Local', car_type='I
                 # WTF, mismatch? Take the annotation one (more reliable)
                 logging.warn('overriding heading year of {} with annotation year of {}'.format(listing.model_year, model_year))
                 listing.model_year = model_year
-        #logging.info('a: {} {} {} h: {} out: {} {} {}'.format(model_year, make, model, item.heading, listing.model_year, listing.make, listing.model))
+        else: # no annotation or heading to pull year/make/model??
+            ok = False
+            logging.warn('skipping item with no year/make/model information: {}'.format(json.dumps(item)))
+
         try:
             listing.pic_href = item.images[0]['full']
         except (KeyError, IndexError) as e:
@@ -1244,6 +1214,15 @@ def pull_3taps_inventory(classified, inventory_marker, area='Local', car_type='I
             logging.warn('listing for a {} {} {} has no local ID; using 3taps ID {}'.format(listing.model_year, listing.make, listing.model, listing.stock_no))
             listing.local_id = listing.stock_no
 
+#        logging.info('local_id: {} a: {} {} {} h: {} out: {} {} {}'.format(listing.local_id, model_year, make, model, item.heading, listing.model_year, listing.make, listing.model))
+
+        if 'location' in item:
+            if 'lat' in item.location:
+                listing.lat = item.location['lat']
+            if 'long' in item.location: # note 3taps uses long, we use lon
+                listing.lon = item.location['long']
+            # could fall back to other location info here if lat/long is unreliable?
+        
         # GEE TODO: examine & use flagging info
         if item.status == 'for_sale' and item.deleted == False:
             listing.status = 'F' # 'F' -> For Sale
@@ -1310,7 +1289,7 @@ def pull_3taps_inventory(classified, inventory_marker, area='Local', car_type='I
 # inventory is small enough to pull & update within a single db commit
 # (and then this method commits)
 #
-def import_from_dealer(con, es, dealer, file=False):
+def import_from_dealer(dealer, con=None, session=None, es=None, file=False):
 
     # get the active listings stored in the db for this dealer
     old_db_listing_hash = {}
@@ -1323,7 +1302,7 @@ def import_from_dealer(con, es, dealer, file=False):
             old_db_listing_hash[listing['local_id']] = listing
 
     # get the current listings on the dealer's website inventory
-    listings = pull_dealer_inventory(dealer)
+    listings = pull_dealer_inventory(dealer, session=session)
 
     for listing in listings:
         if con:
@@ -1374,7 +1353,7 @@ def import_from_dealer(con, es, dealer, file=False):
 #
 # NOTE: no longer supporting writing files or skipping db or indexing
 #
-def import_from_classified(con, es, classified):
+def import_from_classified(classified, con=None, session=None, es=None):
 
     # 3taps provides polling w/ only new/updated records in the stream, so
     # we explicitly get deletes/expirations/etc. All other sites we need
@@ -1399,9 +1378,9 @@ def import_from_classified(con, es, classified):
         # note the special-casing for some sites that have their own method
 
         if classified['custom_pull_func']:
-            listings, inventory_marker = globals()[classified['custom_pull_func']](classified, inventory_marker)
+            listings, inventory_marker = globals()[classified['custom_pull_func']](classified, inventory_marker=inventory_marker, session=session)
         else:
-            listings, inventory_marker = pull_classified_inventory(classified, inventory_marker)
+            listings, inventory_marker = pull_classified_inventory(classified, inventory_marker=inventory_marker, session=session)
 
         # now put the located records in the db & index
         if listings:
@@ -1455,21 +1434,6 @@ def import_from_classified(con, es, classified):
     logging.info('Completed inventory pull for {}'.format(classified.textid))
 
     return True
-
-
-# all_norcal_inventory()
-#
-# Pull inventory from all the norcal sites we've written importers before
-#
-# This is a junk routine which should be replaced by something db-driven!
-#
-# returns a list of listings dicts
-#
-def all_norcal_inventory():
-    list_of_listings = []
-    for dealer in dealers:
-        list_of_listings.extend(pull_dealer_inventory(dealers[dealer]))
-    return list_of_listings
 
 
 # match_from_hash()
@@ -1537,7 +1501,7 @@ def db_insert_or_update_listing(con, listing, existing_inventory = {}):
             if db_listing['markers']:
                 db_listing['markers'] == db_listing['markers'].translate({ord(i):None for i in 'P'})
         else:
-            for field in ['markers','status','model_year','make','model','price','listing_text','pic_href','listing_href']:
+            for field in ['markers','status','model_year','make','model','price','listing_text','pic_href','listing_href', 'lat', 'lon']:
                 if str(listing[field]) != str(db_listing[field]):
                     logging.debug('value for {} changed from <{}> to <{}>'.format(field, db_listing[field], listing[field]))
                     db_listing[field] = listing[field]
@@ -1550,14 +1514,14 @@ model_year = %s, make = %s, model = %s,
 price = %s, listing_text = %s,
 pic_href = %s, listing_href = %s,
 source_type = %s, source_id = %s, source_textid = %s,
-stock_no = %s,
+stock_no = %s, lat = %s, lon = %s,
 last_update = CURRENT_TIMESTAMP where id = %s""",
                        (db_listing['status'], db_listing['markers'],
                         db_listing['model_year'], db_listing['make'], db_listing['model'],
                         db_listing['price'], db_listing['listing_text'],
                         db_listing['pic_href'], db_listing['listing_href'],
                         db_listing['source_type'], db_listing['source_id'], db_listing['source_textid'],
-                        db_listing['stock_no'], 
+                        db_listing['stock_no'], db_listing['lat'], db_listing['lon'],
                         db_listing['id']))
             logging.debug('found record id={}: {} {} {} (updated)'.format(db_listing['id'], db_listing['model_year'], db_listing['make'], db_listing['model']))
         else: # else listing is up to date; no update required
@@ -1572,21 +1536,21 @@ model_year, make, model,
 price, listing_text,
 pic_href, listing_href,
 source_type, source_id, source_textid,
-local_id, stock_no,
+local_id, stock_no, lat, lon,
 listing_date, removal_date, last_update) values
 (%s, %s,
 %s, %s, %s,
 %s, %s,
 %s, %s,
 %s, %s, %s,
-%s, %s,
+%s, %s, %s, %s,
 CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP)""",
             (listing['status'], listing['markers'],
              listing['model_year'], listing['make'], listing['model'],
              listing['price'], listing['listing_text'],
              listing['pic_href'], listing['listing_href'],
              listing['source_type'], listing['source_id'],listing['source_textid'],
-             listing['local_id'], listing['stock_no'],))
+             listing['local_id'], listing['stock_no'], listing.lat, listing.lon))
 
         # re-execute the same fetch which will now grab the new record
         c2 = con.cursor(db.cursors.DictCursor)
@@ -1644,157 +1608,6 @@ def text_store_listing(list_dir, listing):
     logging.debug("wrote listing id {} ({} {} {}) to file {}".format(listing['id'], listing['model_year'],listing['make'], listing['model'], pathname))
     return True
 
-# ============================================================================
-# DATA STRUCTURES
-# ============================================================================
-# heh - can't put these up in constants because they reference funcs not yet defined
-# and python doesn't really do forward declarations
-
-# map of dealerships, URLs, functions
-# GEE TODO move this to a db table, etc etc
-#
-
-carbuffs = {
-    'textid' : 'carbuffs',
-    'full_name' : 'Car Buffs',
-    'base_url' : 'http://carbuffs.com',
-    'inventory_url' : '/inventory',
-    'extract_car_list_func' : "lambda s: s.find_all(class_='car-cont')",
-    'listing_from_list_item_func' : "lambda s: s",
-    'parse_listing_func' : "carbuffs_parse_listing"
-    }
-# ccw site has NO useful markup; best plan I can come up with to ID a car entry
-# is to look for <img> tag where src does NOT start with 'New-Site'
-ccw = {
-    'textid' : 'ccw',
-    'full_name' : 'Classic Cars West',
-    'base_url' : 'http://www.classiccarswest.com',
-    'inventory_url' : '/Inventory.html',
-    'extract_car_list_func' : "lambda s: s.find_all('img',src=re.compile('^([^N][^e][^w])'))",
-    'listing_from_list_item_func' : "lambda s: s.parent.parent.parent",
-    'parse_listing_func' : "ccw_parse_listing"
-    }
-cvc = {
-    'textid' : 'cvc',
-    'full_name' : 'Central Valley Classics',
-    'base_url' : 'http://www.centralvalleyclassics.com',
-    'inventory_url' : '/cars/carsfs.html',
-    'extract_car_list_func' : "lambda s: s.find_all('img',alt=re.compile('Click'))", # Yuck!
-    'listing_from_list_item_func' : "lambda s: s.parent.parent.parent", # Yuck again!
-    'parse_listing_func' : "cvc_parse_listing"
-    }
-cfc = {
-    'textid' : 'cfc',
-    'full_name' : 'Checkered Flag Classics',
-    'base_url' : 'http://checkeredflagclassics.com',
-    'inventory_url' : '/',
-    'extract_car_list_func' : "lambda s: s.find_all('li')",
-    'listing_from_list_item_func' : "lambda s: s",
-    'parse_listing_func' : "cfc_parse_listing"
-    }
-dawydiak = {
-    'textid' : 'dawydiak',
-    'full_name' : 'Cars Dawydiak',
-    'base_url' : 'http://www.carsauto.com',
-    'inventory_url' : '/other-inventory.htm?limit=500&order_by=&d=backw',
-    'extract_car_list_func' : "lambda s: s.find_all(class_='in-lst-buttoned-nm')",
-    'listing_from_list_item_func' : "lambda s: s.parent",
-    'parse_listing_func' : "dawydiak_parse_listing"
-    }
-dawydiakp = {
-    'textid' : 'dawydiakp',
-    'full_name' : 'Cars Dawydiak',
-    'base_url' : 'http://www.carsauto.com',
-    'inventory_url' : '/porsche-inventory.htm?limit=500&order_by=&d=backw',
-    'extract_car_list_func' : "lambda s: s.find_all(class_='in-lst-buttoned-nm')",
-    'listing_from_list_item_func' : "lambda s: s.parent",
-    'parse_listing_func' : "dawydiak_parse_listing"
-    }
-# GEE TODO: should also handle FJ's off-site inventory
-fj = {
-    'textid' : 'fj',
-    'full_name' : 'Fantasy Junction',
-    'base_url' : 'http://www.fantasyjunction.com',
-    'inventory_url' : '/inventory',
-    'extract_car_list_func' : "lambda s: s.find_all(class_='list-entry pkg list-entry-link')",
-    'listing_from_list_item_func' : "lambda s: s",
-    'parse_listing_func' : "fj_parse_listing"
-    }
-lcc = {
-    'textid' : 'lcc',
-    'full_name' : 'Left Coast Classics',
-    'base_url' : 'http://www.leftcoastclassics.com',
-    'inventory_url' : '/LCCofferings.html', # not sure why URLs are not parallel?
-    'extract_car_list_func' : "lambda s: s.find_all('h3')", # Yuck!
-    'listing_from_list_item_func' : "lambda s: s.parent.parent", # h3 under td under tr
-    'parse_listing_func' : "lc_parse_listing" # shared parser for the 2 sets of cars
-    }
-lce = {
-    'textid' : 'lce',
-    'full_name' : 'Left Coast Exotics',
-    'base_url' : 'http://www.leftcoastexotics.com',
-    'inventory_url' : '/cars-for-sale.html', # not sure why URLs are not parallel?
-    'extract_car_list_func' : "lambda s: s.find_all('h3')", # Yuck!
-    'listing_from_list_item_func' : "lambda s: s.parent.parent", # h3 under td under tr
-    'parse_listing_func' : "lc_parse_listing" # shared parser for the 2 sets of cars
-    }
-mhc = {
-    'textid' : 'mhc',
-    'full_name' : 'My Hot Cars',
-    'base_url' : 'http://www.myhotcars.com',
-    'inventory_url' : '/inventory.htm',
-    'extract_car_list_func' : "lambda s: s.find_all(class_='invebox')",
-    'listing_from_list_item_func' : "lambda s: s",
-    'parse_listing_func' : "mhc_parse_listing"
-    }
-sfs = {
-    'textid' : 'sfs',
-    'full_name' : 'San Francisco Sportscars',
-    'base_url' : 'http://sanfranciscosportscars.com',
-    'inventory_url' : '/cars-for-sale.html',
-    'extract_car_list_func' : "lambda s: s.find_all('h2')",
-    'listing_from_list_item_func' : "lambda s: s.parent",
-    'parse_listing_func' : "sfs_parse_listing"
-    }
-specialty = {
-    'textid' : 'specialty',
-    'full_name' : 'Specialty Auto Sales',
-    'base_url' : 'http://www.specialtysales.com',
-    'inventory_url' : '/inventory?per_page=300',
-    'extract_car_list_func' : "lambda s: s.find_all(class_='vehicle-entry')",
-    'listing_from_list_item_func' : "lambda s: s",
-    'parse_listing_func' : "specialty_parse_listing"
-    }
-vip = {
-    'textid' : 'vip',
-    'full_name' : 'VIP Motors',
-    'base_url' : 'http://www.vipmotors.us',
-    'inventory_url' : 'http://vipmotors.autorevo.com/vehicles?SearchString=',
-    'extract_car_list_func' : "lambda s: s.find_all(class_='inventoryListItem')",
-    'listing_from_list_item_func' : "lambda s: s",
-    'parse_listing_func' : "autorevo_parse_listing"
-    }
-# ^^^
-# Note that the page on VIP's main site is just a js that calls out to autorevo
-# the VIP literally doesn't actually contain listing info so we HAVE to go to
-# the autorevo site
-
-# GEE TODO investigate using OrderedDict
-dealers = {
-    'carbuffs' : carbuffs,
-    'ccw' : ccw,
-    'cfc' : cfc,
-    'cvc' : cvc,
-    'dawydiak' : dawydiak,
-    'dawydiakp' : dawydiakp,
-    'fj' : fj,
-    'lcc' : lcc,
-    'lce' : lce,
-    'mhc' : mhc,
-    'sfs' : sfs,
-    'specialty' : specialty,
-    'vip' : vip,
-    }
 
 # ============================================================================
 # MAIN
@@ -1803,8 +1616,6 @@ dealers = {
 def process_command_line():
     # initialize the parser object:
     parser = argparse.ArgumentParser(description='Imports car listings')
-    parser.add_argument('--nodb', dest='db', action='store_const',
-                        const=False, default=True, help='skip writing the listings to db tables')
     parser.add_argument('--noindex', dest='index', action='store_const',
                         const=False, default=True, help='skip indexing the listings')
     parser.add_argument('--files', dest='file', action='store_const',
@@ -1826,39 +1637,45 @@ def main():
     # start logging
     logging.basicConfig(level=args.log_level.upper())
 
+    # GEE TODO: split right now b/w direct db access and sqlalchemy usage
+    # b/c we are testing sqlalchemy. Decide and migrate fully!
     con = None # declare scope of db connection
+    session = None # ... and the SQLAlchemy session
     es = None # and the indexing connection
     dealerships = {}
     classifieds = {}
 
-    if args.db:
-        try:
-            con = db.connect(os.environ['OGL_DB_HOST'],
-                             os.environ['OGL_DB_USERACCOUNT'],
-                             os.environ['OGL_DB_USERACCOUNT_PASSWORD'],
-                             os.environ['OGL_DB'],
-                             charset='utf8')
-        except KeyError:
-            print("Please set environment variables for OGL DB connectivity and rerun.")
-            sys.exit(1)
+    try:
+        con = db.connect(os.environ['OGL_DB_HOST'],
+                         os.environ['OGL_DB_USERACCOUNT'],
+                         os.environ['OGL_DB_USERACCOUNT_PASSWORD'],
+                         os.environ['OGL_DB'],
+                         charset='utf8')
+        sqla_db_string = 'mysql+pymysql://{}:{}@{}/{}'.format(os.environ['OGL_DB_USERACCOUNT'],
+                                                              os.environ['OGL_DB_USERACCOUNT_PASSWORD'],
+                                                              os.environ['OGL_DB_HOST'],
+                                                              os.environ['OGL_DB'])
+        engine = create_engine(sqla_db_string)
+        Session = sessionmaker(bind=engine)
+        session = Session()
+    except KeyError:
+        print("Please set environment variables for OGL DB connectivity and rerun.")
+        sys.exit(1)
 
-        # GEE TODO: test db connection success here (since we are not just doing 'with con:' as db usage is conditional)
+    # GEE TODO: test db connection success here (since we are not just doing 'with con:' as db usage is conditional)
 
-        # ... and go ahead and fetch the sources from the db here for simplicity
-        # GEE TODO: once I retire the non-db path this can be turned into query-by-source-name for the import case
-        c = con.cursor(db.cursors.DictCursor)
-        rows = c.execute("""select * from dealership where status = 'I'""")
-        for dealer in c.fetchall():
-            dealerships[dealer['textid']] = Bunch(dealer)
-        c = con.cursor(db.cursors.DictCursor)
-        rows = c.execute("""select * from classified where status = 'I'""")
-        for classified in c.fetchall():
-            classifieds[classified['textid']] = Bunch(classified)
-        # read in all the non-canonical makes into a hash for easy & quick ref
-        populate_non_canonical_makes(con)
-    else:
-        dealerships = dealers; # use built-in/non-db dealership list
-        # classifieds will remain NULL -- non-db func does not exist for any of them
+    # ... and go ahead and fetch the sources from the db here for simplicity
+    # GEE TODO: when # of sources gets large we can move this to query-by-source-name + some aggregates
+    c = con.cursor(db.cursors.DictCursor)
+    rows = c.execute("""select * from dealership where status = 'I'""")
+    for dealer in c.fetchall():
+        dealerships[dealer['textid']] = Bunch(dealer)
+    c = con.cursor(db.cursors.DictCursor)
+    rows = c.execute("""select * from classified where status = 'I'""")
+    for classified in c.fetchall():
+        classifieds[classified['textid']] = Bunch(classified)
+    # read in all the non-canonical makes into a hash for easy & quick ref
+    populate_non_canonical_makes(con)
 
     if args.index:
         es = Elasticsearch()
@@ -1870,20 +1687,18 @@ def main():
         for classified in classifieds:
             print('{} [classified site {}]'.format(classifieds[classified]['textid'], classifieds[classified]['full_name']))
 
-        # GEE TODO: remove these non-db sources, or clearly label as test-only
-        print('test [special test file of 1 record]')
         print('norcal [special aggregation of norcal dealerships]')
         print('db_dealers [all dealers in the database]')
 
     elif args.action == 'import':
         for source in args.sources:
             if source in dealerships:
-                import_from_dealer(con, es, dealerships[source])
+                import_from_dealer(dealerships[source], con=con, session=session, es=es)
             elif source in classifieds:
-                import_from_classified(con, es, classifieds[source])
+                import_from_classified(classifieds[source], con=con, session=session, es=es)
             elif source == 'norcal':
                 for dealer in dealerships:
-                    import_from_dealer(con, es, dealerships[dealer])
+                    import_from_dealer(dealerships[dealer], con=con, session=session, es=es)
             else:
                 logging.error('request of import from unknown source: {}'.format(source))
     else: # uh, shouldn't be possible?
