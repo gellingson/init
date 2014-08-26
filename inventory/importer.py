@@ -938,7 +938,8 @@ def pull_ebay_inventory(classified, inventory_marker=None, area='Local', car_typ
     if not inventory_marker:
         inventory_marker = 0 # start with the first batch...
 
-    ebay_yaml = os.environ.get('OGL_STAGE', '..') + 'conf/ebay.yaml'
+    # look for ebay yaml (config) in $STAGE/conf, or ../conf if stage not set
+    ebay_yaml = os.path.join(os.environ.get('OGL_STAGE', '..'), 'conf/ebay.yaml')
     api = ebaysdk_finding(debug=False, appid=None, config_file=ebay_yaml, warnings=True)
     api_request = {
         'categoryId': 6001,
