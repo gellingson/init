@@ -51,7 +51,7 @@
 		  <!--input type="submit" value="Search" /-->
 		</form>
 		<div><!-- considered class="center-block" but it didn't work -->
-		  <p class="text-info note">showing: latest interesting cars</p>
+		  <p class="text-info note">showing: {{ search_criteria }}</p>
 		</div>
 	  </div>
 	  <div class="listings">
@@ -65,8 +65,8 @@
 				  <p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
 				  <p><strong>{{ item.price }}</strong></p>
 				</div>
-				<div class="col-md-5">{{ item.listing_text }}</div>
-				<div class="col-md-1">x</div>
+				<div class="col-md-6">{{ item.listing_text }}</div>
+				<!--<div class="col-md-1">x</div>-->
 			  </a>
 			</div>
 		  {% endfor %}
@@ -88,9 +88,9 @@
 		  <ul class="nav navbar-nav navbar-right">
 			<li class="active"><a href="./">RSS</a></li>
 		  </ul>
-		</div><!--/.navbar-collapse -->
+		</div>--><!--/.navbar-collapse -->
 	  </div>
-	  -->
+
     <!-- Bootstrap core JavaScript
 		 ================================================== -->
 	<!-- Placed at the end of the document so the pages load faster -->
