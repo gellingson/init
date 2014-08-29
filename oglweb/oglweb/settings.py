@@ -86,4 +86,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/dev/howto/static-files/
 
+# this URL is where static files are to be loaded from
+# (modulo the apache server's translation of this URL in its conf file)
 STATIC_URL = '/static/'
+
+# this directory (not URL) is where the 'collectfiles' program should collect
+# the static files so that apache can point the STATIC_URL at them
+# (ie STATIC_ROOT is the actual filepath that will underly STATIC_URL)
+# note that this is ONLY used by collectfiles, not while serving the files, so
+# it *is* safe to reference env variables that may not be set while serving.
+STATIC_ROOT = os.path.join(os.environ.get('OGL_STAGE','/home/ubuntu'),'../static')
