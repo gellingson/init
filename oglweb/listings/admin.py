@@ -1,5 +1,5 @@
 from django.contrib import admin
-from listings.models import Classified, Dealership, Listing, NonCanonicalMake
+from listings.models import Classified, Dealership, Listing, NonCanonicalMake, NonCanonicalModel, ConceptTag, ConceptImplies
 
 class ClassifiedAdmin(admin.ModelAdmin):
     fieldsets = [
@@ -25,7 +25,20 @@ class NonCanonicalMakeAdmin(admin.ModelAdmin):
     fieldsets = [
         (None, {'fields': ['non_canonical_name', 'canonical_name', 'consume_words', 'push_words']})]
 
+class NonCanonicalModelAdmin(admin.ModelAdmin):
+    ordering = ('canonical_name', 'non_canonical_name')
+    fields = ('non_canonical_make', 'non_canonical_name', 'canonical_name', 'consume_words', 'push_words')
+
+@admin.register(ConceptTag)
+class ConceptTagAdmin(admin.ModelAdmin):
+    fields = ('tag', 'display_tag', 'syn_of_tag')
+
+@admin.register(ConceptImplies)
+class ConceptImpliesAdmin(admin.ModelAdmin):
+    fields = ('has_tag', 'implies_tag')
+
 admin.site.register(Dealership, DealershipAdmin)
 admin.site.register(Classified, ClassifiedAdmin)
 admin.site.register(Listing, ListingAdmin)
 admin.site.register(NonCanonicalMake, NonCanonicalMakeAdmin)
+admin.site.register(NonCanonicalModel, NonCanonicalModelAdmin)

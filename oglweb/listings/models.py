@@ -112,6 +112,7 @@ class Listing(models.Model):
     last_update = models.DateTimeField(blank=True, null=True)
     lat = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
     lon = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
+    tags = models.CharField(max_length=2048, blank=True)
 
     def __str__(self):
         return "{} {} {} ({}, {})".format(self.model_year, self.make, self.model, self.source_textid, str(self.id))
@@ -252,6 +253,50 @@ class NonCanonicalMake(models.Model):
         managed = False
         db_table = 'non_canonical_make'
 
+
+class NonCanonicalModel(models.Model):
+    id = models.IntegerField(primary_key=True)  # AutoField?
+    non_canonical_make = models.ForeignKey(NonCanonicalMake, blank=True, null=True)
+    non_canonical_name = models.CharField(unique=True, max_length=50, blank=True)
+    canonical_name = models.CharField(max_length=50, blank=True)
+    consume_words = models.CharField(max_length=100, blank=True)
+    push_words = models.CharField(max_length=100, blank=True)
+
+    def __str__(self):
+        return "{} -> {} remove: {} add: {}".format(self.non_canonical_name, self.canonical_name, self.consume_words, self.push_words)
+
+    class Meta:
+        managed = False
+        db_table = 'non_canonical_model'
+
+
+class ConceptImplies(models.Model):
+    id = models.IntegerField(primary_key=True)  # AutoField?
+    has_tag = models.ForeignKey('ConceptTag', related_name='has_tag')
+    implies_tag = models.ForeignKey('ConceptTag', related_name='implies_tag')
+
+    def __str__(self):
+        return '{} -> {}'.format(self.has_tag, self.implies_tag)
+
+    class Meta:
+        managed = False
+        db_table = 'concept_implies'
+
+
+class ConceptTag(models.Model):
+    id = models.IntegerField(primary_key=True)  # AutoField?
+    tag = models.CharField(unique=True, max_length=20)
+    syn_of_tag = models.ForeignKey('self', blank=True, null=True)
+    display_tag = models.CharField(max_length=20, blank=True)
+
+    def __str__(self):
+        return '{} [{}]'.format(self.tag, self.syn_of_tag)
+
+    class Meta:
+        managed = False
+        db_table = 'concept_tag'
+
+        
 class Zipcode(models.Model):
     zip = models.CharField(primary_key=True, max_length=5)
     city_upper = models.CharField(max_length=100, blank=True)

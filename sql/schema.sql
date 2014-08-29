@@ -283,12 +283,75 @@ drop table non_canonical_make_backup;
 rename table non_canonical_make to non_canonical_make_backup;
 create table non_canonical_make(
 id                int unsigned not null auto_increment,
-non_canonical_name  varchar(1024),
-canonical_name		varchar(1024),
-consume_words		varchar(1024),
-push_words			varchar(1024),
+non_canonical_name  varchar(50),
+canonical_name		varchar(50),
+consume_words		varchar(100),
+push_words			varchar(100),
 primary key (id),
+unique index (non_canonical_name),
 index ncn(non_canonical_name));
+
+
+# non_canonical_model
+drop table non_canonical_model_backup;
+rename table non_canonical_model to non_canonical_model_backup;
+create table non_canonical_model(
+id   int unsigned not null auto_increment,
+non_canonical_make_id int unsigned,
+non_canonical_name  varchar(50),
+canonical_name	varchar(50),
+consume_words		varchar(100),
+push_words			varchar(100),
+primary key (id),
+unique index (non_canonical_name),
+foreign key (non_canonical_make_id) references non_canonical_make(id));
+
+
+# concept_tag
+#
+# contains one entry with synonym_of_tag_id=NULL for each tag concept and
+# (zero or more) synonymous tags with the tag.id of the canonical tag name
+# entry in the syn_of_tag_id field. E.g.:
+#
+# id, tag, syn_of_tag_id
+# 1, 'MIATA', NULL
+# 2, 'MX5', 1
+# 3, 'MX-5', 1
+#
+# all concept tags will be upcase, but the canonical name (and maybe
+# some synonums) have mixed case equivalents for when display is required
+#
+# MySQL is really weird about foreign keys, but this works... barely.
+# incorrectly prevent some deletions (and even dropping the table!)
+# due tot he self-referential FK. But we will see if this is good enough.
+#
+drop table concept_tag_backup;
+rename table concept_tag to concept_tag_backup;
+create table concept_tag(
+id    int unsigned not null auto_increment,
+tag   varchar(20) not null,
+syn_of_tag_id int unsigned,
+display_tag varchar(20),
+primary key (id),
+unique index (tag),
+foreign key (syn_of_tag_id) references concept_tag(id));
+
+# concept_implies
+#
+# relationship table:
+# any listing with has_tag_id should also get implies_tag_id (and synonyms)
+#
+drop table concept_implies_backup;
+rename table concept_implies to concept_implies_backup;
+create table concept_implies(
+id    int unsigned not null auto_increment,
+has_tag_id    int unsigned not null,
+implies_tag_id    int unsigned not null,
+primary key (id),
+foreign key (has_tag_id) references concept_tag(id),
+foreign key (implies_tag_id) references concept_tag(id));
+# removed because mysql cannot handle both this index and the FKs:
+#index rels(has_tag_id, implies_tag_id),
 
 # zipcodes
 #

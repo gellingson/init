@@ -182,6 +182,26 @@ class NonCanonicalMake(IDMixIn, Base):
     push_words = Column(String(1024))
 
 
+class NonCanonicalModel(IDMixIn, Base):
+
+    non_canonical_make_id = Column(Integer, ForeignKey('non_canonical_make.id'))
+    non_canonical_name = Column(String(50), index=True)
+    canonical_name = Column(String(50))
+    consume_words = Column(String(100))
+    push_words = Column(String(100))
+
+
+class ConceptTag(IDMixIn, Base):
+
+    tag = Column(String(20))
+    syn_of_tag_id = Column(Integer, ForeignKey('concept_tag.id'))
+    display_tag = Column(String(20))
+
+
+class concept_implies(IDMixIn, Base):
+
+    has_tag_id = Column(Integer, ForeignKey('concept_tag.id'))
+    implies_tag_id = Column(Integer, ForeignKey('concept_tag.id'))
 
 
 class Tbl02Model(Base):
