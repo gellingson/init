@@ -16,6 +16,7 @@ import urllib.request, urllib.error, urllib.parse
 import os
 import errno
 import logging
+import datetime
 
 # third party modules used
 from bunch import Bunch
@@ -28,34 +29,10 @@ from elasticsearch.exceptions import NotFoundError
 import pymysql as db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 
 # OGL modules used
-from orm.models import Zipcode
-
-# classes (temporary until I switch to using the ORM classes)
-
-class Listing(Bunch):
-    def __str__(self):
-        return str(dict(self))
-#        return ' '.join([self.local_id, self.model_year, self.make, self.model, self.lat, self.lon])
-
-    # lets stop silly key errors (and really, we need to switch to a model class)
-    def __init__(self):
-        self.markers = ''
-        self.source_type = ''
-        self.source_id = ''
-        self.source_textid = ''
-        self.model_year = ''
-        self.make = ''
-        self.model = ''
-        self.price = ''
-        self.local_id = ''
-        self.stock_no = ''
-        self.listing_href = ''
-        self.pic_href = ''
-        self.lat = ''
-        self.lon = ''
-        self.listing_text = ''
+from orm.models import Zipcode, Listing
 
 
 # ============================================================================
@@ -271,21 +248,21 @@ def make_sure_path_exists(path):
 # crummy kludge to filter to cars we want for now vs ones we don't
 #
 def is_car_interesting(listing, include_unknown_makes=True):
-    if int(listing['model_year']) > 1800 and int(listing['model_year']) <= 1975:
+    if int(listing.model_year) > 1800 and int(listing.model_year) <= 1975:
         return True # automatically interesting
     if not include_unknown_makes:
         try:
-            discard = non_canonical_makes[listing['make']]
+            discard = non_canonical_makes[listing.make]
             # if it's in there, do nothing and continue checks
         except KeyError as e:
             return False # something odd -- chuck it
         
     # GEE TODO: case of comparisons & substrings make this.... interesting
-    if listing['make'] not in boring_makes: # wow is this inefficient - need make/model db stuff
+    if listing.make not in boring_makes: # wow is this inefficient - need make/model db stuff
         return True
-    if listing['model'] in interesting_models: # pull particular models back in
+    if listing.model in interesting_models: # pull particular models back in
         return True
-    if int(listing['price']) > 100000: # Prima facia evidence of interesting status? :)
+    if int(listing.price) > 100000: # Prima facia evidence of interesting status? :)
         return True
     return False
 
@@ -326,15 +303,15 @@ def soup_from_url(url):
 def new_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
-    (listing['model_year'],
-     listing['make'],
-     listing['model']) = regularize_year_make_model('')
+    (listing.model_year,
+     listing.make,
+     listing.model) = regularize_year_make_model('')
 
-    listing['listing_text'] = ''
+    listing.listing_text = ''
 
     # pull the rest of the fields from the detail page
 
-    listing['price'] = regularize_price('')
+    listing.price = regularize_price('')
 
     return True
 
@@ -347,20 +324,20 @@ def new_parse_listing(listing, entry, detail):
 def autorevo_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
-    (listing['model_year'],
-     listing['make'],
-     listing['model']) = regularize_year_make_model(entry.find('h1').text)
+    (listing.model_year,
+     listing.make,
+     listing.model) = regularize_year_make_model(entry.find('h1').text)
 
     try:
-        listing['price'] = regularize_price(entry.find(class_='vehicleMainPriceRow').text)
+        listing.price = regularize_price(entry.find(class_='vehicleMainPriceRow').text)
     except AttributeError:
-        listing['price'] = -1
+        listing.price = -1
 
     # doesn't have listing text on inventory page
     try:
-        listing['listing_text'] = detail.find(class_='innerDescriptionText').find('p').text
+        listing.listing_text = detail.find(class_='innerDescriptionText').find('p').text
     except AttributeError:
-        listing['listing_text'] = ''
+        listing.listing_text = ''
 
     return True
 
@@ -371,12 +348,12 @@ def autorevo_parse_listing(listing, entry, detail):
 def carbuffs_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page
-    listing['listing_text'] = entry.find(class_="car-excerpt").text
+    listing.listing_text = entry.find(class_="car-excerpt").text
 
     # pull the rest of the fields from the detail page
-    (listing['model_year'],
-     listing['make'],
-     listing['model']) = regularize_year_make_model(detail.find(class_='car-name').text)
+    (listing.model_year,
+     listing.make,
+     listing.model) = regularize_year_make_model(detail.find(class_='car-name').text)
 
     # common name/value patterns in details page:
     #<li><strong>Car model year:</strong> 1963</li>
@@ -384,7 +361,7 @@ def carbuffs_parse_listing(listing, entry, detail):
     pe = detail.find('strong',text='Asking Price:')
     if pe != None:
         pe = pe.next_sibling
-    listing['price'] = regularize_price(pe)
+    listing.price = regularize_price(pe)
 
     return True
 
@@ -392,11 +369,11 @@ def carbuffs_parse_listing(listing, entry, detail):
 def ccw_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
-    (listing['model_year'],
-     listing['make'],
-     listing['model']) = regularize_year_make_model(entry.find('strong').text)
+    (listing.model_year,
+     listing.make,
+     listing.model) = regularize_year_make_model(entry.find('strong').text)
 
-    listing['listing_text'] = '' # no short text available, only longer text from detail page
+    listing.listing_text = '' # no short text available, only longer text from detail page
 
     # pull the rest of the fields from the detail page
 
@@ -408,11 +385,11 @@ def ccw_parse_listing(listing, entry, detail):
 def cfc_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
-    (listing['model_year'],
-     listing['make'],
-     listing['model']) = regularize_year_make_model(entry.find('a').text)
+    (listing.model_year,
+     listing.make,
+     listing.model) = regularize_year_make_model(entry.find('a').text)
 
-    listing['listing_text'] = '' # no crisp text, just long text
+    listing.listing_text = '' # no crisp text, just long text
 
     return True
 
@@ -428,18 +405,18 @@ def cvc_parse_listing(listing, entry, detail):
 
     strings = entry.find_all(text=True)
 
-    (listing['model_year'],
-     listing['make'],
-     listing['model']) = regularize_year_make_model(strings[0])
+    (listing.model_year,
+     listing.make,
+     listing.model) = regularize_year_make_model(strings[0])
 
-    listing['listing_text'] = strings[1]
+    listing.listing_text = strings[1]
 
     # no real patterns to mine on the details page.
     # but hey, at least it has the price! (unlike the inventory page)
     pe = detail.find(text=re.compile('Asking Price:'))
     if pe != None:
         pe = pe.split(':')[-1]
-    listing['price'] = regularize_price(pe)
+    listing.price = regularize_price(pe)
 
     return True
 
@@ -453,18 +430,18 @@ def dawydiak_parse_listing(listing, entry, detail):
     # get some stuff from the inventory page
 
     # if dawydiak has any listing text, it's in the introlist
-    listing['listing_text'] = entry.find(class_='introlist').text
+    listing.listing_text = entry.find(class_='introlist').text
 
     if entry.find(class_='dscprice'):
-        listing['price'] = regularize_price(entry.find(class_='dscprice').text)
+        listing.price = regularize_price(entry.find(class_='dscprice').text)
 
     # pull the rest of the fields from the detail page
-    listing['model_year'] = detail.find('dt',text=re.compile('Year:')).parent.dd.text
-    listing['make'] = detail.find('dt',text=re.compile('Make:')).parent.dd.text
-    listing['model'] = detail.find('dt',text=re.compile('Model:')).parent.dd.text
+    listing.model_year = detail.find('dt',text=re.compile('Year:')).parent.dd.text
+    listing.make = detail.find('dt',text=re.compile('Make:')).parent.dd.text
+    listing.model = detail.find('dt',text=re.compile('Model:')).parent.dd.text
 
-    listing['local_id'] = detail.find('dt',text=re.compile('Stock')).parent.dd.text
-    listing['stock_no'] = listing['local_id'] # no separate stock#
+    listing.local_id = detail.find('dt',text=re.compile('Stock')).parent.dd.text
+    listing.stock_no = listing.local_id # no separate stock#
 
     return True
 
@@ -474,18 +451,18 @@ def dawydiak_parse_listing(listing, entry, detail):
 def fj_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page
-    listing['listing_text'] = entry.find(class_="entry-subheader blue").get_text()
+    listing.listing_text = entry.find(class_="entry-subheader blue").get_text()
 
     # pull the rest of the fields from the detail page
 
     if (detail.find('title')):
         s = detail.find('title').text
-        (listing['model_year'],
-         listing['make'],
-         listing['model']) = regularize_year_make_model(s)
+        (listing.model_year,
+         listing.make,
+         listing.model) = regularize_year_make_model(s)
 
-    listing['local_id'] = detail.find(id="ContactCarId")['value']
-    listing['stock_no'] = listing['local_id'] # no separate stock#
+    listing.local_id = detail.find(id="ContactCarId")['value']
+    listing.stock_no = listing.local_id # no separate stock#
 
     # many interesting items are in an "alpha-inner-bottom' div, but for now just grab price
     # tabular format with labels & values in two td elements, e.g.:
@@ -495,7 +472,7 @@ def fj_parse_listing(listing, entry, detail):
     # </tr>
     elt = detail.find(id='alpha-inner-bottom')
     price_string = elt.find("td", text="Price").parent.find('td', class_="car-detail-value").text
-    listing['price'] = regularize_price(price_string)
+    listing.price = regularize_price(price_string)
 
     return True
 
@@ -519,14 +496,14 @@ def lc_parse_listing(listing, entry, detail):
     # we just have to make the best of it
 
     # get the short listing text from the inventory page
-    listing['listing_text'] = entry.find('h3').text
+    listing.listing_text = entry.find('h3').text
 
     # price is only on the inventory page, not on the detail page (!)
     # and it's often missing (text will just be CALL, SOLD, etc)
     price_string = entry.find('h2', align='center')
     if price_string != None:
         price_string = price_string.text
-    listing['price'] = regularize_price(price_string)
+    listing.price = regularize_price(price_string)
 
     # pull the rest of the fields from the detail page, IF we loaded one
     # (sometimes there isn't one! Just "COMING SOON" and a phone number)
@@ -545,9 +522,9 @@ def lc_parse_listing(listing, entry, detail):
         else:
             s = entry.find('h2').text
 
-        (listing['model_year'],
-         listing['make'],
-         listing['model']) = regularize_year_make_model(s)
+        (listing.model_year,
+         listing.make,
+         listing.model) = regularize_year_make_model(s)
 
         # removed a hacky bit here since I don't think it chains correctly off the revised code above, and I hope I don't need it!
 
@@ -567,16 +544,16 @@ def lc_parse_listing(listing, entry, detail):
 def mhc_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
-    (listing['model_year'],
-     listing['make'],
-     listing['model']) = regularize_year_make_model(entry.find('h2').text)
+    (listing.model_year,
+     listing.make,
+     listing.model) = regularize_year_make_model(entry.find('h2').text)
 
     # GEE TODO: some don't have any description, but others do (on the detail page)
-    listing['listing_text'] = '' 
+    listing.listing_text = '' 
 
     # pull the rest of the fields from the detail page
 
-    listing['price'] = regularize_price(entry.find('span').text)
+    listing.price = regularize_price(entry.find('span').text)
 
     return True
 
@@ -586,16 +563,16 @@ def mhc_parse_listing(listing, entry, detail):
 def sfs_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
-    (listing['model_year'],
-     listing['make'],
-     listing['model']) = regularize_year_make_model(entry.find('h2').text)
+    (listing.model_year,
+     listing.make,
+     listing.model) = regularize_year_make_model(entry.find('h2').text)
 
-    listing['listing_text'] = entry.find('h3').text
+    listing.listing_text = entry.find('h3').text
 
     if entry.find('h6'):
-        listing['price'] = regularize_price(entry.find('h6').text)
+        listing.price = regularize_price(entry.find('h6').text)
     else:
-        listing['price'] = -1
+        listing.price = -1
 
     # pull the rest of the fields from the detail page
 
@@ -610,31 +587,31 @@ def sfs_parse_listing(listing, entry, detail):
 def specialty_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page
-    listing['listing_text'] = entry.get_text()
+    listing.listing_text = entry.get_text()
 
     # grab price from the main listings page entry
     if entry.find(class_='vehicle-price-label'):
         price_string = entry.find(class_='vehicle-price-label').text
     else:
         price_string = ''
-    listing['price'] = regularize_price(price_string)
+    listing.price = regularize_price(price_string)
 
     # grab year/make/model
     if entry.find(class_='vehicle-heading'):
         s = entry.find(class_='vehicle-heading').text
     else:
         s = ''
-    (listing['model_year'],
-     listing['make'],
-     listing['model']) = regularize_year_make_model(s)
+    (listing.model_year,
+     listing.make,
+     listing.model) = regularize_year_make_model(s)
 
     s = ''
     if entry.find(class_='vehicle-stock'):
         s = entry.find(class_='vehicle-stock').text
         if '#' in s:
             junk, s = s.split('#')
-    listing['local_id'] = s
-    listing['stock_no'] = listing['local_id'] # no separate stock#
+    listing.local_id = s
+    listing.stock_no = listing.local_id # no separate stock#
 
     # NOTE: we got everything from the inventory page;
     # not currently using the detail page at all
@@ -676,6 +653,10 @@ def specialty_parse_listing(listing, entry, detail):
 # this was first developed on/for specialty & fantasy junction sites
 #
 def pull_dealer_inventory(dealer, session=None):
+
+    # implicit param from environment:
+    # [currently unused in dealer pulls, but for consistency & future use...]
+    inv_settings = os.environ.get('OGL_INV_SETTINGS', '')
 
     list_of_listings = []
     last_local_id = None
@@ -759,16 +740,16 @@ def pull_dealer_inventory(dealer, session=None):
                 if (scheme and scheme != 'http' and scheme != 'https'):
                     # uh... let's skip this one if we can't link to it as http
                     logging.warn('found non-http detail URL: {}'.format(detail_url))
-                    listing['listing_href'] = detail_url # just to prevent barfs
+                    listing.listing_href = detail_url # just to prevent barfs
                     ok = False
                 else:
                     try:
                         # GEE TODO: occasionally detail_url is NOT escaped properly
                         # (e.g. contains spaces), but calling urllib.parse.quote()
                         # on it quotes chars that shouldn't be quoted. What to do?
-                        listing['listing_href'] = urllib.parse.urljoin(full_inv_url, detail_url)
-                        logging.debug('detail page: ' + listing['listing_href'])
-                        req = urllib.request.Request(listing['listing_href'], headers=hdrs)
+                        listing.listing_href = urllib.parse.urljoin(full_inv_url, detail_url)
+                        logging.debug('detail page: ' + listing.listing_href)
+                        req = urllib.request.Request(listing.listing_href, headers=hdrs)
                         detail_page = urllib.request.urlopen(req)
                         detail = BeautifulSoup(detail_page)
                         # if the detail page is well-formed (has a body)
@@ -779,60 +760,60 @@ def pull_dealer_inventory(dealer, session=None):
 
                     except urllib.error.HTTPError as error:
                         logging.error('Unable to load detail page ' +
-                                      listing['listing_href'] + ': HTTP ' +
+                                      listing.listing_href + ': HTTP ' +
                                       str(error.code) + ' ' + error.reason)
                         ok = False
 
             # look for an image in the entry
             if entry.find('img'):
-                listing['pic_href'] = urllib.parse.urljoin(full_inv_url, str(entry.find('img').attrs['src']))
+                listing.pic_href = urllib.parse.urljoin(full_inv_url, str(entry.find('img').attrs['src']))
             elif detail and detail.find('img'): # failover to 1st detail img
-                listing['pic_href'] = urllib.parse.urljoin(full_inv_url, str(detail.find('img').attrs['src']))
+                listing.pic_href = urllib.parse.urljoin(full_inv_url, str(detail.find('img').attrs['src']))
             else:
-                listing['pic_href'] = None
+                listing.pic_href = None
 
             # look for a string to use as listing text:
             # pick the longest string in a likely tag within the entry
-            listing['listing_text'] = ''
+            listing.listing_text = ''
             for tag in entry.descendants:
                 if (tag.name == 'p' or tag.name == 'div' or tag.name == 'li' or
                     tag.name == 'span' or tag.name == 'td'):
                     if (len(tag.text) > 50 and
-                        len(tag.text) > len(listing['listing_text'])):
-                        listing['listing_text'] = tag.text
+                        len(tag.text) > len(listing.listing_text)):
+                        listing.listing_text = tag.text
             # if that failed, try to find something on the detail page
-            if detail and not listing['listing_text']:
+            if detail and not listing.listing_text:
                 for tag in detail.descendants:
                     if (tag.name == 'p' or tag.name == 'div' or tag.name == 'li' or
                         tag.name == 'span' or tag.name == 'td'):
                         if (len(tag.text) > 50 and
-                            len(tag.text) > len(listing['listing_text'])):
-                            listing['listing_text'] = tag.text
+                            len(tag.text) > len(listing.listing_text)):
+                            listing.listing_text = tag.text
 
             # many sites have no stock#/inventory ID; default to the unique URL element
             # note that this will be wonky for item(s) that are 'coming soon'
             # (no detail page exists yet)
-            listing['local_id'] = listing['listing_href'].rstrip('/').split('/')[-1].replace('.html','')
-            listing['stock_no'] = listing['local_id'] # no separate stock_no
+            listing.local_id = listing.listing_href.rstrip('/').split('/')[-1].replace('.html','')
+            listing.stock_no = listing.local_id # no separate stock_no
 
             # see if the listing is marked as sold?
             # GEE TODO improve this; using uppercase intentionally as a cheat
             if entry.find(text=re.compile('SOLD')):
                 # used to also check detail but that was getting too many false
                 # positives due to 'VIEW CARS SOLD' link or similar on the page
-                listing['status'] = 'S' # 'S' -> Sold
+                listing.status = 'S' # 'S' -> Sold
             elif (entry.find(text=re.compile('SALE PENDING')) or
                 (detail and detail.find(text=re.compile('SALE PENDING')))):
-                listing['status'] = 'P' # 'P' -> Sale Pending
+                listing.status = 'P' # 'P' -> Sale Pending
             else:
-                listing['status'] = 'F' # 'F' -> For Sale
+                listing.status = 'F' # 'F' -> For Sale
 
             # $ followed by a number is likely to be a price :-)
             # look first in the entry on the inventory page
-            listing['price'] = regularize_price(entry.find(text=re.compile('\$[0-9]')))
+            listing.price = regularize_price(entry.find(text=re.compile('\$[0-9]')))
             # try detail page if we didn't get one from the inventory page
-            if listing['price'] == -1 and detail:
-                listing['price'] = regularize_price(detail.find(text=re.compile('\$[0-9]')))
+            if listing.price == -1 and detail:
+                listing.price = regularize_price(detail.find(text=re.compile('\$[0-9]')))
 
             # call the dealer-specific method
             # GEE TODO need to define some sort of error-handling protocol...
@@ -840,28 +821,28 @@ def pull_dealer_inventory(dealer, session=None):
             if ok:
                 # check for common errors / signs of trouble:
                 # need a listing_id
-                if listing['local_id'] == last_local_id:
+                if listing.local_id == last_local_id:
                     # not getting clean, unique local_ids from this dealer's page
                     logging.warning('Duplicate local_ids [{}] from {} inventory'.format(last_local_id, dealer['textid']))
                     ok = False
-                last_local_id = listing['local_id']
+                last_local_id = listing.local_id
                 # model_year must be a string containing an integer
                 # (not None or a string that doesn't become an int, etc)
-                if not listing['model_year']:
-                    listing['model_year'] = '1'
-                elif isinstance(listing['model_year'], int):
-                    listing['model_year'] = str(listing['model_year'])
+                if not listing.model_year:
+                    listing.model_year = '1'
+                elif isinstance(listing.model_year, int):
+                    listing.model_year = str(listing.model_year)
                 else:
                     try:
-                        junk = int(listing['model_year']) # convert it                        
+                        junk = int(listing.model_year) # convert it                        
                     except ValueError:
-                        listing['model_year'] = '1' #oops
+                        listing.model_year = '1' #oops
 
             if ok:
                 list_of_listings.append(listing)
-                logging.debug('pulled listing: ' + json.dumps(listing))
+                logging.debug('pulled listing: {}'.format(listing))
             else:
-                logging.warning('skipped listing: ' + json.dumps(listing))
+                logging.warning('skipped listing: {}'.format(listing))
 
             # END LOOP over listings on the page
 
@@ -906,8 +887,11 @@ def pull_classified_inventory(classified, inventory_marker=None, session=None):
 # parameters:
 # classified: the classified site we are to pull (ebay motors in this case)
 # inventory_marker: a marker used to chunk the work; opaque to caller
-# area: 'Local' => limits to local area (see notes)
-# car_type: 'Interesting' => limits to "interesting" cars (see notes)
+#
+# implicit parameter from unix environment: if OGL_INV_SETTINGS=limited then:
+# 	limits pulls to local area (see notes)
+# 	limits pulls to "interesting" cars (see notes)
+# 	allows larger chunking of the pulls (see notes)
 #
 # returns:
 # list_of_listings: a set of listings (could be partial or entire set)
@@ -925,16 +909,36 @@ def pull_classified_inventory(classified, inventory_marker=None, session=None):
 # GEE TODO: chunking by years may not be entirely sufficient to avoid the 10K
 # limit (and gives us some pretty big work bundles). Should get more granular.
 #
-def pull_ebay_inventory(classified, inventory_marker=None, area='Local', car_type='Interesting', session=None):
+def pull_ebay_inventory(classified, inventory_marker=None, session=None):
+
+    # implicit param from environment:
+    inv_settings = os.environ.get('OGL_INV_SETTINGS', '')
 
     list_of_listings = []
 
-    # wonky workaround for ebay's 10K limit. Works with locality 95112
-    # (no set approaching 10K) but will need more work if/as I scale up
-    # note: we're throwing away most of the cars post-1975 (per def of
-    # is_car_interesting() method) but I'd like to tweak that method to
-    # give me some decent mid-term results, so... into the fray we go!
-    ebay_year_batches = [ (1900, 2010), (2011, 2012), (2013, 2013), (2014, 2014), (2015, 2020) ]
+    # wonky workaround for ebay's 10K limit.
+    # need to split into more granular pieces when inv pull is not limited
+    if inv_settings == 'limited':
+        ebay_year_batches = [ (1900, 2010), (2011, 2012), (2013, 2013), (2014, 2014), (2015, 2020) ]
+    else:
+        # note special case of second year in batch being 1 (to start),
+        # thus indicating that the batch is one year only and must
+        # be further subdivided to fit under the 10K limit
+
+        # GEE TODO: non-limited case NOT FULLY IMPLEMENTED YET, DO NOT USE
+
+        ebay_year_batches = [ (1900, 1960), (1961, 1970), (1971, 1980),
+                              (1981, 1990), (1991, 1995), (1996, 1999),
+                              (2000, 2003), (2004, 2005), (2006, 2006),
+                              (2007, 2007), (2008, 2008), (2009, 2009),
+                              (2010, 2010), (2011, 2011), (2012, 2012),
+                              (2013, 2013), (2014, 1), (2015, 2015) ]
+
+        # for any years that are too big we can further segment by color (!)
+        colors = [ 'Black', 'Blue', 'Brown', 'Burgundy', 'Gold', 'Gray',
+                   'Green', 'Orange', 'Purple', 'Red', 'Silver', 'Tan',
+                   'Teal', 'White', 'Yellow', 'Not Specified' ]
+
     if not inventory_marker:
         inventory_marker = 0 # start with the first batch...
 
@@ -951,11 +955,11 @@ def pull_ebay_inventory(classified, inventory_marker=None, area='Local', car_typ
         'affiliate': {'trackingId': 1},
         'sortOrder': 'CountryDescending',
         'paginationInput': {
-            'entriesPerPage': 150,
+            'entriesPerPage': 100, # max allowed; higher would be ignored
             'pageNumber': 1}
         }
 
-    if area == 'Local':
+    if inv_settings == 'limited':
         logging.debug('limiting to local cars')
         api_request['itemFilter'].append({'name': 'MaxDistance',
                                           'value': 150 })
@@ -966,6 +970,8 @@ def pull_ebay_inventory(classified, inventory_marker=None, area='Local', car_typ
     for year in range(ebay_year_batches[inventory_marker][0], ebay_year_batches[inventory_marker][1]+1):
         api_request['aspectFilter'].append({'aspectName': 'Model Year',
                                             'aspectValueName': year})
+    if inv_settings != 'limited':
+        pass
 
     while True:
         response = api.execute('findItemsAdvanced', api_request)
@@ -977,7 +983,8 @@ def pull_ebay_inventory(classified, inventory_marker=None, area='Local', car_typ
             print(response.json())
             logging.error('eBay reports failure: {}'.format(response))
             break
-        if r['searchResult']['_count'] == 0:
+        # _count may be empty, or '0', or 0, or... who knows, but skip it
+        if not r['searchResult']['_count'] or int(['searchResult']['_count']) == 0:
             logging.warning('eBay returned a set of zero records')
             break
         logging.info('Number of car listings found: {}'.format(r['searchResult']['_count']))
@@ -991,26 +998,26 @@ def pull_ebay_inventory(classified, inventory_marker=None, area='Local', car_typ
             try:
                 for attr in item['attribute']:
                     if attr['name'] == 'Year':
-                        listing['model_year'] = attr['value'][:4]
+                        listing.model_year = attr['value'][:4]
             except KeyError:
-                listing['model_year'] = 'None'
-            listing['make'] = item['title'].split(':')[0].strip()
-            listing['model'] = item['primaryCategory']['categoryName'] # alternatively could often get more info from title
+                listing.model_year = 'None'
+            listing.make = item['title'].split(':')[0].strip()
+            listing.model = item['primaryCategory']['categoryName'] # alternatively could often get more info from title
             try:
-                listing['pic_href'] = item['galleryURL']
+                listing.pic_href = item['galleryURL']
             except KeyError:
-                listing['pic_href'] = 'N/A'
-            listing['listing_href'] = item['viewItemURL']
-            listing['local_id'] = item['itemId']
-            listing['stock_no'] = item['itemId']
-            listing['status'] = 'F' # 'F' -> For Sale
-            listing['listing_text'] = item['title']
+                listing.pic_href = 'N/A'
+            listing.listing_href = item['viewItemURL']
+            listing.local_id = item['itemId']
+            listing.stock_no = item['itemId']
+            listing.status = 'F' # 'F' -> For Sale
+            listing.listing_text = item['title']
 
             # GEE TODO: this is ignoring ebay price weirdness and currency
             try:
-                listing['price'] = regularize_price(item['sellingStatus']['buyItNowPrice']['value']) 
+                listing.price = regularize_price(item['sellingStatus']['buyItNowPrice']['value']) 
             except:                
-                listing['price'] = regularize_price(item['sellingStatus']['currentPrice']['value'])
+                listing.price = regularize_price(item['sellingStatus']['currentPrice']['value'])
 
             if 'postalCode' in item and session:
                 z = session.query(Zipcode).filter_by(zip = item['postalCode']).first()
@@ -1020,13 +1027,16 @@ def pull_ebay_inventory(classified, inventory_marker=None, area='Local', car_typ
 
             # validate model_year
             try:
-                junk = int(listing['model_year'])
-            except ValueError:
-                logging.warning('bad year [{}] for item {}'.format(listing['model_year'], listing['local_id']))
-                listing['model_year'] = '1'
+                junk = int(listing.model_year)
+            except (ValueError, TypeError) as e:
+                logging.warning('bad year [{}] for item {}'.format(listing.model_year, listing.local_id))
+                listing.model_year = '1'
 
-            if (ok and car_type == 'Interesting'):
-                ok = is_car_interesting(listing)
+            if is_car_interesting(listing):
+                listing.add_tag('interesting')
+            else:
+                if inv_settings == 'limited':
+                    ok = False # throw it away for limited inventory stages
 
             if ok:
                 list_of_listings.append(listing)
@@ -1093,17 +1103,18 @@ def pull_ebay_inventory(classified, inventory_marker=None, area='Local', car_typ
 # 3taps doesn't seem to offer control over the chunking of the polling results;
 # it returns chunks of 1000 listings. We'll chunk that way too for simplicity.
 #
-# For now, 'local' = ???? GEE TODO ???? and 'interesting' filters as
-# described in the named method
-#
-# GEE TODO (in this and other methods): switch action on 'interesting' from
-# discarding to suitable tagging
+# implicit parameter from unix environment: if OGL_INV_SETTINGS=limited then:
+# 	limits pulls to local area (see notes)
+# 	limits pulls to "interesting" cars (see notes)
 #
 # GEE TODO clean up the classified (and dealer) db entries/table structures
 # for now, this method goes in custom_pull_method and the anchor goes in
 # the extract_car_list_func field
 #
 def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_type='Interesting', session=None):
+
+    # implicit param from environment:
+    inv_settings = os.environ.get('OGL_INV_SETTINGS', '')
 
     list_of_listings = []
 
@@ -1125,7 +1136,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_ty
     url = 'http://polling.3taps.com/poll?auth_token=a7e282009ed50537b7f3271b753c803a&category=VAUT&retvals=id,account_id,source,category,location,external_id,external_url,heading,body,timestamp,timestamp_deleted,expires,language,price,currency,images,annotations,deleted,flagged_status,state,status'
     url_params = ['&source={}'.format(classified.textid.upper())]
     url_params.append('&anchor={}'.format(inventory_marker))
-    if area == 'Local':
+    if inv_settings == 'limited':
         logging.debug('limiting to local cars')
         # GEE TODO: note that the anchor will be invalidated if we switch back and forth between local and not
         url_params.append('&location.state=USA-CA')
@@ -1201,7 +1212,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_ty
                 listing.model_year = model_year
         else: # no annotation or heading to pull year/make/model??
             ok = False
-            logging.warn('skipping item with no year/make/model information: {}'.format(json.dumps(item)))
+            logging.warn('skipping item with no year/make/model information: {}'.format(item))
 
         try:
             listing.pic_href = item.images[0]['full']
@@ -1240,23 +1251,23 @@ def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_ty
 
         # validate model_year
         try:
-            junk = int(listing['model_year'])
-        except ValueError:
-            logging.warning('bad year [{}] for item {}'.format(listing['model_year'], listing['local_id']))
-            listing['model_year'] = '1'
+            junk = int(listing.model_year)
+        except (ValueError, TypeError) as e:
+            logging.warning('bad year [{}] for item {}'.format(listing.model_year, listing.local_id))
+            listing.model_year = '1'
 
-        if (ok and car_type == 'Interesting'):
-            if classified.textid == 'craig':
-                # be tougher on these for now because there is so much junk
-                ok = is_car_interesting(listing, include_unknown_makes=False)
+            # be tougher on cl listings for now because there is so much junk
+            if is_car_interesting(listing, include_unknown_makes=(classified.textid == 'craig')):
+                listing.add_tag('interesting')
             else:
-                ok = is_car_interesting(listing)
+                if inv_settings == 'limited':
+                    ok = False # throw it away for limited inventory stages
 
         if ok:
             list_of_listings.append(listing)
-            logging.debug('pulled listing: ' + json.dumps(listing))
+            logging.debug('pulled listing: {}'.format(listing))
         else:
-            logging.debug('skipped listing: ' + json.dumps(listing)) # debug not warn b/c we're throwing out lots of stuff
+            logging.debug('skipped listing: {}'.format(listing)) # debug not warn b/c we're throwing out lots of stuff
 
         # END LOOP over listings in the feed pull
 
@@ -1291,49 +1302,33 @@ def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_ty
 # inventory is small enough to pull & update within a single db commit
 # (and then this method commits)
 #
-def import_from_dealer(dealer, con=None, session=None, es=None, file=False):
+def import_from_dealer(dealer, session, es):
 
-    # get the active listings stored in the db for this dealer
-    old_db_listing_hash = {}
-    if con:
-        c = con.cursor(db.cursors.DictCursor)
-        rows = c.execute("""select * from listing where source_textid= %s""",
-                         (dealer['textid']))
-        for listing in c.fetchall():
-            logging.debug('existing record with (id, local_id) of ({}, {})'.format(listing['id'], listing['local_id']))
-            old_db_listing_hash[listing['local_id']] = listing
+    # paint current records so we can mark-as-removed any that no longer exist
+    mark_listings_pending_delete('D', dealer.id, session)
+    session.commit()
 
     # get the current listings on the dealer's website inventory
     listings = pull_dealer_inventory(dealer, session=session)
 
-    for listing in listings:
-        if con:
-            id = db_insert_or_update_listing(con, listing, old_db_listing_hash)
-            listing.id = id
-        else: # temporary -- use something other than db id as filename
-            id = listing['local_id']
-        if es:
+    # now put the located records in the db & es index
+    if listings:
+        # with sqlalchemy, we get new objects back so build a list of those
+        db_listings = []
+        for listing in listings:
+            db_listings.append(add_or_update_found_listing(session, listing))
+
+        # commit the block of listings (which generates ids on new records)
+        session.commit()
+        logging.debug('committed a block of listings for {}'.format(dealer.textid))
+
+        for listing in db_listings:
             index_listing(es, listing)
-        if file:
-            listing['id'] = id # put it in the hash
-            text_store_listing('/tmp/listings', listing)
 
-    if con:
-        # now mark all the listings that were in the db but not the website
-        # inventory as closed
-        for local_id, db_listing in old_db_listing_hash.items():
-            if 'found' in db_listing:
-                pass
-            else:
-                db_listing['status'] = 'R' # Removed, reason unknown
-                if es:
-                    index_listing(es, db_listing) # will remove based on status
-                c = con.cursor(db.cursors.DictCursor)
-                rows = c.execute("""update listing set status = %s, last_update = CURRENT_TIMESTAMP where id = %s""",
-                                 (db_listing['status'], db_listing['id']))
+    remove_marked_listings('D', dealer.id, session, es=es)
 
-        # and commit
-        con.commit()
+    # and commit (marked-as-removed inventory)
+    session.commit()
 
     return True
 
@@ -1355,19 +1350,15 @@ def import_from_dealer(dealer, con=None, session=None, es=None, file=False):
 #
 # NOTE: no longer supporting writing files or skipping db or indexing
 #
-def import_from_classified(classified, con=None, session=None, es=None):
+def import_from_classified(classified, session, es):
 
     # 3taps provides polling w/ only new/updated records in the stream, so
     # we explicitly get deletes/expirations/etc. All other sites we need
     # to treat disappearance of the listing as cause for cancellation
 
     if classified.custom_pull_func != 'pull_3taps_inventory':
-        # mark the active listings stored in the db for this classified
-        c = con.cursor(db.cursors.DictCursor)
-        rows = c.execute("""update listing set markers = concat(ifnull(markers,''), 'P') where source_textid= %s and status = 'F'""",
-                         (classified['textid']))
-        logging.debug('Painted {} existing records for classified site {}'.format(rows, classified['full_name']))
-        con.commit()
+        mark_listings_pending_delete('C', classified.id, session)
+        session.commit()
 
     inventory_marker = None
     done = False
@@ -1388,15 +1379,19 @@ def import_from_classified(classified, con=None, session=None, es=None):
                                                                    inventory_marker=inventory_marker,
                                                                    session=session)
 
-        # now put the located records in the db & index
+        # now put the located records in the db & es index
         if listings:
+            # with sqlalchemy, we get new objects back so build a list of those
+            db_listings = []
             for listing in listings:
-                listing.id = db_insert_or_update_listing(con, listing)
-                index_listing(es, listing)
+                db_listings.append(add_or_update_found_listing(session, listing))
 
-            # and commit the block of listings
-            con.commit()
+            # commit the block of listings (which generates ids on new records)
+            session.commit()
             logging.debug('committed a block of listings for {}'.format(classified.textid))
+
+            for listing in db_listings:
+                index_listing(es, listing)
 
         # check if we're done?
         if not inventory_marker:
@@ -1408,169 +1403,133 @@ def import_from_classified(classified, con=None, session=None, es=None):
         # records we have pulled and thus where to start from next time;
         # the pull method will already have updated the field in classified
         logging.debug('Saving the 3taps anchor')
-        logging.info('func, id = {}, {}'.format(classified.extract_car_list_func, classified.id))
-        c = con.cursor(db.cursors.DictCursor)
-        rows = c.execute("""update classified set extract_car_list_func = %s where id = %s""",
-                         (classified.extract_car_list_func, classified.id))
+        # NO LONGER REQUIRED - sqlalchemy will automatically flush the update when we commit
     else:
-        # now mark all the listings that were in the db but not the website
-        # inventory as closed; note that we have to load each one in order to
-        # remove it from the index
-        # GEE TODO: can I improve this to use an es delete-by-query somehow?
+        remove_marked_listings('C', classified.id, session, es=es)
 
-        logging.info('Removing listings that have been taken down since the last pull')
-        c = con.cursor(db.cursors.DictCursor)
-        rows = c.execute("""select id from listing where source_textid = %s and instr(markers,'P') != 0""",
-                         (classified['textid']))
-        result = c.fetchmany()
-        while result:
-            for listing_id in result:
-                try:
-                    es.delete(index="carbyr-index", doc_type="listing-type", id=listing_id)
-                except NotFoundError as err:
-                    logging.warning('record with id={} not found during attempted deletion: {}'.format(listing_id, err))
-            result = c.fetchmany()
-
-        # mark them all in the db in one query to avoid per-record round-trips
-        c = con.cursor(db.cursors.DictCursor)
-        rows = c.execute("""update listing set status = 'R', markers=replace(markers,'P',''), last_update = CURRENT_TIMESTAMP where source_textid = %s and instr(markers,'P') != 0""",
-                         (classified['textid']))
-
-    con.commit() # aaaaaand commit!
+    session.commit() # aaaaaand commit!
     logging.info('Completed inventory pull for {}'.format(classified.textid))
 
     return True
 
 
-# match_from_hash()
+# mark_listings_pending_delete()
 #
-# NOTE: assumes the hash has only records with matching source_textid
+# Normally used in preparation for a pull, to help id records that we will need
+# to delete if they are not found in the current pull
 #
-def match_from_hash(listing, hashset):
-    if listing['local_id'] in hashset:
-        return hashset[listing['local_id']]
-    return None
+def mark_listings_pending_delete(source_type, source_id, session):
+    # mark the active listings stored in the db for this classified
+    result = session.execute("update listing set markers = concat(ifnull(markers,''), 'P') where source_type = :source_type and source_id = :source_id and status = 'F'",
+                             {'source_type': source_type, 'source_id': source_id})
+    logging.debug('Painted {} existing records for {} site {}'.format(result.rowcount,
+                                                                      source_type, source_id))
+    return result.rowcount
 
 
-# match_from_db()
-def match_from_db(con, listing):
-    db_listing = {}
-    c = con.cursor(db.cursors.DictCursor) # get result as a dict rather than a list for prettier interaction
-    rows = c.execute("""select * from listing where source_textid= %s and local_id = %s""",
-                     (listing['source_textid'], listing['local_id'],))
-    return c.fetchone()
+# remove_marked_listings()
+#
+# set status to 'R' on all the listings marked pending-delete
+# (which is normally those existing before a pull and not found in the pull)
+#
+# returns the number of listings removed
+#
+def remove_marked_listings(source_type, source_id, session, es=None):
+
+    # we have to load each one in order to remove it from the es index
+    # GEE TODO: can I improve this to use an es delete-by-query somehow?
+    # I think I would have to do an es-mark-all query like I do with the db;
+    # any other solution would involve generating the set to pass to es
+    # so for now, let's just iterate
+    if (es):
+        logging.info('Removing listings that have been taken down since the last pull')
+        result = session.execute("select id from listing where source_type = :source_type and source_id = :source_id and instr(ifnull(markers,''),'P') != 0",
+                                 {'source_type': source_type, 'source_id': source_id})
+        for row in result:
+            listing_id = row[0]
+            try:
+                es.delete(index="carbyr-index", doc_type="listing-type", id=listing_id)
+            except NotFoundError as err:
+                logging.warning('record with id={} not found during attempted deletion: {}'.format(listing_id, err))
+
+    # mark them all in the db in one query to avoid per-record round-trips
+    # NOTE: we didn't pull the full rows into Listing objects, so we can't
+    # update that way
+    result = session.execute("update listing set status = 'R', markers = replace(markers,'P',''), removal_date = ifnull(removal_date, CURRENT_TIMESTAMP), last_update = CURRENT_TIMESTAMP where source_type = :source_type and source_id = :source_id and instr(ifnull(markers,''),'P') != 0""",
+                             {'source_type': source_type, 'source_id': source_id})
+    logging.debug('Marked {} rows as no longer active on {} site #{}'.format(result.rowcount, source_type, source_id))
+    return result.rowcount
 
 
-# db_insert_or_update_listing
+# add_or_update_found_listing
+#
+# used to add a listing found from a source to the db, or update the existing
+# record for that listing if there is one. Has some special-case logic.
 #
 # parameters:
-# con: db connection (None if no db access is possible/requested)
-# listing: the current listing
-# existing_inventory: hash of this dealer's existing/previous inventory
+# session: db session
+# current_listing: the listing as most recently pulled from a source
 #
-# returns the database ID of the listing (all other cases raise exceptions)
+# returns a new listing object that is embedded in the current session
 #
 # NOTES:
 #
-# this method coordinates with the caller in one of two methods for catching
-# and deleting records no longer found in current inventory:
+# The input listing is NOT modified, and thus becomes out-of-date!
+# Throw it away, e.g.:
 #
-# if an existing_inventory hash is passed, it is searched for matches and any
-# matching record is marked so that the caller can identify matched records;
-#      -or-
-# if no hash is passed, this method searches the db for potential matches and
-# ensures matched records are updated in the db (removes pending-delete marker)
+# my_listing = add_or_update_found_listing(session, my_listing)
+#
+# this method searches the db for potential matches and ensures matched records
+# are updated in the db (including removing any pending-delete marker, if the
+# passed-in listing is not so marked)
+#
+# matching is always/only by local_id
+#
+# Markers (other than pending-delete) and tags will carry forward (union)
+# between existing and new listing records
 #
 # also: if there is a matching record, the new record overrides most fields
-# but will NOT override a status of 'X' (removed, not-a-valid-listing).
+# but will NOT override or otherwise affect a record that has a status of
+# 'X' (removed, not-a-valid-listing).
 #
-def db_insert_or_update_listing(con, listing, existing_inventory = {}):
-    db_listing = {}
-    logging.debug('checking on existence of listing {}'.format(listing['local_id']))
-    if existing_inventory:
-        db_listing = match_from_hash(listing, existing_inventory)
-    else:
-        db_listing = match_from_db(con, listing)
+# new listings will NOT have an id in them, but will receive one when next the
+# session is flushed
+#
+def add_or_update_found_listing(session, current_listing):
 
-    if db_listing: # found a match
+    logging.debug('checking on existence of listing {}'.format(current_listing.local_id))
+    try:
+        existing_listing = session.query(Listing).filter_by(local_id=current_listing.local_id).one()
 
-        db_listing['found'] = True # mark it as still on the site
-        # NOTE: in the using-hash case this actually modifies the hash,
-        # which may be used by the caller for cleanup of old records
-        # NOTE2: in the non-hash case we must force an update to remove
-        # the pending-delete marker :(
-        logging.debug('found: {}'.format(db_listing))
-        update_required = False
-        if db_listing['status'] == 'X':
+        logging.debug('found: {}'.format(existing_listing))
+        if existing_listing.markers:
+            s = set(existing_listing.markers)
+            if 'P' in s:
+                s.remove('P')
+                existing_listing.markers = ''.join(s)
+
+        if existing_listing.status == 'X':
             # remove the pending-delete marker but make no other changes
-            update_required = True
-            if db_listing['markers']:
-                db_listing['markers'] == db_listing['markers'].translate({ord(i):None for i in 'P'})
-        else:
-            for field in ['markers','status','model_year','make','model','price','listing_text','pic_href','listing_href', 'lat', 'lon']:
-                if str(listing[field]) != str(db_listing[field]):
-                    logging.debug('value for {} changed from <{}> to <{}>'.format(field, db_listing[field], listing[field]))
-                    db_listing[field] = listing[field]
-                    update_required = True
-        if update_required:
-            up = con.cursor(db.cursors.DictCursor)
-            up.execute("""update listing set
-status = %s, markers = %s,
-model_year = %s, make = %s, model = %s,
-price = %s, listing_text = %s,
-pic_href = %s, listing_href = %s,
-source_type = %s, source_id = %s, source_textid = %s,
-stock_no = %s, lat = %s, lon = %s,
-last_update = CURRENT_TIMESTAMP where id = %s""",
-                       (db_listing['status'], db_listing['markers'],
-                        db_listing['model_year'], db_listing['make'], db_listing['model'],
-                        db_listing['price'], db_listing['listing_text'],
-                        db_listing['pic_href'], db_listing['listing_href'],
-                        db_listing['source_type'], db_listing['source_id'], db_listing['source_textid'],
-                        db_listing['stock_no'], db_listing['lat'], db_listing['lon'],
-                        db_listing['id']))
-            logging.debug('found record id={}: {} {} {} (updated)'.format(db_listing['id'], db_listing['model_year'], db_listing['make'], db_listing['model']))
-        else: # else listing is up to date; no update required
-            logging.debug('found record id={}: {} {} {} (no update required)'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
+            return existing_listing # already in session; discard new listing
 
-    else: # no matching listing in the previously-existing inventory -- insert
-        ins = con.cursor(db.cursors.DictCursor)
-        ins.execute(
-            """insert into listing
-(status, markers,
-model_year, make, model,
-price, listing_text,
-pic_href, listing_href,
-source_type, source_id, source_textid,
-local_id, stock_no, lat, lon,
-listing_date, removal_date, last_update) values
-(%s, %s,
-%s, %s, %s,
-%s, %s,
-%s, %s,
-%s, %s, %s,
-%s, %s, %s, %s,
-CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP)""",
-            (listing['status'], listing['markers'],
-             listing['model_year'], listing['make'], listing['model'],
-             listing['price'], listing['listing_text'],
-             listing['pic_href'], listing['listing_href'],
-             listing['source_type'], listing['source_id'],listing['source_textid'],
-             listing['local_id'], listing['stock_no'], listing.lat, listing.lon))
+        # mark the current record with the id of the existing record
+        # and carry forward (merge) tags and markers, etc
+        current_listing.id = existing_listing.id
+        current_listing.add_tags(existing_listing.tags)
+        current_listing.add_markers(existing_listing.markers)
+        current_listing.listing_date = existing_listing.listing_date
+        if current_listing.status != 'F' and not existing_listing.removal_date:
+            # GEE TODO: this should be server/db time, not python time: how?!
+            current_listing.removal_date = datetime.datetime.now()
+        # all other fields will be taken from the current listing record
 
-        # re-execute the same fetch which will now grab the new record
-        c2 = con.cursor(db.cursors.DictCursor)
-        c2.execute("""select * from listing where source_textid= %s and local_id = %s order by last_update desc""",
-                   (listing['source_textid'], listing['local_id'],))
-        db_listing = c2.fetchone()
-        if (db_listing):
-            logging.debug('inserted record id={}: {} {} {}'.format(db_listing['id'],listing['model_year'],listing['make'], listing['model']))
-        else:
-            logging.error('failed to find newly-inserted record: {} {} {} {}'.format(listing['local_id'],listing['model_year'],listing['make'], listing['model']))
-            raise TypeError
+    except NoResultFound as e:
+        logging.debug('no match for local_id={}'.format(current_listing.local_id))
+        pass # current_listing will not get an id until merge & flush
 
-    # if we get here, we succeeded... I assume
-    return db_listing['id']
+    # GEE TODO: this setting of last_update should not be required, but...
+    current_listing.last_update = datetime.datetime.now()
+    return session.merge(current_listing) # behavior dependent upon id
 
 
 # index_listing
@@ -1586,13 +1545,22 @@ CURRENT_TIMESTAMP, NULL, CURRENT_TIMESTAMP)""",
 # (but we could, if we added the page text to the listing dict)
 #
 def index_listing(es, listing):
-    if listing['status'] == 'F':
-        es.index(index="carbyr-index", doc_type="listing-type", id=listing['id'], body=listing)
+    if listing.status == 'F':
+        # elasticsearch uses the builtin JSON serialization module, which does
+        # not understand arbitrary objects nor does it understand certain types
+        # (DateTime, Numeric->Decimal). Fortunately our model types know how to
+        # convert themselves to "JSON-safe" dicts....
+        if isinstance(listing, Listing):
+            listing_d = dict(listing)
+        else:
+            # if we got some other flavor of listing then hope it is already safe
+            listing_d = listing
+        es.index(index="carbyr-index", doc_type="listing-type", id=listing_d['id'], body=listing_d)
     else:
         try:
-            es.delete(index="carbyr-index", doc_type="listing-type", id=listing['id'])
+            es.delete(index="carbyr-index", doc_type="listing-type", id=listing.id)
         except NotFoundError as err:
-            logging.warning('record with id={} not found during attempted deletion: {}'.format(listing['id'], err))
+            logging.warning('record with id={} not found during attempted deletion: {}'.format(listing.id, err))
             # NOTE: this can easily happen if we find a record of a SOLD car but did not already have the car listing open
     return True
 
@@ -1605,13 +1573,13 @@ def index_listing(es, listing):
 def text_store_listing(list_dir, listing):
     # store car listing file in subdir by source (not the best, heh -- temporary, should really be some more reliable sharding mechanism)
     # and with the id (our internal id) as the filename root
-    make_sure_path_exists(list_dir + '/' + listing['source_textid'])
-    pathname=str(list_dir + '/' + listing['source_textid'] + '/' + str(listing['id']) + '.html')
+    make_sure_path_exists(list_dir + '/' + listing.source_textid)
+    pathname=str(list_dir + '/' + listing.source_textid + '/' + str(listing.id) + '.html')
     list_file=open(pathname,"w")
-    list_file.write(json.dumps(listing))
+    list_file.write(listing)
     list_file.close()
 
-    logging.debug("wrote listing id {} ({} {} {}) to file {}".format(listing['id'], listing['model_year'],listing['make'], listing['model'], pathname))
+    logging.debug("wrote listing id {} ({} {} {}) to file {}".format(listing.id, listing.model_year,listing.make, listing.model, pathname))
     return True
 
 
@@ -1699,12 +1667,12 @@ def main():
     elif args.action == 'import':
         for source in args.sources:
             if source in dealerships:
-                import_from_dealer(dealerships[source], con=con, session=session, es=es)
+                import_from_dealer(dealerships[source], session, es)
             elif source in classifieds:
-                import_from_classified(classifieds[source], con=con, session=session, es=es)
+                import_from_classified(classifieds[source], session, es)
             elif source == 'norcal':
                 for dealer in dealerships:
-                    import_from_dealer(dealerships[dealer], con=con, session=session, es=es)
+                    import_from_dealer(dealerships[dealer], session, es)
             else:
                 logging.error('request of import from unknown source: {}'.format(source))
     else: # uh, shouldn't be possible?

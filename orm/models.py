@@ -1,8 +1,10 @@
 # coding: utf-8
+from decimal import Decimal
 import re
 
 from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, Numeric, SmallInteger, String, Table, text
-from sqlalchemy.orm import relationship
+from sqlalchemy.sql.functions import func
+from sqlalchemy.orm import relationship, reconstructor
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -19,22 +21,14 @@ class Base(object):
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
     
     def convert_datetime(value):
-        return value.strftime("%Y-%m-%d %H:%M:%S")
-
-    def todict(self):
-        d = {}
-        for c in self.__table__.columns:
-            if isinstance(c.type, DateTime):
-                value = getattr(self, c.name).strftime("%Y-%m-%d %H:%M:%S")
-            else:    
-                value = getattr(self, c.name)
-            d[c.name] = value
-        return d
+        return value.strftime("%Y-%m-%dT%H:%M:%S")
 
     def get_iter(self):
         for c in self.__table__.columns:
-            if isinstance(c.type, DateTime):
-                value = convert_datetime(getattr(self, c.name))
+            if getattr(self, c.name) and isinstance(c.type, DateTime):
+                value = Listing.convert_datetime(getattr(self, c.name))
+            elif getattr(self, c.name) and isinstance(getattr(self, c.name), Decimal):
+                value = str(getattr(self, c.name))
             else:
                 value = getattr(self, c.name)
 
@@ -76,11 +70,6 @@ class Classified(IDMixIn, Base):
     inventory_url = Column(String(1024))
     owner_account_id = Column(Integer)
 
-#        "id: {}, textid: {}, full_name: {}, status: {}, markers: {}\n base_url: {}, inventory_url: {}, custom_pull_func: {}, extract_car_list_func: {}, listing_from_list_item_func: {}, parse_listing_func: {}, owner_account_id: {}, primary_classified_id: {}",
-#              id, textid, full_name, status, markers,
-#              base_url, inventory_url,
-#              custom_pull_func, extract_car_list_func, listing_from_list_item_func, parse_listing_func,
-#              owner_account_id, primary_classified_id)
 
 class Dealership(IDMixIn, Base):
 
@@ -139,11 +128,50 @@ class Listing(IDMixIn, Base):
     source_textid = Column(String(255))
     local_id = Column(String(255))
     stock_no = Column(String(255))
-    listing_date = Column(DateTime)
+    listing_date = Column(DateTime, default=func.now())
     removal_date = Column(DateTime)
-    last_update = Column(DateTime)
+    last_update = Column(DateTime, server_default=text('CURRENT TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     lat = Column(Numeric(10, 7))
     lon = Column(Numeric(10, 7))
+    tags = Column(String(2048))
+
+    def __init__(self):
+        self.tagset = set()
+
+    @reconstructor
+    def init_on_load(self):
+        if self.tags:
+            self.tagset = set(self.tags.split(':'))
+        else:
+            self.tagset = set()
+
+    def add_tag(self, tag):
+        self.tagset.add(tag)
+        # writethrough to the underlying column now
+        # GEE TODO: would be more efficient to writethrough only @ write hook?
+        self.tags = ':'.join(self.tagset)
+
+    def add_tags(self, tags):
+        if tags:
+            self.tagset.union(tags)
+            # writethrough to the underlying column now
+            # GEE TODO: would be more efficient to writethrough only @ write hook?
+            self.tags = ':'.join(self.tagset)
+
+    def remove_tag(self, tag):
+        # .remove() would raise KeyError if not found; .discard() does not
+        self.tagset.discard(tag) 
+        # writethrough to the underlying column now
+        # GEE TODO: would be more efficient to writethrough only @ write hook?
+        self.tags = ':'.join(self.tagset)
+
+    def add_markers(self, more_markers):
+        if not self.markers:
+            self.markers = more_markers
+        elif not more_markers:
+            pass
+        else: # both have contents: merge
+            self.markers = ''.join(set(self.markers.append(more_markers)))
 
 
 class NonCanonicalMake(IDMixIn, Base):
