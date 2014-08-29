@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
@@ -18,12 +20,16 @@ def homepage(request):
     
 def index(request):
     def prettify_listing(listing):
-        if listing.price == 1:
+        if listing.price == -1:
             listing.price = 'Contact for price'
         else:
             m = Money(listing.price, 'USD')
             listing.price = m.format('en_US')
         return listing
+        p = urlparse(listing.pic_href)
+        if not p.netloc:
+            # relative URL means we have a problem
+            listing.pic_href = ''
     
     search_string = None
     listings = []
