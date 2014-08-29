@@ -36,7 +36,7 @@
 	</div>
 	<div class="container">
 	  <div class="page-header">
-		<h1> Search more listings faster with with Carbyr...</h1>
+		<h1> Search more listings faster with Carbyr...</h1>
 		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
 		<form class="" role="form" action="{% url 'listings:index' %}" method="get">
@@ -60,7 +60,12 @@
 		  {% for item in listings %}
 		    <div class="row">
 			  <a href='{{ item.listing_href }}'>
-				<div class="col-md-3"><img class="img-responsive img-rounded" src='{{ item.pic_href }}'></div>
+				<div class="col-md-3">
+				  {% if item.pic_href %}
+				    <img class="img-responsive img-rounded" src='{{ item.pic_href }}'>
+				  {% else %}
+					<p> No photo available. </p>
+				</div>
 				<div class="col-md-3">
 				  <p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
 				  <p><strong>{{ item.price }}</strong></p>
