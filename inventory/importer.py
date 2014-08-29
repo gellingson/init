@@ -903,8 +903,9 @@ def pull_classified_inventory(classified, inventory_marker=None, session=None):
 # will give an error on page 101. eBay queries on the website are a messed
 # up pile o' crap, so hopefully these APIs will give better results
 #
-# For now, 'local' = 150 miles of 95112 and 'interesting' filters as
-# described in the named method
+# For now, 'limited' pull is interpreted as:
+# * 'local' = 150 miles of 95112, and
+# * 'interesting' filters as described in the named method
 #
 # GEE TODO: chunking by years may not be entirely sufficient to avoid the 10K
 # limit (and gives us some pretty big work bundles). Should get more granular.
@@ -916,31 +917,34 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
 
     list_of_listings = []
 
-    # wonky workaround for ebay's 10K limit.
-    # need to split into more granular pieces when inv pull is not limited
-    if inv_settings == 'limited':
-        ebay_year_batches = [ (1900, 2010), (2011, 2012), (2013, 2013), (2014, 2014), (2015, 2020) ]
-    else:
-        # note special case of second year in batch being 1 (to start),
-        # thus indicating that the batch is one year only and must
-        # be further subdivided to fit under the 10K limit
+    # wonky workaround for ebay's 10K limit. Mostly we can split by model years
+    # but for years with lots of inventory (basically the current model year)
+    # we have to further subdivide or we run past 10K when not restricting to
+    # local cars only
 
-        # GEE TODO: non-limited case NOT FULLY IMPLEMENTED YET, DO NOT USE
+    # we use a magic value for the second year in a batch being 1, indicating
+    # that the batch is one year only and must be further subdivided by color
 
-        ebay_year_batches = [ (1900, 1960), (1961, 1970), (1971, 1980),
-                              (1981, 1990), (1991, 1995), (1996, 1999),
-                              (2000, 2003), (2004, 2005), (2006, 2006),
-                              (2007, 2007), (2008, 2008), (2009, 2009),
-                              (2010, 2010), (2011, 2011), (2012, 2012),
-                              (2013, 2013), (2014, 1), (2015, 2015) ]
+    ebay_year_batches = [ (1900, 1960), (1961, 1970), (1971, 1980),
+                          (1981, 1990), (1991, 1995), (1996, 1999),
+                          (2000, 2003), (2004, 2005), (2006, 2006),
+                          (2007, 2007), (2008, 2008), (2009, 2009),
+                          (2010, 2010), (2011, 2011), (2012, 2012),
+                          (2013, 2013), (2014, 1), (2015, 2015) ]
 
-        # for any years that are too big we can further segment by color (!)
-        colors = [ 'Black', 'Blue', 'Brown', 'Burgundy', 'Gold', 'Gray',
-                   'Green', 'Orange', 'Purple', 'Red', 'Silver', 'Tan',
-                   'Teal', 'White', 'Yellow', 'Not Specified' ]
+    # for any years that are too big we further segment by color (!)
+    # (hey, it splits the inventory into reasonably-suitable chunks)
+    colors = [ 'NotSubBatching', 'Black', 'Blue', 'Brown', 'Burgundy', 'Gold',
+               'Gray', 'Green', 'Orange', 'Purple', 'Red', 'Silver', 'Tan',
+               'Teal', 'White', 'Yellow', 'Not Specified' ]
+
+#    if inv_settings == 'limited':
+#        # overwrite with a simpler set of buckers, with no sub-buckets
+#        ebay_year_batches = [ (1900, 2010), (2011, 2012), (2013, 2013), (2014, 2014), (2015, 2020) ]
 
     if not inventory_marker:
-        inventory_marker = 0 # start with the first batch...
+        # start with the first batch, no sub-batch
+        inventory_marker = { 'batch': 0, 'sub': None} 
 
     # look for ebay yaml (config) in $STAGE/conf, or ../conf if stage not set
     ebay_yaml = os.path.join(os.environ.get('OGL_STAGE', '..'), 'conf/ebay.yaml')
@@ -966,14 +970,30 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
     else:
         logging.debug('NOT limiting to local cars')
 
-    # batching by years to avoid ebay's 10K limit and manage our commit blocks
-    for year in range(ebay_year_batches[inventory_marker][0], ebay_year_batches[inventory_marker][1]+1):
+    logging.info('batch {} sub {}'.format(inventory_marker['batch'], inventory_marker['sub']))
+    # batching by year-groupings; if the 2nd "year" in the batch tuple is not a
+    # year but a small #, then this is a single-year batch with sub-batches
+    for year in range(ebay_year_batches[inventory_marker['batch']][0],
+                      max(ebay_year_batches[inventory_marker['batch']][1],
+                          ebay_year_batches[inventory_marker['batch']][0])+1):
         api_request['aspectFilter'].append({'aspectName': 'Model Year',
                                             'aspectValueName': year})
-    if inv_settings != 'limited':
-        pass
+    if inventory_marker['sub']:
+        # then we're doing sub-batches, so select the indicated color batch
+        api_request['aspectFilter'].append({'aspectName': 'Exterior Color',
+                                            'aspectValueName': colors[inventory_marker['sub']]})
+
+    # log the API request for page 1 (not again each page inside the next loop)
+    logging.info('eBay API request: {}'.format(api_request))
+    # xyzzy make this a debug instead!
 
     while True:
+
+        # NOTE: in case of various issues we can break out of this loop, but
+        # we must be careful not to break out of the enclosing (batch) loop
+        # to avoid potentially mangling inventory_marker handling
+
+        # pull a page
         response = api.execute('findItemsAdvanced', api_request)
         r = response.dict()
         if r['ack'] != 'Success':
@@ -982,11 +1002,14 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
             # print(response.json().dump())
             print(response.json())
             logging.error('eBay reports failure: {}'.format(response))
-            break
+            break; # note: breaks out of loop over pages
         # _count may be empty, or '0', or 0, or... who knows, but skip it
-        if not r['searchResult']['_count'] or int(['searchResult']['_count']) == 0:
+        if not r['searchResult']['_count'] or int(r['searchResult']['_count']) == 0:
             logging.warning('eBay returned a set of zero records')
-            break
+            break; # note: breaks out of loop over pages
+
+        # note: _count may not be present if we got a bad fetch from eBay;
+        # hopefully we've done all our checks above and called a break...
         logging.info('Number of car listings found: {}'.format(r['searchResult']['_count']))
         for item in r['searchResult']['item']:
             ok = True
@@ -998,8 +1021,14 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
             try:
                 for attr in item['attribute']:
                     if attr['name'] == 'Year':
+                        # only take the 1st 4 chars because of an eBayism
+                        # of sometimes having trailing 0s (e.g. 20140000)
                         listing.model_year = attr['value'][:4]
-            except KeyError:
+            except (KeyError, TypeError) as e:
+                # note: got an odd TypeError once because on one record eBay
+                # returned a string rather than a hash for an attr (!). The
+                # inconsistency makes no sense, but I guess it is just another
+                # way for the record to be messed up & missing model_year
                 listing.model_year = 'None'
             listing.make = item['title'].split(':')[0].strip()
             listing.model = item['primaryCategory']['categoryName'] # alternatively could often get more info from title
@@ -1063,9 +1092,26 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
 
     logging.info('Loaded ' + str(len(list_of_listings)) + ' cars from ebay')
 
-    inventory_marker = inventory_marker + 1
-    if inventory_marker == len(ebay_year_batches):
+    # do we increment sub-batch (color) or move to the next batch?
+    if inventory_marker['sub']:
+        # then the current batch has sub-batches;
+        # move to the next sub-batch of the current batch
+        inventory_marker['sub'] = inventory_marker['sub'] + 1
+        #  unless we have done all the sub-batches, that is?
+        if inventory_marker['sub'] == len(colors):
+            # we are done with all the sub-batches so go to the next batch
+            inventory_marker['batch'] = inventory_marker['batch'] + 1
+            inventory_marker['sub'] = None # will check below...
+    else: # no sub-batches right now, always increment to next batch
+        inventory_marker['batch'] = inventory_marker['batch'] + 1
+
+    # have we walked through all the batches?
+    # do we have sub-batches in this batch?
+    if inventory_marker['batch'] == len(ebay_year_batches):
         inventory_marker = None # done!
+    elif ebay_year_batches[inventory_marker['batch']][1] == 1 and not inventory_marker['sub']:
+        # need to sub-batch this new batch; start with sub-batch index=1
+        inventory_marker['sub'] = 1 # 1st color is @ ind 1, not 0, in list
 
     return list_of_listings, inventory_marker
 
