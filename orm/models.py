@@ -2,24 +2,46 @@
 from decimal import Decimal
 import re
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, Numeric, SmallInteger, String, Table, text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric
+from sqlalchemy import String, text
 from sqlalchemy.sql.functions import func
-from sqlalchemy.orm import relationship, reconstructor
+from sqlalchemy.orm import reconstructor
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 
+
 # id column is used on most but not all tables, so make a mixin
 class IDMixIn(object):
-    id =  Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
+
+
+# mixin to handle push/consume word lists: converts space-separated word
+# list to a python list. Does not convert back; suitable only as refdata
+class ConsumePushMixIn(object):
+    def __init__(self):
+        self.consume_list = []
+        self.push_list = []
+
+    @reconstructor
+    def init_on_load(self):
+        if self.consume_words:
+            self.consume_list = self.consume_words.split(':')
+        else:
+            self.consume_list = []
+        if self.push_words:
+            self.push_list = self.push_words.split(':')
+        else:
+            self.push_list = []
+
 
 # extend the base to automagically get non-camelcase tablename
 class Base(object):
-    
+
     @declared_attr
     def __tablename__(cls):
         s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', cls.__name__)
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-    
+
     def convert_datetime(value):
         return value.strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -27,7 +49,8 @@ class Base(object):
         for c in self.__table__.columns:
             if getattr(self, c.name) and isinstance(c.type, DateTime):
                 value = Listing.convert_datetime(getattr(self, c.name))
-            elif getattr(self, c.name) and isinstance(getattr(self, c.name), Decimal):
+            elif getattr(self, c.name) and isinstance(getattr(self, c.name),
+                                                      Decimal):
                 value = str(getattr(self, c.name))
             else:
                 value = getattr(self, c.name)
@@ -41,7 +64,7 @@ class Base(object):
         return self.get_iter()
 
     def fromdict(self, values):
-        """Merge in items in the values dict into our object if it's one of our columns
+        """Merge items in values dict into our object if one of our columns
         """
         for c in self.__table__.columns:
             if c.name in values:
@@ -130,7 +153,9 @@ class Listing(IDMixIn, Base):
     stock_no = Column(String(255))
     listing_date = Column(DateTime, default=func.now())
     removal_date = Column(DateTime)
-    last_update = Column(DateTime, server_default=text('CURRENT TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
+    last_update = Column(DateTime,
+                         server_default=text(
+                             'CURRENT TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
     lat = Column(Numeric(10, 7))
     lon = Column(Numeric(10, 7))
     tags = Column(String(2048))
@@ -155,12 +180,12 @@ class Listing(IDMixIn, Base):
         if tags:
             self.tagset.union(tags)
             # writethrough to the underlying column now
-            # GEE TODO: would be more efficient to writethrough only @ write hook?
+            # GEE TODO: more efficient to writethrough only @ write hook?
             self.tags = ':'.join(self.tagset)
 
     def remove_tag(self, tag):
         # .remove() would raise KeyError if not found; .discard() does not
-        self.tagset.discard(tag) 
+        self.tagset.discard(tag)
         # writethrough to the underlying column now
         # GEE TODO: would be more efficient to writethrough only @ write hook?
         self.tags = ':'.join(self.tagset)
@@ -170,11 +195,11 @@ class Listing(IDMixIn, Base):
             self.markers = more_markers
         elif not more_markers:
             pass
-        else: # both have contents: merge
+        else:  # both have contents: merge
             self.markers = ''.join(set(self.markers.append(more_markers)))
 
 
-class NonCanonicalMake(IDMixIn, Base):
+class NonCanonicalMake(IDMixIn, ConsumePushMixIn, Base):
 
     non_canonical_name = Column(String(1024), index=True)
     canonical_name = Column(String(1024))
@@ -182,9 +207,10 @@ class NonCanonicalMake(IDMixIn, Base):
     push_words = Column(String(1024))
 
 
-class NonCanonicalModel(IDMixIn, Base):
+class NonCanonicalModel(IDMixIn, ConsumePushMixIn, Base):
 
-    non_canonical_make_id = Column(Integer, ForeignKey('non_canonical_make.id'))
+    non_canonical_make_id = Column(Integer,
+                                   ForeignKey('non_canonical_make.id'))
     non_canonical_name = Column(String(50), index=True)
     canonical_name = Column(String(50))
     consume_words = Column(String(100))
@@ -198,7 +224,7 @@ class ConceptTag(IDMixIn, Base):
     display_tag = Column(String(20))
 
 
-class concept_implies(IDMixIn, Base):
+class ConceptImplies(IDMixIn, Base):
 
     has_tag_id = Column(Integer, ForeignKey('concept_tag.id'))
     implies_tag_id = Column(Integer, ForeignKey('concept_tag.id'))

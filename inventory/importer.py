@@ -21,18 +21,17 @@ import datetime
 # third party modules used
 from bunch import Bunch
 from bs4 import BeautifulSoup
-import ebaysdk
-from ebaysdk.exception import ConnectionError
 from ebaysdk.finding import Connection as ebaysdk_finding
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
-import pymysql as db
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
 # OGL modules used
-from orm.models import Zipcode, Listing
+from orm.models import ConceptTag, ConceptImplies
+from orm.models import Classified, Dealership, Listing, Zipcode
+from orm.models import NonCanonicalMake, NonCanonicalModel
 
 
 # ============================================================================
@@ -42,82 +41,104 @@ from orm.models import Zipcode, Listing
 # GEE TODO refine this: what headers do we want to send?
 # some sites don't want to offer up inventory without any headers.
 # Not sure why, but let's impersonate some real browser and such to get through
-hdrs = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-              'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-              'Accept-Encoding': 'none',
-              'Accept-Language': 'en-US,en;q=0.8',
-              'Connection': 'keep-alive'}
+_HDRS = {
+    'User-Agent': ('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11'
+                   '(KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'),
+    'Accept': ('text/html,application/xhtml+xml,application/xml;q=0.9,'
+               '*/*;q=0.8'),
+    'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+    'Accept-Encoding': 'none',
+    'Accept-Language': 'en-US,en;q=0.8',
+    'Connection': 'keep-alive'
+}
 
-boring_makes = ['Dodge','Chrysler', 'Ram', 'RAM', 'Jeep',
-                'Honda', 'Acura', 'Toyota', 'Lexus', 'Scion', 'Nissan', 'Infiniti',
-                'Mazda', 'Subaru', 'Isuzu', 'Mitsubishi',
-                'Chevrolet','Chevy', 'Pontiac', 'Saturn', 'Cadillac', 'Buick', 'Oldsmobile',
-                'GM','General','GMC',
-                'Ford','Mercury', 'Lincoln',
-                'BMW', 'Mini', 'MINI', 'Mercedes', 'Mercedes-Benz', 'MB',
-                'Volkswagen', 'VW', 'Audi',
-                'Fiat', 'Volvo', 'Land Rover', 'Range Rover', 'Saab',
-                'Hyundai', 'Kia', 'Suzuki',
-                'Smart']
+_BORING_MAKES = [
+    'Dodge', 'Chrysler', 'Ram', 'RAM', 'Jeep',
+    'Honda', 'Acura', 'Toyota', 'Lexus', 'Scion', 'Nissan', 'Infiniti',
+    'Mazda', 'Subaru', 'Isuzu', 'Mitsubishi',
+    'Chevrolet', 'Pontiac', 'Saturn', 'Cadillac', 'Buick', 'Oldsmobile',
+    'GM', 'General', 'GMC',
+    'Ford', 'Mercury', 'Lincoln',
+    'BMW', 'Mini', 'MINI', 'Mercedes', 'Mercedes-Benz', 'MB',
+    'Volkswagen', 'VW', 'Audi',
+    'Fiat', 'Volvo', 'Land Rover', 'Range Rover', 'Saab',
+    'Hyundai', 'Kia', 'Suzuki',
+    'Smart'
+]
 
-interesting_models = ['Viper',
-                      'NSX', 'MR2', 'MR-2', 'Supra', 'LFA', '300zx', 'Skyline', 'GTR',
-                      'MX5', 'MX-5', 'Miata', 'MX-5 Miata', 'rx7', 'STI', 'Evolution', 'Evo',
-                      'Corvette', 'Grand National', 
-                      'Boss', 'Shelby', 'GT',
-                      'M3', 'M5', 'M6', 'SLS', 'AMG', 'R8']
+_INTERESTING_MODELS = [
+    'Viper',
+    'NSX', 'MR2', 'MR-2', 'Supra', 'LFA', '300zx', 'Skyline', 'GTR',
+    'MX5', 'MX-5', 'Miata', 'MX-5 Miata', 'rx7', 'STI', 'Evolution', 'Evo',
+    'Corvette', 'Grand National',
+    'Boss', 'Shelby', 'GT',
+    'M3', 'M5', 'M6', 'SLS', 'AMG', 'R8'
+]
 
-# will populate via associated method
-# GEE TODO: yes, I should be using OOP (sigh)
-non_canonical_makes = {}
+# global hashes (caches) of refdata objects from the db, populated at startup
+G_makes = {}
+G_models = {}
+G_tags = {}
+G_tag_rels = {}
 
 # ============================================================================
 # UTILITY METHODS
 # ============================================================================
 
-# populate_non_canonical_makes
+
+# load_refdata_cache
 #
-# populates a hash of non-canonical makes
+# cache some stable (read-only) db entries into globals for quicker access
+# GEE TODO: these reference data may outgrow this approach eventually...
 #
-# NOTES:
-#
-# Yeah, yeah, this is a hack. But it works for now :).
-#
-def populate_non_canonical_makes(con):
-    c = con.cursor(db.cursors.DictCursor)
-    rows = c.execute("""select * from non_canonical_make""")
-    for ncm in c.fetchall():
-        if ncm['consume_words']:
-            ncm['consume_words'] = ncm['consume_words'].split(" ")
-        if ncm['push_words']:
-            ncm['push_words'] = ncm['push_words'].split(" ")
-        non_canonical_makes[ncm['non_canonical_name']] = ncm
-    return True
+def load_refdata_cache(session):
+
+    all_ncms = session.query(NonCanonicalMake).all()
+    for ncm in all_ncms:
+        G_makes[ncm.non_canonical_name] = ncm
+
+    all_ncms = session.query(NonCanonicalModel).all()
+    for ncm in all_ncms:
+        G_models[ncm.non_canonical_name] = ncm
+
+    all_tags = session.query(ConceptTag).all()
+    for tag in all_tags:
+        G_tags[tag.tag] = tag
+
+    # hash of form tag -> list of implied tags
+    all_rels = session.query(ConceptImplies).all()
+    for rel in all_rels:
+        if rel.has_tag_id in G_tag_rels:
+            G_tag_rels[rel.has_tag_id].append(rel.implies_tag_id) # add to list
+        else:
+            G_tag_rels[rel.has_tag_id] = [rel.implies_tag_id] # new tag list
+    return
 
 
-# regularize methods will take a string input that may be "messy" or vary a bit
-# from site to site and regularize/standardize it
+# regularize methods will take a string input that may be "messy" or
+# vary a bit from site to site and regularize/standardize it
 
 # def regularize_price
 #
-# take a price string, strip out any dollar signs and commas, convert to an int
-# TODO: this is US-format-only right now & doesn't handle decimals or other garbage yet
-# ... or currencies!
+# take a price string, strip out any dollar signs and commas, convert
+# to an int
+# GEE TODO: this is US-format-only right now and doesn't handle decimals
+# or other garbage yet ... or currencies!
 
 def regularize_price(price_string):
-    if price_string == None:
+    if price_string is None:
         price = -1
     elif isinstance(price_string, str):
         # strip out 'Price:' or similar if included
         if ':' in price_string: # then take the part after the colon
             (junk, junk, price_string) = price_string.rpartition(':')
-        price_string = re.sub('[a-zA-Z]','', price_string) # strip out any letters that might remain...
+        # strip out any letters that might remain...
+        price_string = re.sub(r'[a-zA-Z]', '', price_string)
         try:
-            price = int(re.sub('[\$,]', '', price_string))
+            price = int(re.sub(r'[$,]', '', price_string))
         except ValueError:
             try:
-                price = int(float(re.sub('[\$,]', '', price_string)))
+                price = int(float(re.sub(r'[$,]', '', price_string)))
             except ValueError:
                 price = -1
     else: # was passed something other than a string (int, float, ...?)
@@ -148,7 +169,7 @@ def regularize_year_make_model(year_make_model_string):
     model = None
     if year_make_model_string: # is not None or ''
         words = year_make_model_string.split(" ")
-        for word in range (0, len(words)-1):
+        for word in range(0, len(words) - 1):
             try:
                 s = words[word].strip("'`\"") # strip likely junk (e.g. '67)
                 s = s.split('.')[0] # chop any trailing decimal (e.g. 1973.5)
@@ -169,30 +190,33 @@ def regularize_year_make_model(year_make_model_string):
         if not year: # then we see no year in the offered string
             # this means we're not doing well and will probably trash this
             # anyway, but let's see what we get when we look for a make
-            for word in range (0, len(words)-1):
+            for word in range(0, len(words)-1):
                 try:
                     s = words[0].strip("'` *~_\"\t") # strip likely junk
-                    ncm = non_canonical_makes[s.upper()]
-                    make = ncm['canonical_name']
+                    ncm = G_makes[s.upper()]
+                    make = ncm.canonical_name
                     # apply the ncm's deltas, then take the rest as model
                     modellist = []
                     if word == len(words)-1: # this is the end of the string
                         modellist = []
                     else:
-                        modellist =  words[(word+1):]
-                    # GEE TODO handle multiple words here; for now just the first
-                    if ncm['consume_words'] and modellist and modellist[0] in ncm['consume_words']:
+                        modellist = words[(word+1):]
+                    # GEE TODO handle multiple words here;
+                    # for now just the first
+                    if (ncm.consume_list and modellist and
+                        modellist[0] in ncm.consume_list):
                         modellist.pop(0) # throw it away
-                    if ncm['push_words']:
-                        modellist = ncm['push_words'] + modellist
-                    # GEE TODO: check if the push word(s) are already there (e.g. 'vette corvette stingray')
+                    if ncm.push_list:
+                        modellist = ncm.push_list + modellist
+                    # GEE TODO: check if the push word(s) are already there
+                    # (e.g. 'vette corvette stingray')
                     model = ' '.join(modellist).strip("'` *~_\"\t")
                     break
                 except KeyError:
                     pass # that wasn't it... no harm, no foul
             # if the for loop finishes without finding a make, then screw it...
             # leave stuff blank
-                
+
             makemodel = words # use the whole list-of-words from the string
 
         elif year and makemodel: # we did find both year and remaining string
@@ -202,15 +226,17 @@ def regularize_year_make_model(year_make_model_string):
             try:
                 model_list = []
                 modelstem = []
-                ncm = non_canonical_makes[make.upper()]
-                make = ncm['canonical_name']
+                ncm = G_makes[make.upper()]
+                make = ncm.canonical_name
                 makemodel.pop(0) # throw away the noncanonical
                 # GEE TODO handle multiple words here; for now just the first
-                if ncm['consume_words'] and makemodel and makemodel[0] in ncm['consume_words']:
+                if (ncm.consume_list and makemodel and
+                    makemodel[0] in ncm.consume_list):
                     makemodel.pop(0) # throw it away
-                if ncm['push_words']:
-                    modelstem = ncm['push_words']
-                    # GEE TODO: check if the push word(s) are already there (e.g. 'vette corvette stingray')
+                if ncm.push_list:
+                    modelstem = ncm.push_list
+                    # GEE TODO: check if the push word(s) are already there
+                    # (e.g. 'vette corvette stingray')
                 else:
                     modelstem = []
                 model_list = modelstem + makemodel
@@ -251,20 +277,18 @@ def is_car_interesting(listing, include_unknown_makes=True):
     if int(listing.model_year) > 1800 and int(listing.model_year) <= 1975:
         return True # automatically interesting
     if not include_unknown_makes:
-        try:
-            discard = non_canonical_makes[listing.make]
-            # if it's in there, do nothing and continue checks
-        except KeyError as e:
-            return False # something odd -- chuck it
-        
+        if listing.make not in G_makes:
+            return False
     # GEE TODO: case of comparisons & substrings make this.... interesting
-    if listing.make not in boring_makes: # wow is this inefficient - need make/model db stuff
+    if listing.make not in _BORING_MAKES:
+        # wow is this inefficient - need make/model db stuff
         return True
-    if listing.model in interesting_models: # pull particular models back in
+    if listing.model in _INTERESTING_MODELS: # pull particular models back in
         return True
-    if int(listing.price) > 100000: # Prima facia evidence of interesting status? :)
+    if int(listing.price) > 100000: # Prima facia evidence of interesting? :)
         return True
     return False
+
 
 # soup_from_file()
 #
@@ -274,21 +298,23 @@ def soup_from_file(path):
     with open(path) as file:
         return BeautifulSoup(file)
 
-    
+
 # soup_from_url()
 #
 # intended for interactive use only; quickly soupify a file for testing.
 #
 def soup_from_url(url):
     try:
-        req = urllib.request.Request(url, headers=hdrs)
+        req = urllib.request.Request(url, headers=_HDRS)
         page = urllib.request.urlopen(req)
     except urllib.error.HTTPError as error:
-        logging.error('Unable to load inventory page ' + url + ': HTTP ' + str(error.code) + ' ' + error.reason)
+        logging.error('Unable to load inventory page ' + url + ': HTTP ' +
+                      str(error.code) + ' ' + error.reason)
         return None
 
     if page.getcode() != 200:
-        logging.error('Failed to pull an inventory page for ' + url + ' with HTTP response code ' + str(page.getcode()))
+        logging.error('Failed to pull an inventory page for ' + url +
+                      ' with HTTP response code ' + str(page.getcode()))
         return None
 
     return BeautifulSoup(page)
@@ -329,13 +355,15 @@ def autorevo_parse_listing(listing, entry, detail):
      listing.model) = regularize_year_make_model(entry.find('h1').text)
 
     try:
-        listing.price = regularize_price(entry.find(class_='vehicleMainPriceRow').text)
+        listing.price = regularize_price(
+            entry.find(class_='vehicleMainPriceRow').text)
     except AttributeError:
         listing.price = -1
 
     # doesn't have listing text on inventory page
     try:
-        listing.listing_text = detail.find(class_='innerDescriptionText').find('p').text
+        listing.listing_text = detail.find(
+            class_='innerDescriptionText').find('p').text
     except AttributeError:
         listing.listing_text = ''
 
@@ -353,13 +381,14 @@ def carbuffs_parse_listing(listing, entry, detail):
     # pull the rest of the fields from the detail page
     (listing.model_year,
      listing.make,
-     listing.model) = regularize_year_make_model(detail.find(class_='car-name').text)
+     listing.model) = regularize_year_make_model(
+         detail.find(class_='car-name').text)
 
     # common name/value patterns in details page:
     #<li><strong>Car model year:</strong> 1963</li>
     #<p class="car-asking-price"><strong>Asking Price:</strong> $89,950</p>
-    pe = detail.find('strong',text='Asking Price:')
-    if pe != None:
+    pe = detail.find('strong', text='Asking Price:')
+    if pe is not None:
         pe = pe.next_sibling
     listing.price = regularize_price(pe)
 
@@ -373,7 +402,8 @@ def ccw_parse_listing(listing, entry, detail):
      listing.make,
      listing.model) = regularize_year_make_model(entry.find('strong').text)
 
-    listing.listing_text = '' # no short text available, only longer text from detail page
+    # no short text available, only longer text from detail page
+    listing.listing_text = ''
 
     # pull the rest of the fields from the detail page
 
@@ -413,8 +443,8 @@ def cvc_parse_listing(listing, entry, detail):
 
     # no real patterns to mine on the details page.
     # but hey, at least it has the price! (unlike the inventory page)
-    pe = detail.find(text=re.compile('Asking Price:'))
-    if pe != None:
+    pe = detail.find(text=re.compile(r'Asking Price:'))
+    if pe is not None:
         pe = pe.split(':')[-1]
     listing.price = regularize_price(pe)
 
@@ -436,11 +466,15 @@ def dawydiak_parse_listing(listing, entry, detail):
         listing.price = regularize_price(entry.find(class_='dscprice').text)
 
     # pull the rest of the fields from the detail page
-    listing.model_year = detail.find('dt',text=re.compile('Year:')).parent.dd.text
-    listing.make = detail.find('dt',text=re.compile('Make:')).parent.dd.text
-    listing.model = detail.find('dt',text=re.compile('Model:')).parent.dd.text
+    listing.model_year = detail.find(
+        'dt', text=re.compile(r'Year:')).parent.dd.text
+    listing.make = detail.find(
+        'dt', text=re.compile(r'Make:')).parent.dd.text
+    listing.model = detail.find(
+        'dt', text=re.compile(r'Model:')).parent.dd.text
 
-    listing.local_id = detail.find('dt',text=re.compile('Stock')).parent.dd.text
+    listing.local_id = detail.find(
+        'dt', text=re.compile(r'Stock')).parent.dd.text
     listing.stock_no = listing.local_id # no separate stock#
 
     return True
@@ -455,7 +489,7 @@ def fj_parse_listing(listing, entry, detail):
 
     # pull the rest of the fields from the detail page
 
-    if (detail.find('title')):
+    if detail.find('title'):
         s = detail.find('title').text
         (listing.model_year,
          listing.make,
@@ -464,14 +498,16 @@ def fj_parse_listing(listing, entry, detail):
     listing.local_id = detail.find(id="ContactCarId")['value']
     listing.stock_no = listing.local_id # no separate stock#
 
-    # many interesting items are in an "alpha-inner-bottom' div, but for now just grab price
+    # many interesting items are in an "alpha-inner-bottom' div,
+    # but for now just grab price
     # tabular format with labels & values in two td elements, e.g.:
     # <tr>
     # <td class="car-detail-name">Price</td>
     # <td class="car-detail-value"> $42,500</td>
     # </tr>
     elt = detail.find(id='alpha-inner-bottom')
-    price_string = elt.find("td", text="Price").parent.find('td', class_="car-detail-value").text
+    price_string = elt.find(
+        "td", text="Price").parent.find('td', class_="car-detail-value").text
     listing.price = regularize_price(price_string)
 
     return True
@@ -479,17 +515,19 @@ def fj_parse_listing(listing, entry, detail):
 
 # lc_parse_listing
 #
-# this method handles both left coast classics (lcc) and left coast exotics (lce)
+# this method handles both left coast classics (lcc) and
+# left coast exotics (lce)
 #
 def lc_parse_listing(listing, entry, detail):
 
     logging.debug(entry)
     logging.debug(detail)
-    # first of all, since the inventory page has so little useful tagging we may
-    # get some entries that are not really car listings. Detect them here and
-    # return False...
+    # first of all, since the inventory page has so little useful tagging
+    # we may get some entries that are not really car listings. Detect
+    # them here and return False...
     if entry.name != 'tr':
-        logging.debug('skipping putative entry because it is not in a <tr> (was a {})'.format(entry.name))
+        logging.debug('skipping putative entry because it is not in '
+                      'a <tr> (was a {})'.format(entry.name))
         return False
 
     # as with cvc, there is no useful tagging....
@@ -501,13 +539,12 @@ def lc_parse_listing(listing, entry, detail):
     # price is only on the inventory page, not on the detail page (!)
     # and it's often missing (text will just be CALL, SOLD, etc)
     price_string = entry.find('h2', align='center')
-    if price_string != None:
+    if price_string is not None:
         price_string = price_string.text
     listing.price = regularize_price(price_string)
 
     # pull the rest of the fields from the detail page, IF we loaded one
     # (sometimes there isn't one! Just "COMING SOON" and a phone number)
-    # 
 
     # GEE TODO: better splitter that understands alfa romeo AND
     # is robust enough to handle unexpected inputs (like missing model year)
@@ -526,7 +563,8 @@ def lc_parse_listing(listing, entry, detail):
          listing.make,
          listing.model) = regularize_year_make_model(s)
 
-        # removed a hacky bit here since I don't think it chains correctly off the revised code above, and I hope I don't need it!
+        # removed a hacky bit here since I don't think it chains correctly
+        # off the revised code above, and I hope I don't need it!
 
     except ValueError: # should happen only if there is no h1 and then no h2
         return False
@@ -548,11 +586,11 @@ def mhc_parse_listing(listing, entry, detail):
      listing.make,
      listing.model) = regularize_year_make_model(entry.find('h2').text)
 
-    # GEE TODO: some don't have any description, but others do (on the detail page)
-    listing.listing_text = '' 
+    # GEE TODO: some don't have any description, but others do
+    # (on the detail page)
+    listing.listing_text = ''
 
     # pull the rest of the fields from the detail page
-
     listing.price = regularize_price(entry.find('span').text)
 
     return True
@@ -621,10 +659,11 @@ def specialty_parse_listing(listing, entry, detail):
     #   <td><h3>Stock: </h3></td>
     #   <td>F13011</td>
     # </tr>
-    # the first td has an h3 with the fieldname, initcaps with colon and a trailing space
+    # the first td has an h3 with the fieldname, initcaps with colon and
+    # a trailing space
     # the second td has the value (raw, not in an h3)
-    # the h3 in there seems to toast next_sibling/next_element, but find_next_sibling('td') works
-    
+    # the h3 in there seems to toast next_sibling/next_element, but
+    # find_next_sibling('td') works
     return True
 
 
@@ -642,7 +681,7 @@ def specialty_parse_listing(listing, entry, detail):
 # returns a list of listings dicts
 #
 # NOTES:
-# 
+#
 # this is a generic puller which accepts (and to perform decently, requires)
 # site-specific helper functions to extract all the listing details.
 #
@@ -664,17 +703,21 @@ def pull_dealer_inventory(dealer, session=None):
     # get a page of listings; we have pagination logic to loop over addl pages
 
     try:
-        full_inv_url = urllib.parse.urljoin(dealer['base_url'], dealer['inventory_url'])
-        logging.info('Pulling ' + dealer['textid'] + ' inventory from ' + full_inv_url + '....')
-        req = urllib.request.Request(full_inv_url, headers=hdrs)
+        full_inv_url = urllib.parse.urljoin(dealer.base_url,
+                                            dealer.inventory_url)
+        logging.info('Pulling ' + dealer.textid + ' inventory from ' +
+                     full_inv_url + '....')
+        req = urllib.request.Request(full_inv_url, headers=_HDRS)
         page = urllib.request.urlopen(req)
     except urllib.error.HTTPError as error:
-        logging.error('Unable to load inventory page ' + full_inv_url + ': HTTP ' + str(error.code) + ' ' + error.reason)
+        logging.error('Unable to load inventory page ' + full_inv_url +
+                      ': HTTP ' + str(error.code) + ' ' + error.reason)
         return list_of_listings
 
     # GEE TODO: handle URLError that might have been raised...
     if page.getcode() != 200:
-        logging.error('Failed to pull an inventory page for ' + full_inv_url + ' with HTTP response code ' + str(page.getcode()))
+        logging.error('Failed to pull an inventory page for ' + full_inv_url +
+                      ' with HTTP response code ' + str(page.getcode()))
         return list_of_listings
 
     while True:
@@ -682,9 +725,8 @@ def pull_dealer_inventory(dealer, session=None):
         soup = BeautifulSoup(page)
 
         # extract all the listings
+        myfunc = eval(dealer.extract_car_list_func)
 
-        myfunc = eval(dealer['extract_car_list_func'])
-        
         listings = myfunc(soup)
         logging.info('Number of car listings found: {}'.format(len(listings)))
         for item in listings:
@@ -696,7 +738,7 @@ def pull_dealer_inventory(dealer, session=None):
 
             # for some sites the full entry is actually a parent or sibling
             # or similar permutation of the list item we just grabbed
-            myfunc = eval(dealer['listing_from_list_item_func'])
+            myfunc = eval(dealer.listing_from_list_item_func)
             entry = myfunc(item)
 
             # try standard grabs; then call the dealer-specific method for
@@ -705,11 +747,13 @@ def pull_dealer_inventory(dealer, session=None):
             # try to find the URL of the detail listing page
             detail = None # if we don't find one, we can pass down this None
             if entry.get('href'):
-                # the found item may itself be an <a> with an href to the detail page
+                # the found item may itself be an <a>
+                # with an href to the detail page
                 detail_url = entry.get('href')
             elif entry.find('a'):
                 detail_url_elt = entry.find('a')
-                # or the first (likely only) href in the block is the detail page
+                # or the first (likely only) href in the block
+                # is the detail page
                 detail_url = detail_url_elt.get('href')
             else:
                 # or alternately, there may be an onclick property we can grab?
@@ -719,37 +763,43 @@ def pull_dealer_inventory(dealer, session=None):
                     detail_url_attr = entry.attrs['onclick']
                 except KeyError:
                     pass
-                if detail_url_attr == None:
+                if detail_url_attr is None:
                     detail_url_elt = entry.find(onclick=True)
-                    if detail_url_elt != None:
+                    if detail_url_elt is not None:
                         detail_url_attr = detail_url_elt.attrs['onclick']
-                if detail_url_attr != None:
-                    detail_url = detail_url_attr.split('href=')[1].replace("'","")
+                if detail_url_attr is not None:
+                    detail_url = detail_url_attr.split(
+                        'href=')[1].replace("'", "")
             # if we found a detail page URL, store & load it
             if detail_url:
-                detail_url=detail_url.lstrip()
+                detail_url = detail_url.lstrip()
                 # is it an http reference? Sometimes there is a phone URL...
                 scheme = urllib.parse.urlsplit(detail_url).scheme
-                # oops -- apparent bug, or at least difference in practical effect
+                # oops -- apparent bug, or at least difference in effect
                 # between safari and urlsplit. urlsplit doesn't recognize
                 # tel:8005551212
-                # it recognizes some variants -- basically it expects at least one '/'
-                # somewhere. Without that, it returns None as the scheme. So:
-                if (detail_url[:4] == 'tel:'):
+                # it recognizes some variants -- basically it expects at
+                # least one '/' somewhere.
+                # Without that, it returns None as the scheme. So:
+                if detail_url[:4] == 'tel:':
                     scheme = 'tel'
-                if (scheme and scheme != 'http' and scheme != 'https'):
+                if scheme and scheme != 'http' and scheme != 'https':
                     # uh... let's skip this one if we can't link to it as http
-                    logging.warn('found non-http detail URL: {}'.format(detail_url))
+                    logging.warn('found non-http detail URL: {}'.format(
+                        detail_url))
                     listing.listing_href = detail_url # just to prevent barfs
                     ok = False
                 else:
                     try:
-                        # GEE TODO: occasionally detail_url is NOT escaped properly
-                        # (e.g. contains spaces), but calling urllib.parse.quote()
-                        # on it quotes chars that shouldn't be quoted. What to do?
-                        listing.listing_href = urllib.parse.urljoin(full_inv_url, detail_url)
+                        # GEE TODO: occasionally detail_url is NOT escaped
+                        # properly (e.g. contains spaces), but calling
+                        # urllib.parse.quote() on it quotes chars that
+                        # shouldn't be quoted. What to do?
+                        listing.listing_href = urllib.parse.urljoin(
+                            full_inv_url, detail_url)
                         logging.debug('detail page: ' + listing.listing_href)
-                        req = urllib.request.Request(listing.listing_href, headers=hdrs)
+                        req = urllib.request.Request(
+                            listing.listing_href, headers=_HDRS)
                         detail_page = urllib.request.urlopen(req)
                         detail = BeautifulSoup(detail_page)
                         # if the detail page is well-formed (has a body)
@@ -766,9 +816,11 @@ def pull_dealer_inventory(dealer, session=None):
 
             # look for an image in the entry
             if entry.find('img'):
-                listing.pic_href = urllib.parse.urljoin(full_inv_url, str(entry.find('img').attrs['src']))
+                listing.pic_href = urllib.parse.urljoin(
+                    full_inv_url, str(entry.find('img').attrs['src']))
             elif detail and detail.find('img'): # failover to 1st detail img
-                listing.pic_href = urllib.parse.urljoin(full_inv_url, str(detail.find('img').attrs['src']))
+                listing.pic_href = urllib.parse.urljoin(
+                    full_inv_url, str(detail.find('img').attrs['src']))
             else:
                 listing.pic_href = None
 
@@ -784,46 +836,53 @@ def pull_dealer_inventory(dealer, session=None):
             # if that failed, try to find something on the detail page
             if detail and not listing.listing_text:
                 for tag in detail.descendants:
-                    if (tag.name == 'p' or tag.name == 'div' or tag.name == 'li' or
+                    if (tag.name == 'p' or tag.name == 'div' or
+                        tag.name == 'li' or
                         tag.name == 'span' or tag.name == 'td'):
                         if (len(tag.text) > 50 and
                             len(tag.text) > len(listing.listing_text)):
                             listing.listing_text = tag.text
 
-            # many sites have no stock#/inventory ID; default to the unique URL element
-            # note that this will be wonky for item(s) that are 'coming soon'
-            # (no detail page exists yet)
-            listing.local_id = listing.listing_href.rstrip('/').split('/')[-1].replace('.html','')
+            # many sites have no stock#/inventory ID; default to the unique
+            # URL element. note that this will be wonky for item(s) that are
+            # 'coming soon' (no detail page exists yet)
+            listing.local_id = listing.listing_href.rstrip('/').split('/')[-1].replace('.html', '')
             listing.stock_no = listing.local_id # no separate stock_no
 
             # see if the listing is marked as sold?
             # GEE TODO improve this; using uppercase intentionally as a cheat
-            if entry.find(text=re.compile('SOLD')):
+            if entry.find(text=re.compile(r'SOLD')):
                 # used to also check detail but that was getting too many false
                 # positives due to 'VIEW CARS SOLD' link or similar on the page
                 listing.status = 'S' # 'S' -> Sold
-            elif (entry.find(text=re.compile('SALE PENDING')) or
-                (detail and detail.find(text=re.compile('SALE PENDING')))):
+            elif (entry.find(text=re.compile(r'SALE PENDING')) or
+                (detail and detail.find(text=re.compile(r'SALE PENDING')))):
                 listing.status = 'P' # 'P' -> Sale Pending
             else:
                 listing.status = 'F' # 'F' -> For Sale
 
             # $ followed by a number is likely to be a price :-)
             # look first in the entry on the inventory page
-            listing.price = regularize_price(entry.find(text=re.compile('\$[0-9]')))
+            listing.price = regularize_price(
+                entry.find(text=re.compile(r'\$[0-9]')))
             # try detail page if we didn't get one from the inventory page
             if listing.price == -1 and detail:
-                listing.price = regularize_price(detail.find(text=re.compile('\$[0-9]')))
+                listing.price = regularize_price(
+                    detail.find(text=re.compile(r'\$[0-9]')))
 
             # call the dealer-specific method
             # GEE TODO need to define some sort of error-handling protocol...
-            ok = (ok and globals()[dealer['parse_listing_func']](listing, entry, detail))
+            ok = (ok and globals()[dealer.parse_listing_func](listing,
+                                                              entry,
+                                                              detail))
             if ok:
                 # check for common errors / signs of trouble:
                 # need a listing_id
                 if listing.local_id == last_local_id:
-                    # not getting clean, unique local_ids from this dealer's page
-                    logging.warning('Duplicate local_ids [{}] from {} inventory'.format(last_local_id, dealer['textid']))
+                    # not getting clean, unique local_ids from the page
+                    logging.warning('Duplicate local_ids '
+                                    '[{}] from {} inventory'.format(
+                                        last_local_id, dealer.textid))
                     ok = False
                 last_local_id = listing.local_id
                 # model_year must be a string containing an integer
@@ -834,7 +893,7 @@ def pull_dealer_inventory(dealer, session=None):
                     listing.model_year = str(listing.model_year)
                 else:
                     try:
-                        junk = int(listing.model_year) # convert it                        
+                        junk = int(listing.model_year) # convert it
                     except ValueError:
                         listing.model_year = '1' #oops
 
@@ -846,24 +905,29 @@ def pull_dealer_inventory(dealer, session=None):
 
             # END LOOP over listings on the page
 
-        # is there another page of listings? Look for a link with "next" text
-        # Note that there may be multiple such links (e.g. @ top & bottom of list);
-        # they should be identical so just grab the first
-        next_ref = soup.find('a', text=re.compile("[Nn]ext"))
+        # Is there another page of listings? Look for a link with "next" text.
+        # Note: there may be multiple such links (e.g. @ top & bottom of list).
+        # They should be identical so just grab the first
+        next_ref = soup.find('a', text=re.compile(r"[Nn]ext"))
         if next_ref:
             # build the full URL (it may be relative to current URL)
-            full_inv_url = urllib.parse.urljoin(full_inv_url, next_ref.get('href'))
-            logging.debug('Loading next page of inventory via URL: {}'.format(full_inv_url))
-            req = urllib.request.Request(full_inv_url, headers=hdrs)
+            full_inv_url = urllib.parse.urljoin(
+                full_inv_url, next_ref.get('href'))
+            logging.debug('Loading next page of inventory via URL: %s',
+                          full_inv_url)
+            req = urllib.request.Request(full_inv_url, headers=_HDRS)
             page = urllib.request.urlopen(req)
             # GEE TODO - check that this is really a listings page and has
             # different listings, ie detect and avoid infinite loops
-            # GEE TODO - catch the ugly exceptions I get for a bogus URL (errno 8 & a big splat) and also errno 54 / connection reset by peer -> ConnectionResetError, etc (here & in all other URL gets)
+            # GEE TODO - catch the ugly exceptions I get for a bogus URL
+            # (errno 8 & a big splat) and also errno 54 / connection reset by
+            # peer -> ConnectionResetError, etc (here & in all other URL gets)
         else:
             break
         # END LOOP over all inventory pages
 
-    logging.info('Loaded ' + str(len(list_of_listings)) + ' cars from ' + dealer['textid'])
+    logging.info('Loaded ' + str(len(list_of_listings)) + ' cars from ' +
+                 dealer.textid)
     return list_of_listings
 
 
@@ -925,30 +989,37 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
     # we use a magic value for the second year in a batch being 1, indicating
     # that the batch is one year only and must be further subdivided by color
 
-    ebay_year_batches = [ (1900, 1960), (1961, 1970), (1971, 1980),
-                          (1981, 1990), (1991, 1995), (1996, 1999),
-                          (2000, 2003), (2004, 2005), (2006, 2006),
-                          (2007, 2007), (2008, 2008), (2009, 2009),
-                          (2010, 2010), (2011, 2011), (2012, 2012),
-                          (2013, 2013), (2014, 1), (2015, 2015) ]
+    ebay_year_batches = [
+        (1900, 1960), (1961, 1970), (1971, 1980),
+        (1981, 1990), (1991, 1995), (1996, 1999),
+        (2000, 2003), (2004, 2005), (2006, 2006),
+        (2007, 2007), (2008, 2008), (2009, 2009),
+        (2010, 2010), (2011, 2011), (2012, 2012),
+        (2013, 2013), (2014, 1), (2015, 2015)
+    ]
 
     # for any years that are too big we further segment by color (!)
     # (hey, it splits the inventory into reasonably-suitable chunks)
-    colors = [ 'NotSubBatching', 'Black', 'Blue', 'Brown', 'Burgundy', 'Gold',
-               'Gray', 'Green', 'Orange', 'Purple', 'Red', 'Silver', 'Tan',
-               'Teal', 'White', 'Yellow', 'Not Specified' ]
+    colors = [
+        'NotSubBatching', 'Black', 'Blue', 'Brown', 'Burgundy', 'Gold',
+        'Gray', 'Green', 'Orange', 'Purple', 'Red', 'Silver', 'Tan',
+        'Teal', 'White', 'Yellow', 'Not Specified'
+    ]
 
 #    if inv_settings == 'limited':
 #        # overwrite with a simpler set of buckers, with no sub-buckets
-#        ebay_year_batches = [ (1900, 2010), (2011, 2012), (2013, 2013), (2014, 2014), (2015, 2020) ]
+#        ebay_year_batches = [ (1900, 2010), (2011, 2012), (2013, 2013),
+#             (2014, 2014), (2015, 2020) ]
 
     if not inventory_marker:
         # start with the first batch, no sub-batch
-        inventory_marker = { 'batch': 0, 'sub': None} 
+        inventory_marker = {'batch': 0, 'sub': None}
 
     # look for ebay yaml (config) in $STAGE/conf, or ../conf if stage not set
-    ebay_yaml = os.path.join(os.environ.get('OGL_STAGE', '..'), 'conf/ebay.yaml')
-    api = ebaysdk_finding(debug=False, appid=None, config_file=ebay_yaml, warnings=True)
+    ebay_yaml = os.path.join(os.environ.get('OGL_STAGE', '..'),
+                             'conf/ebay.yaml')
+    api = ebaysdk_finding(debug=False, appid=None,
+                          config_file=ebay_yaml, warnings=True)
     api_request = {
         'categoryId': 6001,
         'GLOBAL-ID': 100,
@@ -966,11 +1037,12 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
     if inv_settings == 'limited':
         logging.debug('limiting to local cars')
         api_request['itemFilter'].append({'name': 'MaxDistance',
-                                          'value': 150 })
+                                          'value': 150})
     else:
         logging.debug('NOT limiting to local cars')
 
-    logging.info('batch {} sub {}'.format(inventory_marker['batch'], inventory_marker['sub']))
+    logging.info('batch {} sub {}'.format(inventory_marker['batch'],
+                                          inventory_marker['sub']))
     # batching by year-groupings; if the 2nd "year" in the batch tuple is not a
     # year but a small #, then this is a single-year batch with sub-batches
     for year in range(ebay_year_batches[inventory_marker['batch']][0],
@@ -981,7 +1053,8 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
     if inventory_marker['sub']:
         # then we're doing sub-batches, so select the indicated color batch
         api_request['aspectFilter'].append({'aspectName': 'Exterior Color',
-                                            'aspectValueName': colors[inventory_marker['sub']]})
+                                            'aspectValueName':
+                                            colors[inventory_marker['sub']]})
 
     # log the API request for page 1 (not again each page inside the next loop)
     logging.info('eBay API request: {}'.format(api_request))
@@ -997,20 +1070,23 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
         response = api.execute('findItemsAdvanced', api_request)
         r = response.dict()
         if r['ack'] != 'Success':
-            # Hmm, when I get an error back from eBay the response can't be JSON dumped
-            # for some reason. This command barfs saying it isn't JSON serializable:
+            # Hmm, when I get an error back from eBay the response can't be
+            # JSON dumped for some reason. This command barfs saying it isn't
+            # JSON serializable:
             # print(response.json().dump())
             print(response.json())
             logging.error('eBay reports failure: {}'.format(response))
-            break; # note: breaks out of loop over pages
+            break # note: breaks out of loop over pages
         # _count may be empty, or '0', or 0, or... who knows, but skip it
-        if not r['searchResult']['_count'] or int(r['searchResult']['_count']) == 0:
+        if (not r['searchResult']['_count']
+            or int(r['searchResult']['_count']) == 0):
             logging.warning('eBay returned a set of zero records')
-            break; # note: breaks out of loop over pages
+            break # note: breaks out of loop over pages
 
         # note: _count may not be present if we got a bad fetch from eBay;
         # hopefully we've done all our checks above and called a break...
-        logging.info('Number of car listings found: {}'.format(r['searchResult']['_count']))
+        logging.info('Number of car listings found: %s',
+                     r['searchResult']['_count'])
         for item in r['searchResult']['item']:
             ok = True
             logging.debug('eBay ITEM: {}'.format(item['itemId']))
@@ -1031,7 +1107,8 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
                 # way for the record to be messed up & missing model_year
                 listing.model_year = 'None'
             listing.make = item['title'].split(':')[0].strip()
-            listing.model = item['primaryCategory']['categoryName'] # alternatively could often get more info from title
+            listing.model = item['primaryCategory']['categoryName']
+            # ^^ alternatively could often get more info from title
             try:
                 listing.pic_href = item['galleryURL']
             except KeyError:
@@ -1044,12 +1121,15 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
 
             # GEE TODO: this is ignoring ebay price weirdness and currency
             try:
-                listing.price = regularize_price(item['sellingStatus']['buyItNowPrice']['value']) 
-            except:                
-                listing.price = regularize_price(item['sellingStatus']['currentPrice']['value'])
+                listing.price = regularize_price(
+                    item['sellingStatus']['buyItNowPrice']['value'])
+            except:
+                listing.price = regularize_price(
+                    item['sellingStatus']['currentPrice']['value'])
 
             if 'postalCode' in item and session:
-                z = session.query(Zipcode).filter_by(zip = item['postalCode']).first()
+                z = session.query(Zipcode).filter_by(
+                    zip=item['postalCode']).first()
                 if z:
                     listing.lat = z.lat
                     listing.lon = z.lon
@@ -1058,7 +1138,8 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
             try:
                 junk = int(listing.model_year)
             except (ValueError, TypeError) as e:
-                logging.warning('bad year [{}] for item {}'.format(listing.model_year, listing.local_id))
+                logging.warning('bad year [%s] for item %s',
+                                listing.model_year, listing.local_id)
                 listing.model_year = '1'
 
             if is_car_interesting(listing):
@@ -1071,7 +1152,8 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
                 list_of_listings.append(listing)
                 logging.debug('pulled listing: {}'.format(listing))
             else:
-                logging.debug('skipped listing: {}'.format(listing)) # debug not warn b/c we're throwing out lots of stuff
+                # debug not warn b/c we're throwing out lots of stuff
+                logging.debug('skipped listing: {}'.format(listing))
 
             # END LOOP over listings on the page
 
@@ -1109,7 +1191,8 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
     # do we have sub-batches in this batch?
     if inventory_marker['batch'] == len(ebay_year_batches):
         inventory_marker = None # done!
-    elif ebay_year_batches[inventory_marker['batch']][1] == 1 and not inventory_marker['sub']:
+    elif (ebay_year_batches[inventory_marker['batch']][1] == 1
+          and not inventory_marker['sub']):
         # need to sub-batch this new batch; start with sub-batch index=1
         inventory_marker['sub'] = 1 # 1st color is @ ind 1, not 0, in list
 
@@ -1128,8 +1211,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
 # parameters:
 # classified: the classified site we are to pull
 # inventory_marker: a marker used to chunk the work; opaque to caller
-# area: 'Local' => limits to local area (see notes)
-# car_type: 'Interesting' => limits to "interesting" cars (see notes)
+# session: db session
 #
 # returns:
 # list_of_listings: a set of listings (could be partial or entire set)
@@ -1157,7 +1239,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
 # for now, this method goes in custom_pull_method and the anchor goes in
 # the extract_car_list_func field
 #
-def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_type='Interesting', session=None):
+def pull_3taps_inventory(classified, inventory_marker=None, session=None):
 
     # implicit param from environment:
     inv_settings = os.environ.get('OGL_INV_SETTINGS', '')
@@ -1174,17 +1256,26 @@ def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_ty
         pass # run from the passed-in point
     else:
         # caller doesn't specify; start from the anchor in classified
-        inventory_marker = classified.extract_car_list_func # see TODO - anchor is in temporary storage location
+        # see TODO - anchor is in temporary storage location
+        inventory_marker = classified.extract_car_list_func
 
-    logging.info('Pulling inventory from 3taps for {} starting with marker {}'.format(classified.textid, inventory_marker))
+    logging.info('Pulling inventory from 3taps for %s starting with marker %s',
+                 classified.textid, inventory_marker)
 
     # no dedicated python sdk, but simple enough JSON APIs to call directly
-    url = 'http://polling.3taps.com/poll?auth_token=a7e282009ed50537b7f3271b753c803a&category=VAUT&retvals=id,account_id,source,category,location,external_id,external_url,heading,body,timestamp,timestamp_deleted,expires,language,price,currency,images,annotations,deleted,flagged_status,state,status'
+    url = ('http://polling.3taps.com/poll?'
+           'auth_token=a7e282009ed50537b7f3271b753c803a'
+           '&category=VAUT&retvals=id,account_id,source,'
+           'category,location,external_id,external_url,'
+           'heading,body,timestamp,timestamp_deleted,expires'
+           ',language,price,currency,images,annotations,'
+           'deleted,flagged_status,state,status')
     url_params = ['&source={}'.format(classified.textid.upper())]
     url_params.append('&anchor={}'.format(inventory_marker))
     if inv_settings == 'limited':
         logging.debug('limiting to local cars')
-        # GEE TODO: note that the anchor will be invalidated if we switch back and forth between local and not
+        # GEE TODO: note that the anchor will be invalidated if we switch
+        # back and forth between local and not
         url_params.append('&location.state=USA-CA')
     else:
         logging.debug('NOT limiting to local cars')
@@ -1193,16 +1284,18 @@ def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_ty
     logging.debug('inventory URL is: {}'.format(url))
 
     try:
-        req = urllib.request.Request(url, headers=hdrs)
+        req = urllib.request.Request(url, headers=_HDRS)
         page = urllib.request.urlopen(req)
         bytestream = page.read()
         r = json.loads(bytestream.decode())
     except urllib.error.HTTPError as error:
-        logging.error('Unable to poll 3taps at ' + url + ': HTTP ' + str(error.code) + ' ' + error.reason)
+        logging.error('Unable to poll 3taps at ' + url + ': HTTP ' +
+                      str(error.code) + ' ' + error.reason)
         return None, None
-    
+
     if page.getcode() != 200:
-        logging.error('Failed to poll 3taps at ' + url + ' with HTTP response code ' + str(page.getcode()))
+        logging.error('Failed to poll 3taps at ' + url +
+                      ' with HTTP response code ' + str(page.getcode()))
         logging.error('Full error page:'.format(bytestream.decode()))
         return None, None
 
@@ -1223,8 +1316,8 @@ def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_ty
         listing.source_type = 'C'
         listing.source_id = classified.id
         listing.source_textid = classified.textid
-        
-        # GEE TODO: get whitelisted with 3taps for full html/annotation info (make/model/year)?
+
+        # GEE TODO: handle full html for annotation info (make/model/year)
         # carsd seems to have consistent year/make/model
         # autod usually has all three but not always
         # craig sometimes has year, but usually not the other two
@@ -1242,48 +1335,55 @@ def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_ty
         if model_year and make and model:
             (listing.model_year,
              listing.make,
-             listing.model) = regularize_year_make_model(' '.join([model_year, make, model]))
+             listing.model) = regularize_year_make_model(
+                 ' '.join([model_year, make, model]))
         elif 'heading' in item and item.heading: # present and non-empty
             (listing.model_year,
              listing.make,
              listing.model) = regularize_year_make_model(item.heading)
-        
+
             if listing.model_year == 1 and model_year:
                 # then I didn't get any year from the heading
                 # but I can use the model_year from the annotations
                 listing.model_year = model_year
             elif model_year and (listing.model_year != model_year):
                 # WTF, mismatch? Take the annotation one (more reliable)
-                logging.warn('overriding heading year of {} with annotation year of {}'.format(listing.model_year, model_year))
+                logging.warn('overriding heading year of %s with ' +
+                             'annotation year of %s',
+                             listing.model_year, model_year)
                 listing.model_year = model_year
         else: # no annotation or heading to pull year/make/model??
             ok = False
-            logging.warn('skipping item with no year/make/model information: {}'.format(item))
+            logging.warn('skipping item with no year/make/model info: %s',
+                         item)
 
         try:
             listing.pic_href = item.images[0]['full']
         except (KeyError, IndexError) as e:
             listing.pic_href = 'N/A'
         listing.listing_href = item.external_url
-        listing.local_id = item.external_id # use the source identifier to minimize dupes
-        listing.stock_no = item.id # keep the 3taps ID around too (at least the latest one)
+        # use the source identifier to minimize dupes
+        listing.local_id = item.external_id
+        # keep the 3taps ID around too (at least the latest one)
+        listing.stock_no = item.id
         if not listing.local_id:
             # some feeds (e.g. autod) *occasionally* lack the local_id;
             # fall back to stock_no
-            logging.warn('listing for a {} {} {} has no local ID; using 3taps ID {}'.format(listing.model_year, listing.make, listing.model, listing.stock_no))
+            logging.warn('listing for a %s %s %s has no local ID; ' +
+                         'using 3taps ID %s',
+                         listing.model_year, listing.make, listing.model,
+                         listing.stock_no)
             listing.local_id = listing.stock_no
-
-#        logging.info('local_id: {} a: {} {} {} h: {} out: {} {} {}'.format(listing.local_id, model_year, make, model, item.heading, listing.model_year, listing.make, listing.model))
 
         if 'location' in item:
             if 'lat' in item.location:
                 listing.lat = item.location['lat']
             if 'long' in item.location: # note 3taps uses long, we use lon
                 listing.lon = item.location['long']
-            # could fall back to other location info here if lat/long is unreliable?
-        
+            # add fall back to other location info if lat/long is unreliable?
+
         # GEE TODO: examine & use flagging info
-        if item.status == 'for_sale' and item.deleted == False:
+        if item.status == 'for_sale' and item.deleted is False:
             listing.status = 'F' # 'F' -> For Sale
         else:
             listing.status = 'R' # 'R' -> Removed, unknown reason
@@ -1291,7 +1391,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_ty
         listing.listing_text = item.heading
 
         #try:
-        #    listing.price = regularize_price(item.annotations['price']) 
+        #    listing.price = regularize_price(item.annotations['price'])
         #except ValueError:
         listing.price = regularize_price(item.price)
 
@@ -1299,11 +1399,14 @@ def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_ty
         try:
             junk = int(listing.model_year)
         except (ValueError, TypeError) as e:
-            logging.warning('bad year [{}] for item {}'.format(listing.model_year, listing.local_id))
+            logging.warning('bad year [%s] for item %s',
+                            listing.model_year, listing.local_id)
             listing.model_year = '1'
 
             # be tougher on cl listings for now because there is so much junk
-            if is_car_interesting(listing, include_unknown_makes=(classified.textid == 'craig')):
+            if is_car_interesting(listing,
+                                  include_unknown_makes=(
+                                      classified.textid == 'craig')):
                 listing.add_tag('interesting')
             else:
                 if inv_settings == 'limited':
@@ -1313,11 +1416,13 @@ def pull_3taps_inventory(classified, inventory_marker=None, area='Local', car_ty
             list_of_listings.append(listing)
             logging.debug('pulled listing: {}'.format(listing))
         else:
-            logging.debug('skipped listing: {}'.format(listing)) # debug not warn b/c we're throwing out lots of stuff
+            # debug not warn b/c we're throwing out lots of stuff
+            logging.debug('skipped listing: {}'.format(listing))
 
         # END LOOP over listings in the feed pull
 
-    logging.info('Loaded {} cars from 3taps for {}'.format(str(len(list_of_listings)), classified.textid))
+    logging.info('Loaded %s cars from 3taps for %s',
+                 str(len(list_of_listings)), classified.textid)
 
     # update the classified record with the new 3taps anchor AND
     # send the same value back as the inventory marker.
@@ -1366,7 +1471,8 @@ def import_from_dealer(dealer, session, es):
 
         # commit the block of listings (which generates ids on new records)
         session.commit()
-        logging.debug('committed a block of listings for {}'.format(dealer.textid))
+        logging.debug('committed a block of listings for %s',
+                      dealer.textid)
 
         for listing in db_listings:
             index_listing(es, listing)
@@ -1381,7 +1487,8 @@ def import_from_dealer(dealer, session, es):
 
 # import_from_classified
 #
-# Imports inventory from a classified site, overwriting (adding/updating) as needed
+# Imports inventory from a classified site,
+# overwriting (adding/updating) as needed
 #
 # parameters:
 # con: db connection (None if no db access is possible/requested)
@@ -1416,25 +1523,29 @@ def import_from_classified(classified, session, es):
         # or, in the case of 3taps, the deltas since the last polling
         # note the special-casing for some sites that have their own method
 
-        if classified['custom_pull_func']:
-            listings, inventory_marker = globals()[classified['custom_pull_func']](classified,
-                                                                                   inventory_marker=inventory_marker,
-                                                                                   session=session)
-
-            listings, inventory_marker = pull_classified_inventory(classified,
-                                                                   inventory_marker=inventory_marker,
-                                                                   session=session)
+        if classified.custom_pull_func:
+            f = globals()[classified.custom_pull_func]
+            listings, inventory_marker = f(classified,
+                                           inventory_marker=inventory_marker,
+                                           session=session)
+        else:
+            listings, inventory_marker = pull_classified_inventory(
+                classified,
+                inventory_marker=inventory_marker,
+                session=session)
 
         # now put the located records in the db & es index
         if listings:
             # with sqlalchemy, we get new objects back so build a list of those
             db_listings = []
             for listing in listings:
-                db_listings.append(add_or_update_found_listing(session, listing))
+                db_listings.append(add_or_update_found_listing(session,
+                                                               listing))
 
             # commit the block of listings (which generates ids on new records)
             session.commit()
-            logging.debug('committed a block of listings for {}'.format(classified.textid))
+            logging.debug('committed a block of listings for %s',
+                          classified.textid)
 
             for listing in db_listings:
                 index_listing(es, listing)
@@ -1449,7 +1560,8 @@ def import_from_classified(classified, session, es):
         # records we have pulled and thus where to start from next time;
         # the pull method will already have updated the field in classified
         logging.debug('Saving the 3taps anchor')
-        # NO LONGER REQUIRED - sqlalchemy will automatically flush the update when we commit
+        # NO LONGER REQUIRED - sqlalchemy will automatically flush the update
+        # when we commit
     else:
         remove_marked_listings('C', classified.id, session, es=es)
 
@@ -1466,10 +1578,13 @@ def import_from_classified(classified, session, es):
 #
 def mark_listings_pending_delete(source_type, source_id, session):
     # mark the active listings stored in the db for this classified
-    result = session.execute("update listing set markers = concat(ifnull(markers,''), 'P') where source_type = :source_type and source_id = :source_id and status = 'F'",
-                             {'source_type': source_type, 'source_id': source_id})
-    logging.debug('Painted {} existing records for {} site {}'.format(result.rowcount,
-                                                                      source_type, source_id))
+    result = session.execute(
+        "update listing set markers = concat(ifnull(markers, ''), 'P') "
+        "where source_type = :source_type and source_id = :source_id "
+        "and status = 'F'",
+        {'source_type': source_type, 'source_id': source_id})
+    logging.debug('Painted %s existing records for %s site %s',
+                  result.rowcount, source_type, source_id)
     return result.rowcount
 
 
@@ -1487,23 +1602,39 @@ def remove_marked_listings(source_type, source_id, session, es=None):
     # I think I would have to do an es-mark-all query like I do with the db;
     # any other solution would involve generating the set to pass to es
     # so for now, let's just iterate
-    if (es):
-        logging.info('Removing listings that have been taken down since the last pull')
-        result = session.execute("select id from listing where source_type = :source_type and source_id = :source_id and instr(ifnull(markers,''),'P') != 0",
-                                 {'source_type': source_type, 'source_id': source_id})
+    if es:
+        logging.info('Removing listings that have been taken down '
+                     'since the last pull')
+        result = session.execute(
+            "select id from listing "
+            "where source_type = :source_type and source_id = :source_id "
+            "and instr(ifnull(markers, ''), 'P') != 0",
+            {'source_type': source_type, 'source_id': source_id})
         for row in result:
             listing_id = row[0]
             try:
-                es.delete(index="carbyr-index", doc_type="listing-type", id=listing_id)
+                es.delete(index="carbyr-index",
+                          doc_type="listing-type",
+                          id=listing_id)
             except NotFoundError as err:
-                logging.warning('record with id={} not found during attempted deletion: {}'.format(listing_id, err))
+                logging.warning('record with id=%s not found during ' +
+                                'attempted deletion: %s',
+                                listing_id, err)
 
     # mark them all in the db in one query to avoid per-record round-trips
     # NOTE: we didn't pull the full rows into Listing objects, so we can't
     # update that way
-    result = session.execute("update listing set status = 'R', markers = replace(markers,'P',''), removal_date = ifnull(removal_date, CURRENT_TIMESTAMP), last_update = CURRENT_TIMESTAMP where source_type = :source_type and source_id = :source_id and instr(ifnull(markers,''),'P') != 0""",
-                             {'source_type': source_type, 'source_id': source_id})
-    logging.debug('Marked {} rows as no longer active on {} site #{}'.format(result.rowcount, source_type, source_id))
+    result = session.execute(
+        """update listing
+              set status = 'R',
+                  markers = replace(markers, 'P', ''),
+                  removal_date = ifnull(removal_date, CURRENT_TIMESTAMP),
+                  last_update = CURRENT_TIMESTAMP
+            where source_type = :source_type and source_id = :source_id
+              and instr(ifnull(markers, ''), 'P') != 0""",
+        {'source_type': source_type, 'source_id': source_id})
+    logging.debug('Marked %s rows as no longer active on %s site #%s',
+                  result.rowcount, source_type, source_id)
     return result.rowcount
 
 
@@ -1543,7 +1674,8 @@ def remove_marked_listings(source_type, source_id, session, es=None):
 #
 def add_or_update_found_listing(session, current_listing):
 
-    logging.debug('checking on existence of listing {}'.format(current_listing.local_id))
+    logging.debug('checking on existence of listing %s',
+                  current_listing.local_id)
     try:
         existing_listing = session.query(Listing).filter_by(local_id=current_listing.local_id).one()
 
@@ -1570,7 +1702,8 @@ def add_or_update_found_listing(session, current_listing):
         # all other fields will be taken from the current listing record
 
     except NoResultFound as e:
-        logging.debug('no match for local_id={}'.format(current_listing.local_id))
+        logging.debug('no match for local_id=%s',
+                      current_listing.local_id)
         pass # current_listing will not get an id until merge & flush
 
     # GEE TODO: this setting of last_update should not be required, but...
@@ -1599,15 +1732,20 @@ def index_listing(es, listing):
         if isinstance(listing, Listing):
             listing_d = dict(listing)
         else:
-            # if we got some other flavor of listing then hope it is already safe
+            # if we got some other flavor of listing then hope it is safe
             listing_d = listing
-        es.index(index="carbyr-index", doc_type="listing-type", id=listing_d['id'], body=listing_d)
+        es.index(index="carbyr-index", doc_type="listing-type",
+                 id=listing_d['id'], body=listing_d)
     else:
         try:
-            es.delete(index="carbyr-index", doc_type="listing-type", id=listing.id)
+            es.delete(index="carbyr-index", doc_type="listing-type",
+                      id=listing.id)
         except NotFoundError as err:
-            logging.warning('record with id={} not found during attempted deletion: {}'.format(listing.id, err))
-            # NOTE: this can easily happen if we find a record of a SOLD car but did not already have the car listing open
+            logging.warning('record with id=%s not found during attempted ' +
+                            'deletion: %s',
+                            listing.id, err)
+            # NOTE: this can easily happen if we find a record of a SOLD car
+            # but did not already have the car listing open
     return True
 
 
@@ -1617,15 +1755,18 @@ def index_listing(es, listing):
 # in the given directory
 #
 def text_store_listing(list_dir, listing):
-    # store car listing file in subdir by source (not the best, heh -- temporary, should really be some more reliable sharding mechanism)
+    # store car listing file in subdir by source (not the best, heh --
+    # temporary, should really be some more reliable sharding mechanism)
     # and with the id (our internal id) as the filename root
     make_sure_path_exists(list_dir + '/' + listing.source_textid)
-    pathname=str(list_dir + '/' + listing.source_textid + '/' + str(listing.id) + '.html')
-    list_file=open(pathname,"w")
+    pathname = str(list_dir + '/' + listing.source_textid + '/' +
+                   str(listing.id) + '.html')
+    list_file = open(pathname, "w")
     list_file.write(listing)
     list_file.close()
 
-    logging.debug("wrote listing id {} ({} {} {}) to file {}".format(listing.id, listing.model_year,listing.make, listing.model, pathname))
+    logging.debug("wrote listing id {} ({} {} {}) to file {}".format(
+        listing.id, listing.model_year, listing.make, listing.model, pathname))
     return True
 
 
@@ -1637,16 +1778,21 @@ def process_command_line():
     # initialize the parser object:
     parser = argparse.ArgumentParser(description='Imports car listings')
     parser.add_argument('--noindex', dest='index', action='store_const',
-                        const=False, default=True, help='skip indexing the listings')
+                        const=False, default=True,
+                        help='skip indexing the listings')
     parser.add_argument('--files', dest='file', action='store_const',
-                        const=True, default=False, help='writes listings to files in /tmp')
+                        const=True, default=False,
+                        help='writes listings to files in /tmp')
     parser.add_argument('--log_level', default='INFO',
-                        choices=('DEBUG','INFO','WARNING','ERROR', 'CRITICAL'),
+                        choices=('DEBUG', 'INFO', 'WARNING',
+                                 'ERROR', 'CRITICAL'),
                         help='set the logging level')
     parser.add_argument('action',
-                        choices=('list','import'),
-                        help='action: list sources which can be imported and exit, or import from those sources')
-    parser.add_argument('sources', nargs='*', help='the source(s) to pull from if action=import')
+                        choices=('list', 'import'),
+                        help=('action: list sources which can be imported and'
+                              'exit, or import from those sources'))
+    parser.add_argument('sources', nargs='*',
+                        help='the source(s) to pull from if action=import')
 
     return parser.parse_args()
 
@@ -1657,45 +1803,34 @@ def main():
     # start logging
     logging.basicConfig(level=args.log_level.upper())
 
-    # GEE TODO: split right now b/w direct db access and sqlalchemy usage
-    # b/c we are testing sqlalchemy. Decide and migrate fully!
-    con = None # declare scope of db connection
-    session = None # ... and the SQLAlchemy session
+    # establish connections to required services (db & es)
+    session = None # the SQLAlchemy session
     es = None # and the indexing connection
-    dealerships = {}
-    classifieds = {}
 
     try:
-        con = db.connect(os.environ['OGL_DB_HOST'],
-                         os.environ['OGL_DB_USERACCOUNT'],
-                         os.environ['OGL_DB_USERACCOUNT_PASSWORD'],
-                         os.environ['OGL_DB'],
-                         charset='utf8')
-        sqla_db_string = 'mysql+pymysql://{}:{}@{}/{}'.format(os.environ['OGL_DB_USERACCOUNT'],
-                                                              os.environ['OGL_DB_USERACCOUNT_PASSWORD'],
-                                                              os.environ['OGL_DB_HOST'],
-                                                              os.environ['OGL_DB'])
+        sqla_db_string = 'mysql+pymysql://{}:{}@{}/{}'.format(
+            os.environ['OGL_DB_USERACCOUNT'],
+            os.environ['OGL_DB_USERACCOUNT_PASSWORD'],
+            os.environ['OGL_DB_HOST'],
+            os.environ['OGL_DB']
+        )
         engine = create_engine(sqla_db_string)
         Session = sessionmaker(bind=engine)
         session = Session()
     except KeyError:
-        print("Please set environment variables for OGL DB connectivity and rerun.")
+        print("Please set environment variables for OGL DB connectivity"
+              "and rerun.")
         sys.exit(1)
 
-    # GEE TODO: test db connection success here (since we are not just doing 'with con:' as db usage is conditional)
+    # GEE TODO: test session success here
 
     # ... and go ahead and fetch the sources from the db here for simplicity
-    # GEE TODO: when # of sources gets large we can move this to query-by-source-name + some aggregates
-    c = con.cursor(db.cursors.DictCursor)
-    rows = c.execute("""select * from dealership where status = 'I'""")
-    for dealer in c.fetchall():
-        dealerships[dealer['textid']] = Bunch(dealer)
-    c = con.cursor(db.cursors.DictCursor)
-    rows = c.execute("""select * from classified where status = 'I'""")
-    for classified in c.fetchall():
-        classifieds[classified['textid']] = Bunch(classified)
-    # read in all the non-canonical makes into a hash for easy & quick ref
-    populate_non_canonical_makes(con)
+    # GEE TODO: when # of sources gets large we can refactor
+    dealerships = session.query(Dealership).all()
+    classifieds = session.query(Classified).all()
+
+    # populate our cache of db reference data into global hashes
+    load_refdata_cache(session)
 
     if args.index:
         es = Elasticsearch()
@@ -1703,29 +1838,37 @@ def main():
     # now do what the user requested (the action)
     if args.action == 'list':
         for dealer in dealerships:
-            print('{} [dealer {}]'.format(dealerships[dealer]['textid'], dealerships[dealer]['full_name']))
+            print('{} [dealer {}]'.format(dealer.textid, dealer.full_name))
         for classified in classifieds:
-            print('{} [classified site {}]'.format(classifieds[classified]['textid'], classifieds[classified]['full_name']))
+            print('{} [classified site {}]'.format(classified.textid,
+                                                   classified.full_name))
 
         print('norcal [special aggregation of norcal dealerships]')
         print('db_dealers [all dealers in the database]')
 
     elif args.action == 'import':
         for source in args.sources:
-            if source in dealerships:
-                import_from_dealer(dealerships[source], session, es)
-            elif source in classifieds:
-                import_from_classified(classifieds[source], session, es)
-            elif source == 'norcal':
+            if source == 'norcal':
                 for dealer in dealerships:
-                    import_from_dealer(dealerships[dealer], session, es)
+                    import_from_dealer(dealer, session, es)
             else:
-                logging.error('request of import from unknown source: {}'.format(source))
+                found = False
+                for dealer in dealerships:
+                    if dealer.textid == source:
+                        found = True
+                        import_from_dealer(dealer, session, es)
+                for classified in classifieds:
+                    if classified.textid == source:
+                        import_from_classified(classified, session, es)
+                        found = True
+                if not found:
+                    logging.error('request of import from unknown source: %s',
+                                  source)
     else: # uh, shouldn't be possible?
         logging.error('oops -- action {} not recognized'.format(args.action))
 
     return True
-    
+
 if __name__ == "__main__":
     status = main()
     sys.exit(status)
