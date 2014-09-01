@@ -15,7 +15,7 @@ urlpatterns = [
     # url(r'^$', oglviews.fubar, name='homepage'),
     #url(r'^cars/search/$', views.index, name='search'),
     url(r'^$', views.homepage, name='homepage'),
-    url(r'^admin/$', include(admin.site.urls)),
+    url(r'^admin/', include(admin.site.urls)),
     url(r'^cars/$', views.index, name='allcars'),
     url(r'^cars/rss/$', ListingsFeed(), name='rss'),
     url(r'^cars/(?P<filter>[a-z]+)/$', views.index, name='filtered'),
