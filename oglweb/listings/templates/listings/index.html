@@ -39,7 +39,7 @@
 		<h1> Search more listings faster with Carbyr...</h1>
 		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-		<form class="" role="form" action="{% url 'listings:index' %}" method="get">
+		<form class="" role="form" action="{{ post_url }}" method="get">
 		  {% csrf_token %}
 		  <div class="input-group">
 			<input type="text" placeholder="find me..." class="form-control" name="search_string" />
@@ -65,6 +65,7 @@
 				    <img class="img-responsive img-rounded" src='{{ item.pic_href }}'>
 				  {% else %}
 					<p> No photo available. </p>
+				  {% endif %}
 				</div>
 				<div class="col-md-3">
 				  <p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
