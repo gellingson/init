@@ -12,7 +12,9 @@ import sys
 import argparse
 import re
 import json
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
+import urllib.error
+import urllib.parse
 import os
 import errno
 import logging
@@ -29,9 +31,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
 # OGL modules used
+from orm.models import Classified, Dealership, Listing
 from orm.models import ConceptTag, ConceptImplies
-from orm.models import Classified, Dealership, Listing, Zipcode
-from orm.models import NonCanonicalMake, NonCanonicalModel
+from orm.models import NonCanonicalMake, NonCanonicalModel, Zipcode
 
 
 # ============================================================================
@@ -76,10 +78,10 @@ _INTERESTING_MODELS = [
 ]
 
 # global hashes (caches) of refdata objects from the db, populated at startup
-G_makes = {}
-G_models = {}
-G_tags = {}
-G_tag_rels = {}
+_MAKES = {}
+_MODELS = {}
+_TAGS = {}
+_TAG_RELS = {}
 
 # ============================================================================
 # UTILITY METHODS
@@ -95,23 +97,24 @@ def load_refdata_cache(session):
 
     all_ncms = session.query(NonCanonicalMake).all()
     for ncm in all_ncms:
-        G_makes[ncm.non_canonical_name] = ncm
+        _MAKES[ncm.non_canonical_name] = ncm
 
     all_ncms = session.query(NonCanonicalModel).all()
     for ncm in all_ncms:
-        G_models[ncm.non_canonical_name] = ncm
+        _MODELS[ncm.non_canonical_name] = ncm
 
     all_tags = session.query(ConceptTag).all()
     for tag in all_tags:
-        G_tags[tag.tag] = tag
+        _TAGS[tag.tag] = tag
 
     # hash of form tag -> list of implied tags
     all_rels = session.query(ConceptImplies).all()
     for rel in all_rels:
-        if rel.has_tag_id in G_tag_rels:
-            G_tag_rels[rel.has_tag_id].append(rel.implies_tag_id) # add to list
+        # create or add to the given tag's list of implied tags
+        if rel.has_tag_id in _TAG_RELS:
+            _TAG_RELS[rel.has_tag_id].append(rel.implies_tag_id)
         else:
-            G_tag_rels[rel.has_tag_id] = [rel.implies_tag_id] # new tag list
+            _TAG_RELS[rel.has_tag_id] = [rel.implies_tag_id]
     return
 
 
@@ -130,8 +133,8 @@ def regularize_price(price_string):
         price = -1
     elif isinstance(price_string, str):
         # strip out 'Price:' or similar if included
-        if ':' in price_string: # then take the part after the colon
-            (junk, junk, price_string) = price_string.rpartition(':')
+        if ':' in price_string:  # then take the part after the colon
+            (junk, junk, price_string) = price_string.rpartition(':') # noqa
         # strip out any letters that might remain...
         price_string = re.sub(r'[a-zA-Z]', '', price_string)
         try:
@@ -141,11 +144,11 @@ def regularize_price(price_string):
                 price = int(float(re.sub(r'[$,]', '', price_string)))
             except ValueError:
                 price = -1
-    else: # was passed something other than a string (int, float, ...?)
+    else:  # was passed something other than a string (int, float, ...?)
         # lets try force-converting it; if that fails then....
         try:
-            price = int(price_string) # which isn't a string
-        except: # eat any error here
+            price = int(price_string)  # which isn't a string
+        except (ValueError, TypeError):
             price = -1
     return price
 
@@ -167,12 +170,12 @@ def regularize_year_make_model(year_make_model_string):
     makemodel = None
     make = None
     model = None
-    if year_make_model_string: # is not None or ''
+    if year_make_model_string:  # is not None or ''
         words = year_make_model_string.split(" ")
         for word in range(0, len(words) - 1):
             try:
-                s = words[word].strip("'`\"") # strip likely junk (e.g. '67)
-                s = s.split('.')[0] # chop any trailing decimal (e.g. 1973.5)
+                s = words[word].strip("'`\"")  # strip likely junk (e.g. '67)
+                s = s.split('.')[0]  # chop any trailing decimal (e.g. 1973.5)
                 num = int(s)
                 if num > 1900 and num < 2020:
                     year = num
@@ -180,32 +183,34 @@ def regularize_year_make_model(year_make_model_string):
                     year = 1900 + num
                 if num < 20:
                     year = 2000 + num
-                if year: # only look for makemodel in the remaining words
+                if year:  # only look for makemodel in the remaining words
                     if len(words) > word:
                         makemodel = words[(word+1):]
                 break
             except ValueError:
-                pass # that wasn't it... no harm, no foul
+                pass  # that wasn't it... no harm, no foul
 
-        if not year: # then we see no year in the offered string
+        if not year:  # then we see no year in the offered string
             # this means we're not doing well and will probably trash this
             # anyway, but let's see what we get when we look for a make
             for word in range(0, len(words)-1):
                 try:
-                    s = words[0].strip("'` *~_\"\t") # strip likely junk
-                    ncm = G_makes[s.upper()]
+                    s = words[0].strip("'` *~_\"\t")  # strip likely junk
+                    ncm = _MAKES[s.upper()]
                     make = ncm.canonical_name
                     # apply the ncm's deltas, then take the rest as model
                     modellist = []
-                    if word == len(words)-1: # this is the end of the string
+                    if word == len(words)-1:  # this is the end of the string
                         modellist = []
                     else:
                         modellist = words[(word+1):]
                     # GEE TODO handle multiple words here;
                     # for now just the first
-                    if (ncm.consume_list and modellist and
-                        modellist[0] in ncm.consume_list):
-                        modellist.pop(0) # throw it away
+                    if (
+                            ncm.consume_list and modellist and
+                            modellist[0] in ncm.consume_list
+                    ):
+                        modellist.pop(0)  # throw it away
                     if ncm.push_list:
                         modellist = ncm.push_list + modellist
                     # GEE TODO: check if the push word(s) are already there
@@ -213,26 +218,28 @@ def regularize_year_make_model(year_make_model_string):
                     model = ' '.join(modellist).strip("'` *~_\"\t")
                     break
                 except KeyError:
-                    pass # that wasn't it... no harm, no foul
+                    pass  # that wasn't it... no harm, no foul
             # if the for loop finishes without finding a make, then screw it...
             # leave stuff blank
 
-            makemodel = words # use the whole list-of-words from the string
+            makemodel = words  # use the whole list-of-words from the string
 
-        elif year and makemodel: # we did find both year and remaining string
+        elif year and makemodel:  # we did find both year and remaining string
             # jackpot!
             # GEE TODO: apply the real make/model regularization here
             make = makemodel[0].strip("'` *~_\"\t")
             try:
                 model_list = []
                 modelstem = []
-                ncm = G_makes[make.upper()]
+                ncm = _MAKES[make.upper()]
                 make = ncm.canonical_name
-                makemodel.pop(0) # throw away the noncanonical
+                makemodel.pop(0)  # throw away the noncanonical
                 # GEE TODO handle multiple words here; for now just the first
-                if (ncm.consume_list and makemodel and
-                    makemodel[0] in ncm.consume_list):
-                    makemodel.pop(0) # throw it away
+                if (
+                        ncm.consume_list and makemodel and
+                        makemodel[0] in ncm.consume_list
+                ):
+                    makemodel.pop(0)  # throw it away
                 if ncm.push_list:
                     modelstem = ncm.push_list
                     # GEE TODO: check if the push word(s) are already there
@@ -240,20 +247,20 @@ def regularize_year_make_model(year_make_model_string):
                 else:
                     modelstem = []
                 model_list = modelstem + makemodel
-            except KeyError as e:
+            except KeyError:
                 # didn't find it; assume we're OK with make as given
                 make = make.title().strip("'` *~_\"\t") # initcap it
                 if len(makemodel) > 1:
                     model_list = makemodel[1:]
             model = ' '.join(model_list).strip("'` *~_\"\t")
-        else: # found a potential year string but no make/model after it
+        else:  # found a potential year string but no make/model after it
             # this is likely a false positive; let's chuck even the year
             # and tell the caller we found nothing
             year = None
             make = None
             model = None
 
-        return (str(year), make, model) # backconvert year to string
+        return (str(year), make, model)  # backconvert year to string
 
 
 # make_sure_path_exists()
@@ -277,7 +284,7 @@ def is_car_interesting(listing, include_unknown_makes=True):
     if int(listing.model_year) > 1800 and int(listing.model_year) <= 1975:
         return True # automatically interesting
     if not include_unknown_makes:
-        if listing.make not in G_makes:
+        if listing.make not in _MAKES:
             return False
     # GEE TODO: case of comparisons & substrings make this.... interesting
     if listing.make not in _BORING_MAKES:
@@ -385,8 +392,8 @@ def carbuffs_parse_listing(listing, entry, detail):
          detail.find(class_='car-name').text)
 
     # common name/value patterns in details page:
-    #<li><strong>Car model year:</strong> 1963</li>
-    #<p class="car-asking-price"><strong>Asking Price:</strong> $89,950</p>
+    # <li><strong>Car model year:</strong> 1963</li>
+    # <p class="car-asking-price"><strong>Asking Price:</strong> $89,950</p>
     pe = detail.find('strong', text='Asking Price:')
     if pe is not None:
         pe = pe.next_sibling
@@ -695,7 +702,7 @@ def pull_dealer_inventory(dealer, session=None):
 
     # implicit param from environment:
     # [currently unused in dealer pulls, but for consistency & future use...]
-    inv_settings = os.environ.get('OGL_INV_SETTINGS', '')
+    # inv_settings = os.environ.get('OGL_INV_SETTINGS', '')
 
     list_of_listings = []
     last_local_id = None
@@ -805,7 +812,7 @@ def pull_dealer_inventory(dealer, session=None):
                         # if the detail page is well-formed (has a body)
                         # then throw out the rest & keep just the body
                         body = detail.find('body')
-                        if (body):
+                        if body:
                             detail = body
 
                     except urllib.error.HTTPError as error:
@@ -828,25 +835,28 @@ def pull_dealer_inventory(dealer, session=None):
             # pick the longest string in a likely tag within the entry
             listing.listing_text = ''
             for tag in entry.descendants:
-                if (tag.name == 'p' or tag.name == 'div' or tag.name == 'li' or
-                    tag.name == 'span' or tag.name == 'td'):
-                    if (len(tag.text) > 50 and
-                        len(tag.text) > len(listing.listing_text)):
+                if tag.name in ['p', 'div', 'li', 'span', 'td']:
+                    if (
+                            len(tag.text) > 50 and
+                            len(tag.text) > len(listing.listing_text)
+                    ):
                         listing.listing_text = tag.text
             # if that failed, try to find something on the detail page
             if detail and not listing.listing_text:
                 for tag in detail.descendants:
-                    if (tag.name == 'p' or tag.name == 'div' or
-                        tag.name == 'li' or
-                        tag.name == 'span' or tag.name == 'td'):
-                        if (len(tag.text) > 50 and
-                            len(tag.text) > len(listing.listing_text)):
+                    if tag.name in ['p', 'div', 'li', 'span', 'td']:
+                        if (
+                                len(tag.text) > 50 and
+                                len(tag.text) > len(listing.listing_text)
+                        ):
                             listing.listing_text = tag.text
 
             # many sites have no stock#/inventory ID; default to the unique
             # URL element. note that this will be wonky for item(s) that are
             # 'coming soon' (no detail page exists yet)
-            listing.local_id = listing.listing_href.rstrip('/').split('/')[-1].replace('.html', '')
+            listing.local_id = (
+                listing.listing_href.rstrip('/').
+                split('/')[-1].replace('.html', ''))
             listing.stock_no = listing.local_id # no separate stock_no
 
             # see if the listing is marked as sold?
@@ -855,8 +865,10 @@ def pull_dealer_inventory(dealer, session=None):
                 # used to also check detail but that was getting too many false
                 # positives due to 'VIEW CARS SOLD' link or similar on the page
                 listing.status = 'S' # 'S' -> Sold
-            elif (entry.find(text=re.compile(r'SALE PENDING')) or
-                (detail and detail.find(text=re.compile(r'SALE PENDING')))):
+            elif (
+                    entry.find(text=re.compile(r'SALE PENDING')) or
+                    (detail and detail.find(text=re.compile(r'SALE PENDING')))
+            ):
                 listing.status = 'P' # 'P' -> Sale Pending
             else:
                 listing.status = 'F' # 'F' -> For Sale
@@ -872,9 +884,8 @@ def pull_dealer_inventory(dealer, session=None):
 
             # call the dealer-specific method
             # GEE TODO need to define some sort of error-handling protocol...
-            ok = (ok and globals()[dealer.parse_listing_func](listing,
-                                                              entry,
-                                                              detail))
+            ok = (ok and
+                  globals()[dealer.parse_listing_func](listing, entry, detail))
             if ok:
                 # check for common errors / signs of trouble:
                 # need a listing_id
@@ -893,7 +904,7 @@ def pull_dealer_inventory(dealer, session=None):
                     listing.model_year = str(listing.model_year)
                 else:
                     try:
-                        junk = int(listing.model_year) # convert it
+                        int(listing.model_year) # convert it
                     except ValueError:
                         listing.model_year = '1' #oops
 
@@ -1078,8 +1089,10 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
             logging.error('eBay reports failure: {}'.format(response))
             break # note: breaks out of loop over pages
         # _count may be empty, or '0', or 0, or... who knows, but skip it
-        if (not r['searchResult']['_count']
-            or int(r['searchResult']['_count']) == 0):
+        if (
+                not r['searchResult']['_count']
+                or int(r['searchResult']['_count']) == 0
+        ):
             logging.warning('eBay returned a set of zero records')
             break # note: breaks out of loop over pages
 
@@ -1100,7 +1113,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
                         # only take the 1st 4 chars because of an eBayism
                         # of sometimes having trailing 0s (e.g. 20140000)
                         listing.model_year = attr['value'][:4]
-            except (KeyError, TypeError) as e:
+            except (KeyError, TypeError):
                 # note: got an odd TypeError once because on one record eBay
                 # returned a string rather than a hash for an attr (!). The
                 # inconsistency makes no sense, but I guess it is just another
@@ -1123,7 +1136,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
             try:
                 listing.price = regularize_price(
                     item['sellingStatus']['buyItNowPrice']['value'])
-            except:
+            except (AttributeError, TypeError, ValueError):  # all required?
                 listing.price = regularize_price(
                     item['sellingStatus']['currentPrice']['value'])
 
@@ -1136,8 +1149,8 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
 
             # validate model_year
             try:
-                junk = int(listing.model_year)
-            except (ValueError, TypeError) as e:
+                int(listing.model_year)
+            except (ValueError, TypeError):
                 logging.warning('bad year [%s] for item %s',
                                 listing.model_year, listing.local_id)
                 listing.model_year = '1'
@@ -1359,7 +1372,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
 
         try:
             listing.pic_href = item.images[0]['full']
-        except (KeyError, IndexError) as e:
+        except (KeyError, IndexError):
             listing.pic_href = 'N/A'
         listing.listing_href = item.external_url
         # use the source identifier to minimize dupes
@@ -1397,8 +1410,8 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
 
         # validate model_year
         try:
-            junk = int(listing.model_year)
-        except (ValueError, TypeError) as e:
+            int(listing.model_year)
+        except (ValueError, TypeError):
             logging.warning('bad year [%s] for item %s',
                             listing.model_year, listing.local_id)
             listing.model_year = '1'
@@ -1677,7 +1690,8 @@ def add_or_update_found_listing(session, current_listing):
     logging.debug('checking on existence of listing %s',
                   current_listing.local_id)
     try:
-        existing_listing = session.query(Listing).filter_by(local_id=current_listing.local_id).one()
+        existing_listing = session.query(Listing).filter_by(
+            local_id=current_listing.local_id).one()
 
         logging.debug('found: {}'.format(existing_listing))
         if existing_listing.markers:
@@ -1701,7 +1715,7 @@ def add_or_update_found_listing(session, current_listing):
             current_listing.removal_date = datetime.datetime.now()
         # all other fields will be taken from the current listing record
 
-    except NoResultFound as e:
+    except NoResultFound:
         logging.debug('no match for local_id=%s',
                       current_listing.local_id)
         pass # current_listing will not get an id until merge & flush
