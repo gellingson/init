@@ -1,3 +1,4 @@
+
 # coding: utf-8
 from decimal import Decimal
 import re
@@ -166,7 +167,7 @@ class Listing(IDMixIn, Base):
     @reconstructor
     def init_on_load(self):
         if self.tags:
-            self.tagset = set(self.tags.split(':'))
+            self.tagset = set(self.tags.split(' '))
         else:
             self.tagset = set()
 
@@ -174,21 +175,21 @@ class Listing(IDMixIn, Base):
         self.tagset.add(tag)
         # writethrough to the underlying column now
         # GEE TODO: would be more efficient to writethrough only @ write hook?
-        self.tags = ':'.join(self.tagset)
+        self.tags = ' '.join(self.tagset)
 
     def add_tags(self, tags):
         if tags:
-            self.tagset.union(tags)
+            self.tagset = self.tagset.union(tags)
             # writethrough to the underlying column now
             # GEE TODO: more efficient to writethrough only @ write hook?
-            self.tags = ':'.join(self.tagset)
+            self.tags = ' '.join(self.tagset)
 
     def remove_tag(self, tag):
         # .remove() would raise KeyError if not found; .discard() does not
         self.tagset.discard(tag)
         # writethrough to the underlying column now
         # GEE TODO: would be more efficient to writethrough only @ write hook?
-        self.tags = ':'.join(self.tagset)
+        self.tags = ' '.join(self.tagset)
 
     def add_markers(self, more_markers):
         if not self.markers:
@@ -223,6 +224,10 @@ class ConceptTag(IDMixIn, Base):
     syn_of_tag_id = Column(Integer, ForeignKey('concept_tag.id'))
     display_tag = Column(String(20))
 
+    # GEE TODO: implement recursive pull of implied tags
+    def implied_tags(level=9):
+        # default level limit is just to catch if something is wonky
+        return []
 
 class ConceptImplies(IDMixIn, Base):
 

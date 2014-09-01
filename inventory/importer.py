@@ -263,6 +263,104 @@ def regularize_year_make_model(year_make_model_string):
         return (str(year), make, model)  # backconvert year to string
 
 
+# tagify()
+#
+# examines a listing and adds tags
+#
+# ok if the listing already has tags; this will be additive, not replace
+# (but conflicting tags may be removed; e.g. if we determine this is a
+# sportscar we might remove an suv tag if one exists on the listing)
+#
+# NOTE: THIS MAY ALSO MODIFY OTHER ASPECTS OF THE LISTING!
+#
+def tagify(listing):
+    new_tags = []
+    remove_tags = []  # not sure if we want to do this...
+    make = None
+
+    # GEE TODO: maybe we should be doing some of this tagging in the
+    # relevant regularize() methods?
+
+    if (
+            listing.make.upper() in _MAKES and
+            _MAKES[listing.make.upper()].canonical_name == listing.make
+    ):
+        make = _MAKES[listing.make.upper()]
+        new_tags.append('known_make')
+    else:
+        new_tags.append('unknown_make')
+
+    # models may be 1 or 2 words long, and it is OK if the listing has
+    # extra words on the end of the model string; ignore them
+    if make and listing.model:
+        model = None
+        modelwordlist = listing.model.split(' ')
+        if (
+                modelwordlist[0].upper() in _MODELS and
+                _MODELS[modelwordlist[0].upper()].non_canonical_make_id == make.id
+        ):
+            model = _MODELS[modelwordlist[0].upper()]
+        elif len(modelwordlist) >= 2:
+            twowordmodel = ' '.join(modelwordlist[:2]).upper()
+            if (
+                    twowordmodel in _MODELS and
+                    _MODELS[twowordmodel].non_canonical_make_id == make.id
+            ):
+                model = _MODELS[twowordmodel]
+        if model:
+            logging.info('found model: {}'.format(model.canonical_name))
+            new_tags.append('known_model')
+            if model.canonical_name == 'Miata':
+                if listing.model_year <= '1994':
+                    new_tags.append('NA6')
+                    new_tags.append('NA')
+                elif listing.model_year <= '1997':
+                    new_tags.append('NA8')
+                    new_tags.append('NA')
+                elif listing.model_year <= '2005':
+                    new_tags.append('NB')
+                elif listing.model_year <=' 2014':
+                    new_tags.append('NC')
+                else:
+                    new_tags.append('ND')
+            if model.canonical_name == 'Corvette':
+                if listing.model_year <= '1962':
+                    new_tags.append('C1')
+                elif listing.model_year <= '1967':
+                    new_tags.append('C2')
+                elif listing.model_year <= '1983':
+                    new_tags.append('C3')
+                elif listing.model_year <= '1996':
+                    new_tags.append('C4')
+                elif listing.model_year <= '2004':
+                    new_tags.append('C5')
+                elif listing.model_year <= '2013':
+                    new_tags.append('C6')
+                else:
+                    new_tags.append('C7')
+        else:
+            new_tags.append('unknown_model')
+
+        # GEE TODO: method not yet implemented; also, resolve handling of
+        # text and ConceptTag objects!
+        #implied_tag_set = set()
+        #for tag in new_tags:
+        #    implied_tag_set.add(_TAGS[tag].implied_tags())
+        #new_tags.append(implied_tag_set)
+
+    if new_tags:
+        logging.info('adding tags: {} for {} {} {}'.format(new_tags, listing.model_year, listing.make, listing.model))
+    else:
+        logging.info('no new tags')
+    listing.add_tags(new_tags)
+    logging.info('resulting tags are: {}'.format(listing.tags))
+
+    # GEE TODO: if I'm really going to use this mechanism (much) then
+    # I should make a remove_tags() method
+    for tag in remove_tags:
+        listing.remove_tag(tag)
+
+
 # make_sure_path_exists()
 #
 # utility method that will create any missing components of the given path
@@ -909,6 +1007,9 @@ def pull_dealer_inventory(dealer, session=None):
                         listing.model_year = '1' #oops
 
             if ok:
+                if is_car_interesting(listing):
+                    listing.add_tag('interesting')
+                tagify(listing)
                 list_of_listings.append(listing)
                 logging.debug('pulled listing: {}'.format(listing))
             else:
@@ -1162,6 +1263,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
                     ok = False # throw it away for limited inventory stages
 
             if ok:
+                tagify(listing)
                 list_of_listings.append(listing)
                 logging.debug('pulled listing: {}'.format(listing))
             else:
@@ -1426,6 +1528,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
                     ok = False # throw it away for limited inventory stages
 
         if ok:
+            tagify(listing)
             list_of_listings.append(listing)
             logging.debug('pulled listing: {}'.format(listing))
         else:
@@ -1707,7 +1810,7 @@ def add_or_update_found_listing(session, current_listing):
         # mark the current record with the id of the existing record
         # and carry forward (merge) tags and markers, etc
         current_listing.id = existing_listing.id
-        current_listing.add_tags(existing_listing.tags)
+        current_listing.add_tags(existing_listing.tagset)
         current_listing.add_markers(existing_listing.markers)
         current_listing.listing_date = existing_listing.listing_date
         if current_listing.status != 'F' and not existing_listing.removal_date:
