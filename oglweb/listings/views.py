@@ -24,7 +24,16 @@ _VALID_FILTERS = {'miatas': 'model:miata',
 def homepage(request):
     context = {'fubar': 'barfu'}
     return render(request, 'listings/homepage.html', context)
-    
+
+
+def about(request, filter=None):
+    context = {'fubar': 'barfu'}
+    if filter=='miatas':
+        return render(request, 'listings/miatas-about.html', context)
+    else:
+        return render(request, 'listings/about.html', context)
+
+
 def index(request, filter=None):
 
     error_message = None
@@ -38,10 +47,10 @@ def index(request, filter=None):
     if filter:
         print('filter detected: {}'.format(filter));
         if filter in _VALID_FILTERS:
-            error_message = 'Limiting as per filter {}: {}'.format(filter, _VALID_FILTERS[filter])
+            #error_message = 'Limiting as per filter {}: {}'.format(filter, _VALID_FILTERS[filter])
             search_filter = _VALID_FILTERS[filter]
         else:
-            error_message = 'Invalid filter {}'.format(filter)
+            #error_message = 'Invalid filter {}'.format(filter)
             # go to the main page sans filter
             print("REDIRECTING")
             return HttpResponseRedirect(reverse('allcars'))
@@ -51,7 +60,7 @@ def index(request, filter=None):
     # get listings to display
     search_string = ''
     listings = []
-    search_criteria = 'latest interesting cars'
+    search_criteria = 'most recently-listed cars'
 
     try:
         search_string = request.GET['search_string']

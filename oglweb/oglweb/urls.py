@@ -15,6 +15,10 @@ urlpatterns = [
     # url(r'^$', oglviews.fubar, name='homepage'),
     #url(r'^cars/search/$', views.index, name='search'),
     url(r'^$', views.homepage, name='homepage'),
+    url(r'^about$', views.about, name='about'),
+    # GEE TODO: /about and /cars/about -> the same place; clean that up
+    url(r'^cars/about$', views.about, name='about'),
+    url(r'^cars/(?P<filter>[a-z]+)/about$', views.about, name='filter-about'),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^cars/$', views.index, name='allcars'),
     url(r'^cars/rss/$', ListingsFeed(), name='rss'),
