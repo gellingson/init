@@ -81,6 +81,10 @@ removal_date   DATETIME,
 last_update    DATETIME,
 primary key (id)
 );
+create index sourceidx on listing(source_type, source_id);
+create index sourcetextidx on listing(source_textid);
+create index localididx on listing(local_id);
+
 
 # MAKE
 #

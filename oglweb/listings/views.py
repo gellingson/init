@@ -45,17 +45,13 @@ def index(request, filter=None):
     context['post_url'] = request.path_info
 
     if filter:
-        print('filter detected: {}'.format(filter));
         if filter in _VALID_FILTERS:
             #error_message = 'Limiting as per filter {}: {}'.format(filter, _VALID_FILTERS[filter])
             search_filter = _VALID_FILTERS[filter]
         else:
             #error_message = 'Invalid filter {}'.format(filter)
             # go to the main page sans filter
-            print("REDIRECTING")
             return HttpResponseRedirect(reverse('allcars'))
-#    else:
-        #print('filter NOT detected');
 
     # get listings to display
     search_string = ''
@@ -66,8 +62,6 @@ def index(request, filter=None):
         search_string = request.GET['search_string']
     except MultiValueDictKeyError:
         pass  # no criteria specified; get recent listings
-    print('filter string is {}'.format(search_filter))
-    print('search string is {}'.format(search_string))
     if search_string:
         es = Elasticsearch()
         if search_filter:

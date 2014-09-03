@@ -9,9 +9,14 @@
 
 alter table listing add (tags varchar(2048));
 
+# heh, indices! Forgot a bunch of them!
+create index sourceidx on listing(source_type, source_id);
+create index sourcetextidx on listing(source_textid);
+create index localididx on listing(local_id);
+
 # non_canonical_make: field lengths shrank, and we never
 # actually created it formally anyway, so do so here
-# (even though we may find it conventient to use sqldump)
+# (even though we may find it convenient to use sqldump)
 # see schema.sql for more docs
 
 create table non_canonical_make(
