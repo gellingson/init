@@ -1985,7 +1985,7 @@ def main():
     args = process_command_line()
 
     # start logging
-    logging.basicConfig(level=args.log_level.upper())
+    logging.basicConfig(level=args.log_level.upper(),format='%(asctime)s %(message)s')
 
     # establish connections to required services (db & es)
     session = None # the SQLAlchemy session
