@@ -9,6 +9,21 @@
 
 alter table listing add (tags varchar(2048));
 
+# non_canonical_make: field lengths shrank, and we never
+# actually created it formally anyway, so do so here
+# (even though we may find it conventient to use sqldump)
+# see schema.sql for more docs
+
+create table non_canonical_make(
+id                int unsigned not null auto_increment,
+non_canonical_name  varchar(50),
+canonical_name		varchar(50),
+consume_words		varchar(100),
+push_words			varchar(100),
+primary key (id),
+unique index (non_canonical_name),
+index ncn(non_canonical_name));
+
 # non_canonical_model - see schema.sql for more docs
 create table non_canonical_model(
 id   int unsigned not null auto_increment,

@@ -8,17 +8,18 @@
 # GEE TODO currency handling
 
 # builtin modules used
-import sys
 import argparse
-import re
+from base64 import b64decode
+import datetime
+import errno
 import json
+import logging
+import os
+import re
+import sys
 import urllib.request
 import urllib.error
 import urllib.parse
-import os
-import errno
-import logging
-import datetime
 
 # third party modules used
 from bunch import Bunch
@@ -282,7 +283,7 @@ def tagify(listing):
     # relevant regularize() methods?
 
     if (
-            listing.make.upper() in _MAKES and
+            listing.make and listing.make.upper() in _MAKES and
             _MAKES[listing.make.upper()].canonical_name == listing.make
     ):
         make = _MAKES[listing.make.upper()]
@@ -349,11 +350,12 @@ def tagify(listing):
         #new_tags.append(implied_tag_set)
 
     if new_tags:
-        logging.info('adding tags: {} for {} {} {}'.format(new_tags, listing.model_year, listing.make, listing.model))
+        logging.debug('adding tags: %s for %s %s %s',
+                      new_tags, listing.model_year,
+                      listing.make, listing.model)
     else:
-        logging.info('no new tags')
+        logging.debug('no new tags')
     listing.add_tags(new_tags)
-    logging.info('resulting tags are: {}'.format(listing.tags))
 
     # GEE TODO: if I'm really going to use this mechanism (much) then
     # I should make a remove_tags() method
@@ -378,17 +380,26 @@ def make_sure_path_exists(path):
 #
 # crummy kludge to filter to cars we want for now vs ones we don't
 #
-def is_car_interesting(listing, include_unknown_makes=True):
+# parameters:
+# listing: the listing to examine
+# unknown_make_is_interesting: if True then an unknown make is interesting
+# (defaults to True because this catches good oddities; set to False for
+# particularly dirty sources where you have lots of junky records)
+#
+def is_car_interesting(listing, unknown_make_is_interesting=True):
     if int(listing.model_year) > 1800 and int(listing.model_year) <= 1975:
         return True # automatically interesting
-    if not include_unknown_makes:
+    if not unknown_make_is_interesting:
         if listing.make not in _MAKES:
             return False
-    # GEE TODO: case of comparisons & substrings make this.... interesting
+    # GEE TODO: case of comparisons & substrings make this.... interesting.
+    # we need to split model to model/submodel, then us db rels/orm model
+    # objects to make all this easier to handle without all the string stuff
     if listing.make not in _BORING_MAKES:
         # wow is this inefficient - need make/model db stuff
         return True
-    if listing.model in _INTERESTING_MODELS: # pull particular models back in
+    # pull particular models back in
+    if listing.model and listing.model.split(' ')[0] in _INTERESTING_MODELS:
         return True
     if int(listing.price) > 100000: # Prima facia evidence of interesting? :)
         return True
@@ -890,8 +901,8 @@ def pull_dealer_inventory(dealer, session=None):
                     scheme = 'tel'
                 if scheme and scheme != 'http' and scheme != 'https':
                     # uh... let's skip this one if we can't link to it as http
-                    logging.warn('found non-http detail URL: {}'.format(
-                        detail_url))
+                    logging.warning('found non-http detail URL: %s',
+                                    detail_url)
                     listing.listing_href = detail_url # just to prevent barfs
                     ok = False
                 else:
@@ -1169,8 +1180,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
                                             colors[inventory_marker['sub']]})
 
     # log the API request for page 1 (not again each page inside the next loop)
-    logging.info('eBay API request: {}'.format(api_request))
-    # xyzzy make this a debug instead!
+    logging.debug('eBay API request: {}'.format(api_request))
 
     while True:
 
@@ -1219,7 +1229,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
                 # returned a string rather than a hash for an attr (!). The
                 # inconsistency makes no sense, but I guess it is just another
                 # way for the record to be messed up & missing model_year
-                listing.model_year = 'None'
+                listing.model_year = None
             listing.make = item['title'].split(':')[0].strip()
             listing.model = item['primaryCategory']['categoryName']
             # ^^ alternatively could often get more info from title
@@ -1237,7 +1247,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
             try:
                 listing.price = regularize_price(
                     item['sellingStatus']['buyItNowPrice']['value'])
-            except (AttributeError, TypeError, ValueError):  # all required?
+            except (KeyError, AttributeError, TypeError, ValueError):
                 listing.price = regularize_price(
                     item['sellingStatus']['currentPrice']['value'])
 
@@ -1384,7 +1394,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
            'category,location,external_id,external_url,'
            'heading,body,timestamp,timestamp_deleted,expires'
            ',language,price,currency,images,annotations,'
-           'deleted,flagged_status,state,status')
+           'deleted,flagged_status,state,status,html')
     url_params = ['&source={}'.format(classified.textid.upper())]
     url_params.append('&anchor={}'.format(inventory_marker))
     if inv_settings == 'limited':
@@ -1432,45 +1442,82 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
         listing.source_id = classified.id
         listing.source_textid = classified.textid
 
-        # GEE TODO: handle full html for annotation info (make/model/year)
-        # carsd seems to have consistent year/make/model
+        # there are three possible places to find year/make/model from 3taps:
+        # annotations, the listing heading, or the full listing html.
+        # grab the first 2, the 3rd contingently, and keep the best-looking.
+
+        # a few notes on feed quality:
+        # carsd seems to have consistent year/make/model in annotations
         # autod usually has all three but not always
         # craig sometimes has year, but usually not the other two
-        # in all cases, let's take the best we can get
-        # (without triggering key errors for missing annotations)
-        model_year = None
-        make = None
-        model = None
-        if 'year' in item.annotations:
-            model_year = item.annotations['year']
-        if 'make' in item.annotations:
-            make = item.annotations['make']
-        if 'model' in item.annotations:
-            model = item.annotations['model']
-        if model_year and make and model:
-            (listing.model_year,
-             listing.make,
-             listing.model) = regularize_year_make_model(
-                 ' '.join([model_year, make, model]))
-        elif 'heading' in item and item.heading: # present and non-empty
-            (listing.model_year,
-             listing.make,
-             listing.model) = regularize_year_make_model(item.heading)
 
-            if listing.model_year == 1 and model_year:
-                # then I didn't get any year from the heading
-                # but I can use the model_year from the annotations
-                listing.model_year = model_year
-            elif model_year and (listing.model_year != model_year):
-                # WTF, mismatch? Take the annotation one (more reliable)
-                logging.warn('overriding heading year of %s with ' +
-                             'annotation year of %s',
-                             listing.model_year, model_year)
-                listing.model_year = model_year
-        else: # no annotation or heading to pull year/make/model??
-            ok = False
-            logging.warn('skipping item with no year/make/model info: %s',
-                         item)
+        an_model_year = he_model_year = ht_model_year = None
+        an_make = he_make = ht_make = None
+        an_model = he_model = ht_model = None
+
+        # from the annotations:
+        if 'year' in item.annotations:
+            an_model_year = item.annotations['year']
+        if 'make' in item.annotations:
+            an_make = item.annotations['make']
+        if 'model' in item.annotations:
+            an_model = item.annotations['model']
+        # now regularize them (if we found all three annotations)
+        if an_model_year and an_make and an_model:
+            (an_model_year,
+             an_make,
+             an_model) = regularize_year_make_model(
+                 ' '.join([an_model_year, an_make, an_model]))
+
+        # from the heading
+        if 'heading' in item and item.heading: # present and non-empty
+            (he_model_year,
+             he_make,
+             he_model) = regularize_year_make_model(item.heading)
+
+        # now, are we OK with what we got so far?
+        if an_model_year and an_model_year > '1800' and an_model_year < '2020':
+            listing.model_year = an_model_year
+        else:
+            listing.model_year = he_model_year
+        if (
+                (an_make and an_make in _MAKES) or
+                not he_make or he_make not in _MAKES
+        ):
+            listing.make = an_make
+            if an_model:  # take any model found with the winning make
+                listing.model = an_model
+            else:
+                listing.model = he_model
+        else:
+            listing.make = he_make
+            if he_model:
+                listing.model = he_model
+            else:
+                listing.model = an_model
+
+        # OK, how did we do?
+        # we may not have gotten year/make/model from either of the above.
+        # for craigslist we can look one more place: the full html
+        # ... which contains one ore more <p class="attrgroup">
+        # ... one of which which often contains a <span> with Y/M/M info.
+        # GEE TODO: some of the other attrgroup spans are also interesting
+        if (
+                (not listing.model_year or not listing.make) and
+                classified.textid == 'craig' and 'html' in item
+        ):
+            html = b64decode(item.html)
+            soup = BeautifulSoup(html)
+            for p in soup.find_all(class_='attrgroup'):
+                for span in p.find_all('span'):
+                    if not listing.model_year or not listing.make:
+                        (listing.model_year,
+                         listing.make,
+                         listing.model) = regularize_year_make_model(span.text)
+        # year/make/model we ended up with [and what we started from]
+        logging.debug('Final year/make/model: %s %s %s [an: %s %s %s, h: %s]',
+                      listing.model_year, listing.make, listing.model,
+                      an_model_year, an_make, an_model, item.heading)
 
         try:
             listing.pic_href = item.images[0]['full']
@@ -1484,10 +1531,10 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
         if not listing.local_id:
             # some feeds (e.g. autod) *occasionally* lack the local_id;
             # fall back to stock_no
-            logging.warn('listing for a %s %s %s has no local ID; ' +
-                         'using 3taps ID %s',
-                         listing.model_year, listing.make, listing.model,
-                         listing.stock_no)
+            logging.warning('listing for a %s %s %s has no local ID; ' +
+                            'using 3taps ID %s',
+                            listing.model_year, listing.make, listing.model,
+                            listing.stock_no)
             listing.local_id = listing.stock_no
 
         if 'location' in item:
@@ -1510,22 +1557,38 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
         #except ValueError:
         listing.price = regularize_price(item.price)
 
-        # validate model_year
-        try:
-            int(listing.model_year)
-        except (ValueError, TypeError):
-            logging.warning('bad year [%s] for item %s',
-                            listing.model_year, listing.local_id)
-            listing.model_year = '1'
+        # validate year/make/model (well, the first 2 are sufficient)
+        if not listing.model_year and not listing.model:
+            ok = False
+            logging.warning('skipping item with no year/make/model info: %s',
+                            item)
+        else:
+            try:
+                int(listing.model_year)
+            except (ValueError, TypeError):
+                logging.warning('bad year [%s] for item %s',
+                                listing.model_year, listing.local_id)
+                listing.model_year = '1'
 
-            # be tougher on cl listings for now because there is so much junk
-            if is_car_interesting(listing,
-                                  include_unknown_makes=(
-                                      classified.textid == 'craig')):
-                listing.add_tag('interesting')
-            else:
-                if inv_settings == 'limited':
-                    ok = False # throw it away for limited inventory stages
+        # be tougher on cl listings for now because there is so much junk
+        if ok and is_car_interesting(listing,
+                                     unknown_make_is_interesting=(
+                                         classified.textid != 'craig')):
+            listing.add_tag('interesting')
+        else:
+            if inv_settings == 'limited':
+                ok = False # throw it away for limited inventory stages
+
+        # a few more CL junk-data tests: drop records that fail
+        if ok and classified.textid == 'craig' and not listing.has_tag('interesting'):
+            if not listing.year or listing.year < '1800':
+                logging.warning('skipping item with no useful year: %s',
+                                item)                
+                ok = False
+            if not listing.model or listing.model == 'None':
+                logging.warning('skipping item with no useful model: %s',
+                                item)
+                ok = False
 
         if ok:
             tagify(listing)
@@ -1925,7 +1988,13 @@ def main():
     es = None # and the indexing connection
 
     try:
-        sqla_db_string = 'mysql+pymysql://{}:{}@{}/{}'.format(
+        # GEE TODO: recommended connection string adds &use_unicode=0 "because
+        # python is faster at unicode than mysql" (per sqlalchemy docs), but
+        # fuck faster if it doesn't work at all: that generates this error:
+        # TypeError: conversion from bytes to Decimal is not supported
+        # ... which is a dead end.
+        connect_str = 'mysql+pymysql://{}:{}@{}/{}?charset=utf8'
+        sqla_db_string = connect_str.format(
             os.environ['OGL_DB_USERACCOUNT'],
             os.environ['OGL_DB_USERACCOUNT_PASSWORD'],
             os.environ['OGL_DB_HOST'],

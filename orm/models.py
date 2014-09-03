@@ -191,6 +191,9 @@ class Listing(IDMixIn, Base):
         # GEE TODO: would be more efficient to writethrough only @ write hook?
         self.tags = ' '.join(self.tagset)
 
+    def has_tag(self, tag):
+        return tag in self.tagset
+
     def add_markers(self, more_markers):
         if not self.markers:
             self.markers = more_markers
