@@ -1,4 +1,4 @@
-#!/usr/local/bin/python3
+#!/usr/bin/env python3
 # this is a convenience script to index all the listings in the db (without having to go re-import them)
 
 # builtin modules used

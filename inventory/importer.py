@@ -309,7 +309,8 @@ def tagify(listing):
             ):
                 model = _MODELS[twowordmodel]
         if model:
-            logging.info('found model: {}'.format(model.canonical_name))
+
+            logging.debug('found model: %s', model.canonical_name)
             new_tags.append('known_model')
             if model.canonical_name == 'Miata':
                 if listing.model_year <= '1994':
@@ -1857,7 +1858,9 @@ def add_or_update_found_listing(session, current_listing):
                   current_listing.local_id)
     try:
         existing_listing = session.query(Listing).filter_by(
-            local_id=current_listing.local_id).one()
+            local_id=current_listing.local_id,
+            source_type=current_listing.source_type,
+            source_id=current_listing.source_id).one()
 
         logging.debug('found: {}'.format(existing_listing))
         if existing_listing.markers:
