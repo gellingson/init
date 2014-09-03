@@ -1092,8 +1092,9 @@ def pull_classified_inventory(classified, inventory_marker=None, session=None):
 # up pile o' crap, so hopefully these APIs will give better results
 #
 # For now, 'limited' pull is interpreted as:
-# * 'local' = 150 miles of 95112, and
 # * 'interesting' filters as described in the named method
+# and 'local' pull is interpreted as:
+# * 'local' = 150 miles of 95112, and
 #
 # GEE TODO: chunking by years may not be entirely sufficient to avoid the 10K
 # limit (and gives us some pretty big work bundles). Should get more granular.
@@ -1158,7 +1159,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
             'pageNumber': 1}
         }
 
-    if inv_settings == 'limited':
+    if 'local' in inv_settings:
         logging.debug('limiting to local cars')
         api_request['itemFilter'].append({'name': 'MaxDistance',
                                           'value': 150})
@@ -1270,7 +1271,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
             if is_car_interesting(listing):
                 listing.add_tag('interesting')
             else:
-                if inv_settings == 'limited':
+                if 'limited' in inv_settings':
                     ok = False # throw it away for limited inventory stages
 
             if ok:
@@ -1398,7 +1399,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
            'deleted,flagged_status,state,status,html')
     url_params = ['&source={}'.format(classified.textid.upper())]
     url_params.append('&anchor={}'.format(inventory_marker))
-    if inv_settings == 'limited':
+    if 'local' in inv_settings:
         logging.debug('limiting to local cars')
         # GEE TODO: note that the anchor will be invalidated if we switch
         # back and forth between local and not
@@ -1577,7 +1578,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
                                          classified.textid != 'craig')):
             listing.add_tag('interesting')
         else:
-            if inv_settings == 'limited':
+            if 'limited' in inv_settings:
                 ok = False # throw it away for limited inventory stages
 
         # a few more CL junk-data tests: drop records that fail
