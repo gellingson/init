@@ -1511,9 +1511,9 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
             html = None
             try:
                 html = b64decode(item.html)
-            except:
+            except binascii.Error:
                 logging.error('Failed to decode item html for item %s',
-                              listing.local_id)
+                              item.external_id)
             if html:
                 soup = BeautifulSoup(html)
                 for p in soup.find_all(class_='attrgroup'):
@@ -1569,7 +1569,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
         if not listing.model_year and not listing.model:
             ok = False
             logging.warning('skipping item with no year/make/model info: %s',
-                            item)
+                            listing.local_id)
         else:
             try:
                 int(listing.model_year)
@@ -1597,6 +1597,14 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
                 logging.warning('skipping item with no useful model: %s',
                                 item)
                 ok = False
+
+        # GEE TODO remove this hack around some problem in my CL logic
+        if classified.textid = 'craig' and (listing.model.beginswith('Miata') or
+                                            listing.model.beginswith('MX') or
+                                            listing.model.beginswith('MIATA')):
+            listing.add_tag('interesting')
+            ok = True
+            
 
         if ok:
             tagify(listing)
