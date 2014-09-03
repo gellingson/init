@@ -1599,9 +1599,10 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
                 ok = False
 
         # GEE TODO remove this hack around some problem in my CL logic
-        if classified.textid = 'craig' and (listing.model.beginswith('Miata') or
-                                            listing.model.beginswith('MX') or
-                                            listing.model.beginswith('MIATA')):
+        if classified.textid == 'craig' and listing.model and (
+                listing.model.startswith('Miata') or
+                listing.model.startswith('MX') or
+                listing.model.startswith('MIATA')):
             listing.add_tag('interesting')
             ok = True
             
