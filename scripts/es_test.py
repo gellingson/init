@@ -1,4 +1,4 @@
-
+from binascii import Error
 from bunch import Bunch
 from datetime import datetime
 from elasticsearch import Elasticsearch

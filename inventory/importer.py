@@ -321,7 +321,7 @@ def tagify(listing):
                     new_tags.append('NA')
                 elif listing.model_year <= '2005':
                     new_tags.append('NB')
-                elif listing.model_year <= '2014':
+                elif listing.model_year <= '2015':
                     new_tags.append('NC')
                 else:
                     new_tags.append('ND')
