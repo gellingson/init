@@ -391,7 +391,10 @@ def is_car_interesting(listing, unknown_make_is_interesting=True):
     if int(listing.model_year) > 1800 and int(listing.model_year) <= 1975:
         return True # automatically interesting
     if not unknown_make_is_interesting:
-        if listing.make not in _MAKES:
+        if not (
+                listing.make and listing.make.upper() in _MAKES and
+                _MAKES[listing.make.upper()].canonical_name == listing.make
+        ):
             return False
     # GEE TODO: case of comparisons & substrings make this.... interesting.
     # we need to split model to model/submodel, then us db rels/orm model
@@ -1511,7 +1514,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
             html = None
             try:
                 html = b64decode(item.html)
-            except binascii.Error:
+            except:  # GEE TODO: figure out how to catch 'binascii.Error'
                 logging.error('Failed to decode item html for item %s',
                               item.external_id)
             if html:
@@ -1583,9 +1586,13 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
                                      unknown_make_is_interesting=(
                                          classified.textid != 'craig')):
             listing.add_tag('interesting')
+            logging.debug('interesting car %s %s %s',
+                          listing.model_year, listing.make, listing.model)
         else:
             if 'limited' in inv_settings:
                 ok = False # throw it away for limited inventory stages
+            logging.debug('UNinteresting car %s %s %s',
+                          listing.model_year, listing.make, listing.model)
 
         # a few more CL junk-data tests: drop records that fail
         if ok and classified.textid == 'craig' and not listing.has_tag('interesting'):
@@ -1597,15 +1604,6 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
                 logging.warning('skipping item with no useful model: %s',
                                 item)
                 ok = False
-
-        # GEE TODO remove this hack around some problem in my CL logic
-        if classified.textid == 'craig' and listing.model and (
-                listing.model.startswith('Miata') or
-                listing.model.startswith('MX') or
-                listing.model.startswith('MIATA')):
-            listing.add_tag('interesting')
-            ok = True
-            
 
         if ok:
             tagify(listing)
