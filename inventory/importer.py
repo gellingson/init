@@ -1508,14 +1508,20 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
                 (not listing.model_year or not listing.make) and
                 classified.textid == 'craig' and 'html' in item
         ):
-            html = b64decode(item.html)
-            soup = BeautifulSoup(html)
-            for p in soup.find_all(class_='attrgroup'):
-                for span in p.find_all('span'):
-                    if not listing.model_year or not listing.make:
-                        (listing.model_year,
-                         listing.make,
-                         listing.model) = regularize_year_make_model(span.text)
+            html = None
+            try:
+                html = b64decode(item.html)
+            except:
+                logging.error('Failed to decode item html for item %s',
+                              listing.local_id)
+            if html:
+                soup = BeautifulSoup(html)
+                for p in soup.find_all(class_='attrgroup'):
+                    for span in p.find_all('span'):
+                        if not listing.model_year or not listing.make:
+                            (listing.model_year,
+                             listing.make,
+                             listing.model) = regularize_year_make_model(span.text)
         # year/make/model we ended up with [and what we started from]
         logging.debug('Final year/make/model: %s %s %s [an: %s %s %s, h: %s]',
                       listing.model_year, listing.make, listing.model,
