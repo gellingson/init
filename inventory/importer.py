@@ -1271,7 +1271,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
             if is_car_interesting(listing):
                 listing.add_tag('interesting')
             else:
-                if 'limited' in inv_settings':
+                if 'limited' in inv_settings:
                     ok = False # throw it away for limited inventory stages
 
             if ok:
