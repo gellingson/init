@@ -1582,7 +1582,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
 
         # a few more CL junk-data tests: drop records that fail
         if ok and classified.textid == 'craig' and not listing.has_tag('interesting'):
-            if not listing.year or listing.year < '1800':
+            if not listing.model_year or listing.model_year < '1800':
                 logging.warning('skipping item with no useful year: %s',
                                 item)                
                 ok = False
