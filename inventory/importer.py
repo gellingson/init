@@ -1523,6 +1523,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
                     listing.model = an_model
 
         # year/make/model we ended up with [and what we started from]
+        # GEE TODO: cl 1996 1996 nissan pulsar -> model=1996 :(. Can fix that one (header was right, annotations and html were wrong)
         if classified.textid == 'craig':
             logging.debug('Final year/make/model: %s %s %s [an: %s %s %s, h: %s, html: %s %s %s]',
                           listing.model_year, listing.make, listing.model,
