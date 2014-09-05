@@ -1673,7 +1673,7 @@ def import_from_dealer(dealer, session, es):
                       dealer.textid)
 
         for listing in db_listings:
-            index_listing(es, listing)
+            index_listing(es, listing, session)
 
     remove_marked_listings('D', dealer.id, session, es=es)
 
@@ -1746,7 +1746,7 @@ def import_from_classified(classified, session, es):
                           classified.textid)
 
             for listing in db_listings:
-                index_listing(es, listing)
+                index_listing(es, listing, session)
 
         # check if we're done?
         if not inventory_marker:
@@ -1924,17 +1924,51 @@ def add_or_update_found_listing(session, current_listing):
 # only indexing the fields, NOT sucking in the full listing detail pages
 # (but we could, if we added the page text to the listing dict)
 #
-def index_listing(es, listing):
+def index_listing(es, listing, session):
     if listing.status == 'F':
         # elasticsearch uses the builtin JSON serialization module, which does
         # not understand arbitrary objects nor does it understand certain types
         # (DateTime, Numeric->Decimal). Fortunately our model types know how to
         # convert themselves to "JSON-safe" dicts....
         if isinstance(listing, Listing):
-            listing_d = dict(listing)
+            listing_d = Bunch(dict(listing))
         else:
             # if we got some other flavor of listing then hope it is safe
             listing_d = listing
+
+        # now invent some virtual derived fields
+
+        # create a virtual location field from the lat/lon
+        if listing_d.lat and listing_d.lon:
+            listing_d.location = {
+                'lat': listing_d.lat, 'lon': listing_d.lon}
+
+        # create a virtual city field from lat/lon OR dealership info
+        d = None
+        c = None
+        if listing_d.source_type == 'D':
+            d = session.query(Dealership).filter_by(id=listing_d.source_id).one()
+        else:
+            c = session.query(Classified).filter_by(id=listing_d.source_id).one()
+        if d:
+            listing_d.city = '{}, {}'.format(d.city, d.state)
+        elif listing_d.lat and listing_d.lon:
+            print("lat/lon = {}/{}".format(listing_d.lat, listing_d.lon))
+            try:
+                zipcode = session.query(Zipcode).filter_by(lat=listing_d.lat,
+                                                           lon=listing_d.lon).one()
+                listing_d.city = '{}, {}'.format(zipcode.city, zipcode.state_code)
+            except NoResultFound:
+                print("oops - couldn't back-find zipcode from lat/lon")
+                listing_d.city = None
+        else:
+            listing_d.city = None
+        # create a virtual pretty-source field
+        if d:
+            listing_d.source = d.full_name
+        else:
+            listing_d.source = c.full_name
+
         es.index(index="carbyr-index", doc_type="listing-type",
                  id=listing_d['id'], body=listing_d)
     else:

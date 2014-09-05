@@ -291,3 +291,11 @@ class Zipcode(Base):
     county = Column(String(100))
     lat = Column(Numeric(10, 7))
     lon = Column(Numeric(10, 7))
+
+class ZipcodeTemp(Base):
+
+    zip = Column(String(5), primary_key=True, server_default=text("''"))
+    city = Column(String(100))
+    state_code = Column(String(2), index=True)
+    lat = Column(Numeric(10, 7))
+    lon = Column(Numeric(10, 7))

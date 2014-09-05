@@ -1,4 +1,6 @@
 
+import json
+
 from bunch import Bunch
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
@@ -7,16 +9,16 @@ from django.utils.datastructures import MultiValueDictKeyError
 
 from elasticsearch import Elasticsearch
 
-from listings.models import Listing
+from listings.models import Zipcode
 from listings.display_utils import prettify_listing
 
 # GLOBALS
 
 # GEE TODO -- should probably move these to the db
 # for now, to add a filter (sub-site) add it here & in db section below
-_VALID_FILTERS = {'miatas': 'model:miata',
-                  'corvettes': 'model:corvette',
-                  'classics': 'model_year<1975'
+_VALID_FILTERS = {'miatas': { "term": { "model": "miata"}},
+                  'corvettes': { "term": { "model": "corvette"}},
+                  'classics': { "range": { "model_year": { "to": "1975"}}}
 }
 
 # Create your views here.
@@ -39,7 +41,10 @@ def index(request, filter=None):
     error_message = None
     context = {}
 
-    search_filter = ''
+    # querybody components
+    filter_term = ''
+    geolimit_term = ''
+    search_term = ''
 
     # put current page into the context so we post back to the same URL
     context['post_url'] = request.path_info
@@ -47,57 +52,107 @@ def index(request, filter=None):
     if filter:
         if filter in _VALID_FILTERS:
             #error_message = 'Limiting as per filter {}: {}'.format(filter, _VALID_FILTERS[filter])
-            search_filter = _VALID_FILTERS[filter]
+            filter_term = _VALID_FILTERS[filter]
         else:
             #error_message = 'Invalid filter {}'.format(filter)
             # go to the main page sans filter
             return HttpResponseRedirect(reverse('allcars'))
 
     # get listings to display
+
+    # GET params
     search_string = ''
+    limit = ''
+    zip = ''
+
     listings = []
-    search_criteria = 'most recently-listed cars'
+    search_criteria = 'most recently-listed cars'  # default
 
     try:
         search_string = request.GET['search_string']
     except MultiValueDictKeyError:
         pass  # no criteria specified; get recent listings
+    try:
+        limit = request.GET['limit']
+    except MultiValueDictKeyError:
+        pass  # no criteria specified; get recent listings
+    try:
+        zip = request.GET['zip']
+    except MultiValueDictKeyError:
+        pass  # no criteria specified; get recent listings
+        
+    print('params:', search_string, limit, zip)
+
+    es = Elasticsearch()
     if search_string:
-        es = Elasticsearch()
-        if search_filter:
-            final_string = '(' + search_filter + ')&&(' + search_string + ')'
-        else:
-            final_string = search_string
-        search_resp = es.search(index='carbyr-index',
-                                doc_type='listing-type',
-                                size=50,
-                                q=(final_string))
-        search_criteria = search_string  # for display; filter is implied
-        for item in search_resp['hits']['hits']:
-            es_listing = prettify_listing(Bunch(item['_source']))
-            listings.append(es_listing)
+        search_term = {
+            "query_string": {
+                "query": search_string,
+                "default_operator": "AND"
+            }
+        }
     else:
-        # GEE TODO: this is a db pull so these are Listings, whereas
-        # other case is es search thus es hashes. Reconcile!!
+        if limit != "on":
+            # no criteria at all; don't retrieve everything; give
+            # cars from the last few days
+            search_string = "recently-listed cars"
+            search_term = {
+                "constant_score": {
+                    "filter": {
+                        "range": {
+                            "listing_date": {
+                                "from": '2014-09-03',
+                                "to": '2014-09-06'
+                            }
+                        }
+                    }
+                }
+            }
 
-        # GEE TODO: if we keep doing db-based searches then we need to
-        # pickle a filtered queryset object & attach it to the valid
-        # filters list, and do similar for user-owned queries (if supptd).
-        # But we can do this 1-off for now and hope to retire db-based
-        # searches before we need to generalize them....
-        if search_filter == 'model:corvette':
-            queryset = Listing.objects.filter(model__startswith='Corvette')
-        elif search_filter == 'model:miata':
-            queryset = Listing.objects.filter(model__startswith='Miata')
-        elif search_filter == 'model_year<1975':
-            queryset = Listing.objects.filter(model_year__lt='1975')
-        else:  # no filter
-            queryset = Listing.objects.all()
+    if limit=="on" and zip:
+        # GEE TODO: get lat/lon from zip
+        try:
+            zipcode = Zipcode.objects.get(zip=zip)
+            lat = float(zipcode.lat)
+            lon = float(zipcode.lon)
+            geolimit_term = {
+                "geo_distance" : {
+                    "distance": "100mi",
+                    "location": {
+                        "lat": lat,
+                        "lon": lon
+                    }
+                }
+            }
+            if search_string:
+                search_string = search_string + ", near " + zip
+            else:
+                search_string = "cars near " + zip
+        except Zipcode.DoesNotExist:
+            error_message = 'Unknown zip code "{}"; geographic limit not applied.'.format(zip)
 
-        latest_listings = queryset.order_by('-last_update')[:50]
+    querybody = {"query": {"filtered": {}}}
 
-        for item in latest_listings:
-            listings.append(prettify_listing(item))
+    if search_term:
+        print("WTF: " + json.dumps(search_term))
+        querybody['query']['filtered']['query'] = search_term
+    if geolimit_term or filter_term:
+        querybody['query']['filtered']['filter'] = {}
+        querybody['query']['filtered']['filter']['and'] = []
+        if geolimit_term:
+            querybody['query']['filtered']['filter']['and'].append(geolimit_term)
+        if filter_term:
+            querybody['query']['filtered']['filter']['and'].append(filter_term)
+            
+    print(json.dumps(querybody, indent=4, sort_keys=True))
+    search_resp = es.search(index='carbyr-index',
+                            doc_type='listing-type',
+                            size=50,
+                            body=querybody)
+    search_criteria = search_string  # for display; filter is implied
+    for item in search_resp['hits']['hits']:
+        es_listing = prettify_listing(Bunch(item['_source']))
+        listings.append(es_listing)
 
     context['listings'] = listings
     context['search_criteria'] = search_criteria

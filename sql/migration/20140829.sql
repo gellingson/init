@@ -12,6 +12,7 @@ alter table listing add (tags varchar(2048));
 # heh, indices! Forgot a bunch of them!
 create index sourceidx on listing(source_type, source_id, local_id);
 create index sourcetextidx on listing(source_textid);
+create index latlonidx on zipcode(lat, lon);
 
 # non_canonical_make: field lengths shrank, and we never
 # actually created it formally anyway, so do so here

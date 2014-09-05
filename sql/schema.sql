@@ -374,3 +374,4 @@ lat float,
 lon float,
 primary key(zip),
 index states(state_code));
+create index latlonidx on zipcode(lat, lon);
