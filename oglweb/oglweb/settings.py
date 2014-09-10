@@ -20,13 +20,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 SECRET_KEY = '@^z4z&io2apa&^+(_afrvd=f(31suab!8kg&+4##2as!li1i$u'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = bool(os.environ.get('OGL_SERVER_DEBUG', ''))
 
 TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
 TEMPLATE_DEBUG = True
 
-ALLOWED_HOSTS = []
-
+# must be populated when DEBUG is False (ie on "public" servers)
+ALLOWED_HOSTS = [os.environ.get('OGL_SERVER_HOSTNAMES', '')]
 
 # Application definition
 
@@ -39,6 +39,11 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'listings',
 )
+
+# This doesn't really belong here but I'm reusing the django on the home
+# dev server for another app, so...
+os.environ.get('OGL_SERVER_RUN_DEV_APPS','') == 'TRUE':
+    INSTALLED_APPS.append('todo')
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -63,6 +68,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'HOST': os.environ.get('OGL_DB_HOST','localhost'),
         'NAME': os.environ.get('OGL_DB','carsdb'),
+# uncomment these lines and add password when/if you need to be admin (e.g. migrations)
+#        'USER': 'carsdbadmin',
+#        'PASSWORD': '',
         'USER': os.environ.get('OGL_DB_USERACCOUNT','carsdbuser'),
         'PASSWORD': os.environ.get('OGL_DB_USERACCOUNT_PASSWORD', 'nopassword'),
         'CHARSET': 'utf8', # GEE this may apply only to creating test DBs??
