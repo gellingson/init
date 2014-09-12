@@ -30,7 +30,7 @@
 		  <ul class="nav navbar-nav navbar-right">
 			<li><a href="about">About</a></li>
 		  </ul>
-		</div><!--/.navbar-collapse -->
+		</div>
 	  </div>
 	</div>
 	<div class="container">
@@ -42,6 +42,7 @@
 		  {% csrf_token %}
 		  <div class="form-group">
 			<div class="input-group">
+			  <label class="sr-only" for="search_string">Search criteria:</label>
 			  <input type="text" placeholder="find me..." class="form-control" name="search_string" />
 			  <span class="input-group-btn">
 				<button type="submit" class="btn btn-success">Search</button>
@@ -53,11 +54,8 @@
  			  <input type="zip" class="text-inline" placeholder="zip code" class="form-control" name="zip" size="20"/>
 			</div>
 		  </div>
-
-		  <!--label for="search_string"> Enter search here (vanilla elasticsearch right now)</label><br /-->
-		  <!--input type="submit" value="Search" /-->
 		</form>
-		<div><!-- considered class="center-block" but it didn't work -->
+		<div>
 		  <p class="text-info note">showing: {{ search_criteria }}</p>
 		</div>
 	  </div>
@@ -77,14 +75,13 @@
 				<div class="col-md-3">
 				  <p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
 				  <p><strong>{{ item.price }}</strong></p>
-				  {% if item.city %}
-				  <p>{{item.city}} ({{ item.source }})</p>
+				  {% if item.location_text %}
+				  <p>{{item.location_text}} ({{ item.source }})</p>
 				  {% else %}
 				  <p>({{ item.source }})</p>
 				  {% endif %}
 				</div>
 				<div class="col-md-6">{{ item.listing_text }}</div>
-				<!--<div class="col-md-1">x</div>-->
 			  </a>
 			</div>
 		  {% endfor %}
@@ -93,25 +90,7 @@
 		{% endif %}
 	  </div>
 	</div>
-	<!-- TODO: add this only when a) I have something to put in it, and b) I can dynamically change it to less padding but not 3-bar-collapse on a mobile screen. Also TODO: nix margins on the top nav for mobile
-	<div class="navbar navbar-default navbar-fixed-bottom" role="navigation">
-	  <div class="container container-nav">
-		  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-			<span class="sr-only">Toggle navigation</span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-		  </button>
-		<div class="navbar-collapse collapse">
-		  <ul class="nav navbar-nav navbar-right">
-			<li class="active"><a href="./">RSS</a></li>
-		  </ul>
-		</div>--><!--/.navbar-collapse -->
-	  </div>
 
-    <!-- Bootstrap core JavaScript
-		 ================================================== -->
-	<!-- Placed at the end of the document so the pages load faster -->
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 	<script src="{% static 'listings/js/bootstrap.min.js' %}"></script>
   </body>

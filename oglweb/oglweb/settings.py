@@ -42,8 +42,8 @@ INSTALLED_APPS = (
 
 # This doesn't really belong here but I'm reusing the django on the home
 # dev server for another app, so...
-os.environ.get('OGL_SERVER_RUN_DEV_APPS','') == 'TRUE':
-    INSTALLED_APPS.append('todo')
+if os.environ.get('OGL_SERVER_RUN_DEV_APPS','') == 'TRUE':
+    INSTALLED_APPS = INSTALLED_APPS +  ('todo',)
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -69,10 +69,10 @@ DATABASES = {
         'HOST': os.environ.get('OGL_DB_HOST','localhost'),
         'NAME': os.environ.get('OGL_DB','carsdb'),
 # uncomment these lines and add password when/if you need to be admin (e.g. migrations)
-#        'USER': 'carsdbadmin',
-#        'PASSWORD': '',
-        'USER': os.environ.get('OGL_DB_USERACCOUNT','carsdbuser'),
-        'PASSWORD': os.environ.get('OGL_DB_USERACCOUNT_PASSWORD', 'nopassword'),
+        'USER': 'carsdbadmin',
+        'PASSWORD': 'cars4Me',
+#        'USER': os.environ.get('OGL_DB_USERACCOUNT','carsdbuser'),
+#        'PASSWORD': os.environ.get('OGL_DB_USERACCOUNT_PASSWORD', 'nopassword'),
         'CHARSET': 'utf8', # GEE this may apply only to creating test DBs??
     }
 }

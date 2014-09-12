@@ -3,7 +3,7 @@
 from decimal import Decimal
 import re
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, Text
 from sqlalchemy import String, text
 from sqlalchemy.sql.functions import func
 from sqlalchemy.orm import reconstructor
@@ -91,6 +91,7 @@ class Classified(IDMixIn, Base):
     extract_car_list_func = Column(String(1024))
     listing_from_list_item_func = Column(String(1024))
     parse_listing_func = Column(String(1024))
+    anchor = Column(String(1024))
     inventory_url = Column(String(1024))
     owner_account_id = Column(Integer)
 
@@ -152,6 +153,13 @@ class Listing(IDMixIn, Base):
     source_textid = Column(String(255))
     local_id = Column(String(255))
     stock_no = Column(String(255))
+    location_text = Column(String(50))
+    zip = Column(String(10))
+    source = Column(String(50))
+    color = Column(String(20))
+    int_color = Column(String(20))
+    vin = Column(String(20))
+    mileage = Column(Integer)
     listing_date = Column(DateTime, default=func.now())
     removal_date = Column(DateTime)
     last_update = Column(DateTime,
@@ -202,6 +210,17 @@ class Listing(IDMixIn, Base):
         else:  # both have contents: merge
             self.markers = ''.join(set(self.markers.append(more_markers)))
 
+
+class ListingSourceinfo(IDMixIn, Base):
+    source_type = Column(String(1))
+    source_id = Column(Integer)
+    local_id = Column(String(255))
+    proc_time = Column(DateTime, default=func.now())
+    listing_id = Column(Integer,
+                        ForeignKey('listing.id'))
+    entry = Column(Text)
+    detail_enc = Column(String(1))
+    detail_html = Column(Text)
 
 class NonCanonicalMake(IDMixIn, ConsumePushMixIn, Base):
 

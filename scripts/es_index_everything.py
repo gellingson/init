@@ -35,8 +35,14 @@ listing_type_map = {
         "city": {
             "type" : "string"
         },
+        "color": {
+            "type": "string"
+        },
         "id": {
             "type": "long"
+        },
+        "int_color": {
+            "type": "string"
         },
         "last_update": {
             "format": "dateOptionalTime",
@@ -61,11 +67,17 @@ listing_type_map = {
         "location": {
             "type": "geo_point"
         },
+        "location_text": {
+            "type": "string"
+        },
         "lon": {
             "type": "double"
         },
         "make": {
             "type": "string"
+        },
+        "mileage": {
+            "type": "long"
         },
         "model": {
             "type": "string"
@@ -106,7 +118,13 @@ listing_type_map = {
         "timestamp": {
             "format": "dateOptionalTime",
             "type": "date"
-        }
+        },
+        "vin": {
+            "type": "string"
+        },
+        "zip": {
+            "type": "string"
+        },
     }
 }
 
@@ -136,8 +154,6 @@ print(index_resp)
 mapping_resp = es.indices.get_mapping(index="carbyr-index")
 print("new mapping:\n{}".format(json.dumps(mapping_resp, indent=2, sort_keys=True)))
 
-errs = 0
-
 listings = session.query(Listing).filter_by(status='F')
 for listing in listings:
     db_listing = Bunch(dict(listing))
@@ -147,41 +163,8 @@ for listing in listings:
         db_listing.location = {
             'lat': db_listing.lat, 'lon': db_listing.lon}
 
-    # create a virtual city field from lat/lon OR dealership info
-    d = None
-    c = None
-    
-    if db_listing.source_type == 'D':
-        d = session.query(Dealership).filter_by(id=db_listing.source_id).one()
-    else:
-        c = session.query(Classified).filter_by(id=db_listing.source_id).one()
-    if d:
-        db_listing.city = '{}, {}'.format(d.city, d.state)
-    elif db_listing.lat and db_listing.lon:
-        try:
-            # use of listing rather than db_listing INTENTIONAL to avoid
-            # coercion to float which borks the equality testing vs zipcode
-            zipcode = session.query(Zipcode).filter_by(lat=listing.lat,
-                                                       lon=listing.lon).first()
-            if zipcode:
-                db_listing.city = '{}, {}'.format(zipcode.city, zipcode.state_code)
-            else:
-                errs = errs + 1
-                print("no zipcode found for lat/lon {}/{}", listing.lat, listing.lon)
-        except NoResultFound:
-            errs = errs + 1
-            db_listing.city = None
-            print("zipcode not found for lat/lon {}/{}", listing.lat, listing.lon)
-    else:
-        db_listing.city = None
-    # create a virtual pretty-source field
-    if d:
-        db_listing.source = d.full_name
-    else:
-        db_listing.source = c.full_name
-    
     index_resp = es.index(index="carbyr-index",
                           doc_type="listing-type",
                           id=db_listing['id'],
                           body=db_listing)
-print('number of zip errors: {}'.format(errs))
+

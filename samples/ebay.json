@@ -1,0 +1,3878 @@
+{
+    "ack": "Success",
+    "itemSearchURL": "http://www.ebay.com/sch/6001/i.html?Model%2520Year%255Cu0007=1963%7C1964%7C2011&fsaspfilter=Model%2520Year%3D1963%7C1964%7C2011%26Make%3DChevrolet&aspectrequest=1&Make%255Cu0007=Chevrolet&LH_Distance=95112..500&_ddo=1&_fpos=95112&_fspt=1&_ipg=100&_pgn=1&_pos=95112&_sadis=500&_stpos=95112",
+    "paginationOutput": {
+        "entriesPerPage": "100",
+        "pageNumber": "1",
+        "totalEntries": "56",
+        "totalPages": "1"
+    },
+    "searchResult": {
+        "_count": "56",
+        "item": [
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "44742"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "400.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/m_GrHHzChmP2CB5UPGktZew/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "111454965405",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-16T04:01:04.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-06T04:01:04.000Z"
+                },
+                "location": "Palm Desert,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "LoanCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "92211",
+                "primaryCategory": {
+                    "categoryId": "6168",
+                    "categoryName": "Corvette"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "56",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "62863.63"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "62863.63"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P5DT3H8M17S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "Worldwide",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Corvette @NO RESERVE! 1963 CHEVROLET CORVETTE ROADSTER L84 FUEL INJECTED 327 360HP SEBRING NO RESERVE!",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Corvette-NO-RESERVE-/111454965405?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "86000"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Certified pre-owned",
+                    "conditionId": "2500"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "125.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mBePZ8OD64-_whl9oTVK6FA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "321513354612",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-13T02:48:37.000Z",
+                    "gift": "false",
+                    "listingType": "FixedPrice",
+                    "startTime": "2014-09-06T08:48:47.000Z"
+                },
+                "location": "Olivehurst,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "CashInPerson"
+                ],
+                "postalCode": "95961",
+                "primaryCategory": {
+                    "categoryId": "172519",
+                    "categoryName": "Cruze"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "197195239"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "9999.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "9999.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P2DT1H55M50S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Cruze LS Sedan 4-Door 2011 Chevrolet Cruze LS Sedan 4-Door 1.8L",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Cruze-LS-Sedan-4-Door-/321513354612?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19640000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "27999"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "305.0"
+                },
+                "galleryPlusPictureURL": "http://galleryplus.ebayimg.com/ws/web/331313011418_1_0_1.jpg",
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/mjmD0C94lp41noDYl2XEMaQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "331313011418",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-14T16:22:52.000Z",
+                    "gift": "false",
+                    "listingType": "FixedPrice",
+                    "startTime": "2014-09-07T16:22:52.000Z"
+                },
+                "location": "Pasadena,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PersonalCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "91106",
+                "primaryCategory": {
+                    "categoryId": "6169",
+                    "categoryName": "Impala"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "112488134"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "9500.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "9500.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P3DT15H30M5S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": [
+                        "US",
+                        "CA"
+                    ],
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Impala 4 door sedan 1964 Chevrolet Impala 4 door sedan",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Impala-4-door-sedan-/331313011418?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "800"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "285.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/maV4cqNwji-_WIv11-KPTJA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131289845901",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-14T21:00:39.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-07T21:00:39.000Z"
+                },
+                "location": "Canoga Park,CA,USA",
+                "paymentMethod": [
+                    "PayPal",
+                    "PersonalCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "91304",
+                "primaryCategory": {
+                    "categoryId": "39409",
+                    "categoryName": "C-10"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "5",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1303.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1303.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P3DT20H7M52S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "Worldwide",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : C-10 C-20 1963 Chevy C-20 Longbed, Clean Reliable Driver",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-C-10-C-20-/131289845901?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "28362"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "420.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/m7NUIapkDGil5qUDYTxp_Kw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "331310259533",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-11T17:27:48.000Z",
+                    "gift": "false",
+                    "listingType": "FixedPrice",
+                    "startTime": "2014-09-04T17:27:48.000Z"
+                },
+                "location": "El Cajon,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PaymentSeeDescription",
+                    "LoanCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "92020",
+                "primaryCategory": {
+                    "categoryId": "6168",
+                    "categoryName": "Corvette"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "34495.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "34495.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P0DT16H35M1S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "Worldwide",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Corvette v8 6.2L auto paddle shifters leather seats removable roof black alloys new tires",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Corvette-/331310259533?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "3185"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "460.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mepj5Fw97X7zIbLi0mnkMZw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "191298794992",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-13T18:47:27.000Z",
+                    "gift": "false",
+                    "listingType": "FixedPrice",
+                    "startTime": "2014-08-23T18:47:27.000Z"
+                },
+                "location": "St. George,UT,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PersonalCheck",
+                    "PaymentSeeDescription",
+                    "LoanCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "84770",
+                "primaryCategory": {
+                    "categoryId": "6168",
+                    "categoryName": "Corvette"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "89950.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "89950.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P2DT17H54M40S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "Worldwide",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Corvette 2dr Cpe Z06 2011 CHEVROLET CORVETTE CALLAWAY Z06 CORVETTE COUPE - SC652 Package ~ LIKE NEW!",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Corvette-2dr-Cpe-Z06-/191298794992?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "157000"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "310.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mosWyxEmzdz9R53E8BQsMFw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "221541121272",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-11T22:09:12.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-04T22:09:12.000Z"
+                },
+                "location": "Pasadena,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "CashInPerson"
+                ],
+                "postalCode": "91107",
+                "primaryCategory": {
+                    "categoryId": "39409",
+                    "categoryName": "C-10"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "46",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1524.99"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1524.99"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P0DT21H16M25S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : C-10 1963 Chevy Truck",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-C-10-/221541121272?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "56417"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "45.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mXdAZWYNYrchd_RQKB39_cg/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "251637938628",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-27T01:56:32.000Z",
+                    "gift": "false",
+                    "listingType": "FixedPrice",
+                    "startTime": "2014-09-06T01:56:32.000Z"
+                },
+                "location": "San Francisco,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PersonalCheck",
+                    "PaymentSeeDescription",
+                    "LoanCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "94114",
+                "primaryCategory": {
+                    "categoryId": "90969",
+                    "categoryName": "Silverado 2500"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "93742608"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "25995.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "25995.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P16DT1H3M45S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "Worldwide",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Silverado 2500 LT Extended Cab Pickup 4-Door 2011 CHEVROLET SILVERADO 2500 HD LT EXTENDED CAB DIESEL, ONLY 56K MI, STEP BARS!",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Silverado-2500-LT-Extended-Cab-Pickup-4-Door-/251637938628?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "43564"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "315.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mrxI-pAWb3ykBiyeoe8BRfw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "191312311012",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-13T17:00:00.000Z",
+                    "gift": "false",
+                    "listingType": "FixedPrice",
+                    "startTime": "2014-09-06T17:00:00.000Z"
+                },
+                "location": "Gardena,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PersonalCheck",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "90248",
+                "primaryCategory": {
+                    "categoryId": "90969",
+                    "categoryName": "Silverado 2500"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "35950.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "35950.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P2DT16H7M13S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "Worldwide",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Silverado 2500 HD LT Z71 4WD 2011 Chevrolet Silverado 2500HD LT Z71 4WD Lifted, Wheels, Low Miles, Wont Last!",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Silverado-2500-HD-LT-Z71-4WD-/191312311012?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "400"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "40.0"
+                },
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/mDooqxp7xrvQRrylD4sMoJA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "361040553334",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-16T01:00:00.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-06T01:00:00.000Z"
+                },
+                "location": "Tracy,CA,USA",
+                "paymentMethod": [
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "95376",
+                "primaryCategory": {
+                    "categoryId": "6168",
+                    "categoryName": "Corvette"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "17",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "25300.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "25300.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P5DT0H7M13S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "Worldwide",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Corvette Stingray Frame Off Restored 1963 Chevry Corvette Stingray Convertible Hardtop 350/5Sp",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Corvette-Stingray-/361040553334?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "1463"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "340.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/mp01LP1JNzF8gn5yVA3xqyA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "271598324297",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-12T20:32:02.000Z",
+                    "gift": "false",
+                    "listingType": "FixedPrice",
+                    "startTime": "2014-09-05T20:32:02.000Z"
+                },
+                "location": "Costa Mesa,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PersonalCheck",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "92626",
+                "primaryCategory": {
+                    "categoryId": "6168",
+                    "categoryName": "Corvette"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "85575.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "85575.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P1DT19H39M15S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Corvette ZR1 w/3ZR ZR1 w/3ZR Manual Coupe 6.2L NAV CD Supercharged Rear Wheel Drive Power Steering",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Corvette-ZR1-w-3ZR-/271598324297?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19640000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "34000"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "295.0"
+                },
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/mc615uY6E_v0udNLRRAd-Ww/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "171452420535",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-10-08T17:57:37.000Z",
+                    "gift": "false",
+                    "listingType": "FixedPrice",
+                    "startTime": "2014-09-08T17:52:37.000Z"
+                },
+                "location": "Sun Valley,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "91352",
+                "primaryCategory": {
+                    "categoryId": "90965",
+                    "categoryName": "C/K Pickup 1500"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "11999.99"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "11999.99"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P27DT17H4M50S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "Worldwide",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : C/K Pickup 1500 Custom 1964 Chevrolet 3/4 Ton Pickup 2wd 6cyl 3 Speed Vintage Classic",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-C-K-Pickup-1500-Custom-/171452420535?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "4975"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "370.0"
+                },
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/mU3l8dWcs7ETObjWpnvAtMw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "261585012110",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-18T07:00:00.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-08T07:00:00.000Z"
+                },
+                "location": "Las Vegas,NV,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "89135",
+                "primaryCategory": {
+                    "categoryId": "6161",
+                    "categoryName": "Camaro"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "9",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "2025.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "2025.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P7DT6H7M13S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Camaro Automatic 2011 Chevrolet Camaro LT Convertible 2-Door 3.6L",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Camaro-Automatic-/261585012110?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "62000"
+                    }
+                ],
+                "autoPay": "true",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "320.0"
+                },
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/mJa7-BwvC_Z6-Nj0DZWwGmg/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "181521818631",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-16T18:19:08.000Z",
+                    "gift": "false",
+                    "listingType": "FixedPrice",
+                    "startTime": "2014-09-09T18:19:08.000Z"
+                },
+                "location": "Norwalk,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "CashInPerson"
+                ],
+                "postalCode": "90650",
+                "primaryCategory": {
+                    "categoryId": "6173",
+                    "categoryName": "Other"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1900.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1900.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P5DT17H26M21S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Other yes 1963 corvair monza chevy gm car 2door",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Other-yes-/181521818631?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "61829"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/mXxrJxwu_20GoSKGNOHW4Qg/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "161339123023",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-14T10:54:55.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-06-16T10:49:55.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "94402",
+                "primaryCategory": {
+                    "categoryId": "6169",
+                    "categoryName": "Impala"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98883874"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "15395.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "15395.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P3DT10H2M8S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Impala 4dr Sdn 4dr Sdn Ethanol - FFV 3.5L Leather 3.5 Liter 4-Spd w/Overdrive 4-Speed A/T A/C",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Impala-4dr-Sdn-/161339123023?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "999999"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "310.0"
+                },
+                "galleryPlusPictureURL": "http://galleryplus.ebayimg.com/ws/web/271601174954_1_3_1.jpg",
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/mJBSqwFDqhcZGEvuesPKtWQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "271601174954",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-13T20:28:59.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-08T20:28:59.000Z"
+                },
+                "location": "Los Angeles,CA,USA",
+                "paymentMethod": "MOCC",
+                "postalCode": "90033",
+                "primaryCategory": {
+                    "categoryId": "6169",
+                    "categoryName": "Impala"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "15",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1205.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1205.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P2DT19H36M12S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Impala yes 1963 Chevrolet Impala",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Impala-yes-/271601174954?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "98943"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/mNNYoXp_ngKuKD2Mpvwg0Ww/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131270744078",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-14T21:46:11.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-08-15T21:41:11.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "6173",
+                    "categoryName": "Other"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "10988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "10988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P3DT20H53M24S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Other Work Truck P Work Truck P Traction Control Stability Control ABS (4-Wheel) Air Conditioning",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Other-Work-Truck-P-/131270744078?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "67498"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/mBfYp1gWq3K5QpT6MNewtfg/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131203446689",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-27T19:39:05.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-05-30T19:34:05.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "6173",
+                    "categoryName": "Other"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "12988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "12988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P16DT18H46M18S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Other Work Truck P Work Truck P Traction Control Stability Control ABS (4-Wheel) Air Conditioning",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Other-Work-Truck-P-/131203446689?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "4871"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "390.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mQV5IpijFwf0rI5z3lIvYiQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "221541196536",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-15T00:00:04.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-05T00:00:04.000Z"
+                },
+                "location": "Carlsbad,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PaymentSeeDescription"
+                ],
+                "postalCode": "92010",
+                "primaryCategory": {
+                    "categoryId": "6168",
+                    "categoryName": "Corvette"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "36",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "35200.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "35200.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P3DT23H7M17S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Corvette Convertible 1963 Corvette Convertible upgraded triple black with 4 speed NO RESERVE",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Corvette-Convertible-/221541196536?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "73771"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mIMAy8cqO27rMDf_ydEcsrQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131290090716",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-10-08T02:47:34.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-09-08T02:42:34.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "6173",
+                    "categoryName": "Other"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98956573"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P27DT1H54M47S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Other Work Truck 2 Work Truck 2 ABS (4-Wheel) Dual Air Bags Head Curtain Air Bags Air Conditioning",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Other-Work-Truck-2-/131290090716?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "98943"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/mJKtWVtIOsRGPTsBxi6WVXw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131270060254",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-14T01:17:30.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-08-15T01:12:30.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "90968",
+                    "categoryName": "Colorado"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "10988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "10988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P3DT0H24M43S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Colorado Work Truck Pickup  6 ft 2011 Work Truck Pickup  6 ft Used 2.9L I4 16V 2WD Pickup Truck Premium OnStar",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Colorado-Work-Truck-Pickup-6-ft-/131270060254?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "1500"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "50.0"
+                },
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/mQpxyFfLR06fJ2AFy1PcBFA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131291707898",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-17T05:59:19.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-10T05:59:19.000Z"
+                },
+                "location": "Lathrop,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "CashInPerson"
+                ],
+                "postalCode": "95330",
+                "primaryCategory": {
+                    "categoryId": "6169",
+                    "categoryName": "Impala"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "7",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "11095.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "11095.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P6DT5H6M32S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "Worldwide",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Impala 2DR **Must See** 1963 Chevy Impala, Nice Restore, PS, PDB, Vintage Air, Foose Wheels",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Impala-2DR-/131291707898?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "23038"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "60.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/ma6IHQ_y7OoZdR_NfvsBXVQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "121365626704",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-15T05:26:23.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-06-17T05:21:23.000Z"
+                },
+                "location": "Stockton,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "95212",
+                "primaryCategory": {
+                    "categoryId": "6170",
+                    "categoryName": "Malibu"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "15900.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "15900.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P4DT4H33M36S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Malibu LT w/1LT, Cl LT w/1LT, Cl 2.4L CD Front Wheel Drive Power Steering ABS 4-Wheel Disc Brakes",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Malibu-LT-w-1LT-Cl-/121365626704?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "63238"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "15.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/mHxK62OcZc5K28GuGDYE3Jw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "291222503629",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-19T00:13:00.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-08-20T00:08:00.000Z"
+                },
+                "location": "Palo Alto,CA,USA",
+                "paymentMethod": [
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "94303",
+                "primaryCategory": {
+                    "categoryId": "6158",
+                    "categoryName": "Express"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "31995.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "31995.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P7DT23H20M13S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Express Work Van Used 2011 Chevrolet Express Cutaway 6L V8 16V Automatic RWD",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Express-Work-Van-/291222503629?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "32850"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "375.0"
+                },
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/m-7XiNhVQhARR9dSMt9E3LA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "151402684762",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-12T16:43:44.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-05T16:43:44.000Z"
+                },
+                "location": "Las Vegas,NV,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "89131",
+                "primaryCategory": {
+                    "categoryId": "6161",
+                    "categoryName": "Camaro"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "0",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "22500.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "22500.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P1DT15H50M57S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Camaro SS Coupe 2-Door 2011 Camaro SS 2LT + upgrades",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Camaro-SS-Coupe-2-Door-/151402684762?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "15976"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "40.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/mQ6_SFCPWS1H0ublzlfPOdQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "191294442137",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-19T18:54:28.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-08-20T18:49:28.000Z"
+                },
+                "location": "Daly City,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "94014",
+                "primaryCategory": {
+                    "categoryId": "13487",
+                    "categoryName": "Silverado 1500"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "21792.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "21792.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P8DT18H1M41S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Silverado 1500 Work Truck 2011 Work Truck Used 4.8L V8 16V Automatic 4x4 Pickup Truck",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Silverado-1500-Work-Truck-/191294442137?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "61684"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/msTv101HiXtd4VCix6u5IQg/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131222189410",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-19T23:34:02.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-06-21T23:29:02.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "6170",
+                    "categoryName": "Malibu"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98926192"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "12988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "12988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P8DT22H41M15S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Malibu LS 2011 LS Used 2.4L I4 16V FWD Sedan OnStar",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Malibu-LS-/131222189410?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19640000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "90"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "310.0"
+                },
+                "galleryPlusPictureURL": "http://galleryplus.ebayimg.com/ws/web/121431646766_1_0_1.jpg",
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/mDSv-CMDRsg-PdGo33BAJDA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "121431646766",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "true",
+                    "buyItNowPrice": {
+                        "_currencyId": "USD",
+                        "value": "50000.0"
+                    },
+                    "convertedBuyItNowPrice": {
+                        "_currencyId": "USD",
+                        "value": "50000.0"
+                    },
+                    "endTime": "2014-09-13T20:17:30.000Z",
+                    "gift": "false",
+                    "listingType": "AuctionWithBIN",
+                    "startTime": "2014-09-08T20:17:30.000Z"
+                },
+                "location": "El Segundo,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "CashInPerson"
+                ],
+                "postalCode": "90245",
+                "primaryCategory": {
+                    "categoryId": "6169",
+                    "categoryName": "Impala"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "7",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "10100.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "10100.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P2DT19H24M43S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Impala SS CHEVROLETE IMPALA CONVERTIBLE  SS",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Impala-SS-/121431646766?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "61684"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/myu6jaCD2RuEtdHPAzABBZg/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131222468997",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-20T07:00:19.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-06-22T06:55:19.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "6170",
+                    "categoryName": "Malibu"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98926192"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "12988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "12988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P9DT6H7M32S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Malibu LS Sedan 4D LS Sedan 4D Traction Control Stability Control ABS (4-Wheel) Keyless Entry",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Malibu-LS-Sedan-4D-/131222468997?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "69061"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mTGkaLXaOeI3VCAibJ7mgNQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "141296429132",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-20T11:10:19.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-05-23T11:05:19.000Z"
+                },
+                "location": "San Leandro,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PersonalCheck",
+                    "PaymentSeeDescription",
+                    "LoanCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "94577",
+                "primaryCategory": {
+                    "categoryId": "6169",
+                    "categoryName": "Impala"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "14988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "14988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P9DT10H17M32S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Impala LS Fleet LS Fleet Ethanol - FFV 3.5L CD Front Wheel Drive Power Steering ABS Wheel Covers",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Impala-LS-Fleet-/141296429132?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19640000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "99"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "415.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/m6pDnLmx9LWq92IFasuldMQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "151405600336",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-15T19:47:57.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-08T19:47:57.000Z"
+                },
+                "location": "San Diego,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "CashInPerson"
+                ],
+                "postalCode": "92116",
+                "primaryCategory": {
+                    "categoryId": "6173",
+                    "categoryName": "Other"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "22",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "15611.11"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "15611.11"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P4DT18H55M10S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Other base 1964 Chevrolet Corvette Base  2-Door",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Other-base-/151405600336?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "95577"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "15.0"
+                },
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/mFlVPq-0GBY-qmhTBkQnz0g/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "291225167970",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-22T06:30:29.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-08-23T06:25:29.000Z"
+                },
+                "location": "Palo Alto,CA,USA",
+                "paymentMethod": [
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "94303",
+                "primaryCategory": {
+                    "categoryId": "6158",
+                    "categoryName": "Express"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "18995.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "18995.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P11DT5H37M42S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Express Work Van Used 2011 Chevrolet Express 2500 Minivan/Van 4.8L V8 16V Automatic RWD",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Express-Work-Van-/291225167970?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "46000"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "15.0"
+                },
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/mNnsbsYyN8I_gqhpD0aSgJA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "261541700751",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-22T08:15:25.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-07-24T08:10:25.000Z"
+                },
+                "location": "Fremont,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PaymentSeeDescription",
+                    "LoanCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "94538",
+                "primaryCategory": {
+                    "categoryId": "124118",
+                    "categoryName": "Aveo"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "10988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "10988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P11DT7H22M38S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Aveo 4dr Sedan LT w/2LT 4dr Sedan LT w/2LT Low Miles Automatic Gasoline ECOTEC 1.6L DOHC 16-VALVE Silver",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Aveo-4dr-Sedan-LT-w-2LT-/261541700751?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19640000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "57989"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "85.0"
+                },
+                "galleryPlusPictureURL": "http://galleryplus.ebayimg.com/ws/web/121431959639_1_0_1.jpg",
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/mbnpeHKpQGF5dhFAo0OVBYw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "121431959639",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-16T06:10:27.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-09T06:10:27.000Z"
+                },
+                "location": "Sacramento,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "CashInPerson"
+                ],
+                "postalCode": "95831",
+                "primaryCategory": {
+                    "categoryId": "39409",
+                    "categoryName": "C-10"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "4",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1580.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1580.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P5DT5H17M40S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : C-10 3/4 ton 1964 Chevrolet 3/4 ton Fleetside C20 Nice looking and Driving",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-C-10-3-4-ton-/121431959639?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "31454"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/mb6d61jq2kZiqzmFpxVmRMw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131226556687",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-24T23:02:10.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-06-26T22:57:10.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "6170",
+                    "categoryName": "Malibu"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98926192"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P13DT22H9M23S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Malibu LS 2011 LS Used 2.4L I4 16V OnStar FWD Sedan",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Malibu-LS-/131226556687?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "54132"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/mEQUWwb5E_LEmeDFvHfJHGQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "141331699594",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-24T23:02:14.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-06-26T22:57:14.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "6170",
+                    "categoryName": "Malibu"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98926192"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P13DT22H9M27S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Malibu LS 2011 LS Used 2.4L I4 16V FWD Sedan OnStar",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Malibu-LS-/141331699594?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "60000"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "60.0"
+                },
+                "galleryPlusPictureURL": "http://galleryplus.ebayimg.com/ws/web/221543780395_1_1_1.jpg",
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/mz_wyeRF8sJ0-9oBcl9uxgA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "221543780395",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "true",
+                    "buyItNowPrice": {
+                        "_currencyId": "USD",
+                        "value": "15000.0"
+                    },
+                    "convertedBuyItNowPrice": {
+                        "_currencyId": "USD",
+                        "value": "15000.0"
+                    },
+                    "endTime": "2014-09-15T02:58:07.000Z",
+                    "gift": "false",
+                    "listingType": "AuctionWithBIN",
+                    "startTime": "2014-09-08T02:58:07.000Z"
+                },
+                "location": "Rio Vista,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PersonalCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "94571",
+                "primaryCategory": {
+                    "categoryId": "6172",
+                    "categoryName": "Nova"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "2",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "510.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "510.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P4DT2H5M20S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Nova Wagon 1963 Chevy Nova Wagon",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Nova-Wagon-/221543780395?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "54132"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs3.ebaystatic.com/m/mM2l-qrf9zbqqhADPkKlBLg/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131226800770",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-25T07:01:20.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-06-27T06:56:20.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "6170",
+                    "categoryName": "Malibu"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98926192"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P14DT6H8M33S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Malibu LS Sedan 4D LS Sedan 4D Traction Control Stability Control ABS (4-Wheel) Keyless Entry",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Malibu-LS-Sedan-4D-/131226800770?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "31454"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/mqDZZfAT-NHDcapIGImkghw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131226800771",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-25T07:01:20.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-06-27T06:56:20.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "6170",
+                    "categoryName": "Malibu"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98926192"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P14DT6H8M33S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Malibu LS Sedan 4D LS Sedan 4D OnStar Traction Control Stability Control ABS (4-Wheel) Tilt Wheel",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Malibu-LS-Sedan-4D-/131226800771?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "51344"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "335.0"
+                },
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/mDGztDqsxgLK5I7BiqURxdw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "201166718431",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-16T00:16:37.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-09T00:16:37.000Z"
+                },
+                "location": "Anaheim,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PaymentSeeDescription",
+                    "LoanCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "92807",
+                "primaryCategory": {
+                    "categoryId": "6156",
+                    "categoryName": "Tahoe"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98988037"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "0",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "8888.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "8888.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P4DT23H23M50S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Tahoe LTZ 11 Chevrolet Tahoe LTZ silver black interior navigation dvd player 24\" Lexanis",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Tahoe-LTZ-/201166718431?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "47789"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mq5zhW3tuMJVxm0PR_4--qQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "131226800772",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-25T07:01:20.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-06-27T06:56:20.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PaymentSeeDescription",
+                    "CashInPerson"
+                ],
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "6170",
+                    "categoryName": "Malibu"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98926192"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P14DT6H8M33S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Malibu LS Sedan 4D LS Sedan 4D Traction Control Stability Control ABS (4-Wheel) Keyless Entry",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Malibu-LS-Sedan-4D-/131226800772?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "48612"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "95.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mEZRMPzzYzlRhO6wBJs0RSA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "121421249828",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-26T10:43:36.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-08-27T10:38:36.000Z"
+                },
+                "location": "Sacramento,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "95841",
+                "primaryCategory": {
+                    "categoryId": "6170",
+                    "categoryName": "Malibu"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98926192"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13599.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13599.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P15DT9H50M49S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Malibu 4dr Sdn LS w 4dr Sdn LS w Traction Control ABS (4-Wheel) Power Door Locks Keyless Entry",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Malibu-4dr-Sdn-LS-w-/121421249828?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "0"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "340.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mexz60ubEwAOWkQ4gXt4rTw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "161413139908",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-11T15:52:42.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-04T15:52:42.000Z"
+                },
+                "location": "Norco,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PersonalCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "92860",
+                "primaryCategory": {
+                    "categoryId": "6168",
+                    "categoryName": "Corvette"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "0",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "20000.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "20000.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P0DT14H59M55S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Corvette Race car 63 Corvette drag car: A-gas, B-gas, Super Gas",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Corvette-Race-car-/161413139908?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "41877"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "190.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/mHMe-kCAMRktizuOBQAK1ug/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "111447228097",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-27T00:23:47.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-08-28T00:18:47.000Z"
+                },
+                "location": "Reno,NV,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "89502",
+                "primaryCategory": {
+                    "categoryId": "6170",
+                    "categoryName": "Malibu"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98926192"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13999.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13999.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P15DT23H31M0S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Malibu 4dr Sdn LS w 4dr Sdn LS w ABS (4-Wheel) Air Conditioning Alloy Wheels AM/FM Stereo Power Seat",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Malibu-4dr-Sdn-LS-w-/111447228097?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "37254"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/mmQs-o93_68Ap7j6nAxIf_Q/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "161383564481",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-30T22:07:37.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-08-01T22:02:37.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "94402",
+                "primaryCategory": {
+                    "categoryId": "124119",
+                    "categoryName": "HHR"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "12959.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "12959.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P19DT21H14M50S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : HHR FWD 4dr FWD 4dr Ethanol - FFV SUV 2.2L OnStar CD 2.2 Liter 4 Cylinder Engine 4-Cyl A/C",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-HHR-FWD-4dr-/161383564481?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19640000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "175000"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "65.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/m7p1Fx_TRnLaMK-EOepvcfQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "321518834808",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "true",
+                    "buyItNowPrice": {
+                        "_currencyId": "USD",
+                        "value": "3450.0"
+                    },
+                    "convertedBuyItNowPrice": {
+                        "_currencyId": "USD",
+                        "value": "3450.0"
+                    },
+                    "endTime": "2014-09-17T22:30:24.000Z",
+                    "gift": "false",
+                    "listingType": "AuctionWithBIN",
+                    "startTime": "2014-09-10T22:30:24.000Z"
+                },
+                "location": "Novato,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "CashInPerson"
+                ],
+                "postalCode": "94945",
+                "primaryCategory": {
+                    "categoryId": "6167",
+                    "categoryName": "Corvair"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "0",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1200.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1200.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P6DT21H37M37S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "Worldwide",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Corvair Monza 1964 Corvair Monza California Car",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Corvair-Monza-/321518834808?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "43060"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/m8O5rjffjcDqvlvFDdCVclA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "161383565083",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-30T22:08:13.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-08-01T22:03:13.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "94402",
+                "primaryCategory": {
+                    "categoryId": "116477",
+                    "categoryName": "Equinox"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "20659.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "20659.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P19DT21H15M26S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Equinox AWD 4dr AWD 4dr SUV 2.4L OnStar 2.4 Liter 4 Cylinder Engine 4-Cyl 4-Wheel ABS A/C",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Equinox-AWD-4dr-/161383565083?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "61124"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "55.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/meXZn-lHk3xA2_orulXXIYA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "261583346269",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-10-03T19:25:21.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-09-03T19:20:21.000Z"
+                },
+                "location": "San Rafael,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PaymentSeeDescription",
+                    "LoanCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "94901",
+                "primaryCategory": {
+                    "categoryId": "6155",
+                    "categoryName": "Suburban"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98883954"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "28981.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "28981.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P22DT18H32M34S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Suburban 4WD 4dr 1500 LT 4WD 4dr 1500 LT Low Miles SUV Automatic 5.3L 8 Cyl Sheer Silver Metallic",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Suburban-4WD-4dr-1500-LT-/261583346269?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "50000"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "45.0"
+                },
+                "galleryPlusPictureURL": "http://galleryplus.ebayimg.com/ws/web/271598387628_1_2_1.jpg",
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mK6Lo7eJqF_2bR96NHntFDQ/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "271598387628",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-12T22:11:22.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-05T22:11:22.000Z"
+                },
+                "location": "Newman,CA,USA",
+                "paymentMethod": [
+                    "PayPal",
+                    "PaymentSeeDescription"
+                ],
+                "postalCode": "95360",
+                "primaryCategory": {
+                    "categoryId": "6169",
+                    "categoryName": "Impala"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "0",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13000.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13000.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P1DT21H18M35S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Impala  two door coupe 1963 Chevrolet Impala",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Impala-two-door-coupe-/271598387628?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "40383"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "45.0"
+                },
+                "galleryURL": "http://thumbs2.ebaystatic.com/m/mj9hkkuljOqGvI7ZpaYIX3A/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "291235677441",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-10-04T09:15:33.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-09-04T09:10:33.000Z"
+                },
+                "location": "San Francisco,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PersonalCheck",
+                    "PaymentSeeDescription",
+                    "LoanCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "94118",
+                "primaryCategory": {
+                    "categoryId": "173650",
+                    "categoryName": "Volt"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "167367758"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "21888.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "21888.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P23DT8H22M46S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Volt Sedan 4D Sedan 4D Hybrid-electric 1.4L Leather NAV CD Front Wheel Drive Keyless Start ABS",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Volt-Sedan-4D-/291235677441?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "67498"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mgjDsMi21-wMqhITpUdYwNw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "141342219108",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-10-06T09:51:18.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-07-08T09:46:18.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "90968",
+                    "categoryName": "Colorado"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "12988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "12988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P25DT8H58M31S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Colorado Work Truck Pickup  6 ft 2011 Work Truck Pickup  6 ft Used 2.9L I4 16V 2WD Pickup Truck Premium OnStar",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Colorado-Work-Truck-Pickup-6-ft-/141342219108?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19640000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "98467"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "330.0"
+                },
+                "galleryPlusPictureURL": "http://galleryplus.ebayimg.com/ws/web/261585100452_1_0_1.jpg",
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mnFAYfK23PkbEN9qcgSt25A/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "261585100452",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "true",
+                    "buyItNowPrice": {
+                        "_currencyId": "USD",
+                        "value": "78899.0"
+                    },
+                    "convertedBuyItNowPrice": {
+                        "_currencyId": "USD",
+                        "value": "78899.0"
+                    },
+                    "endTime": "2014-09-15T18:05:21.000Z",
+                    "gift": "false",
+                    "listingType": "AuctionWithBIN",
+                    "startTime": "2014-09-06T00:05:27.000Z"
+                },
+                "location": "Rancho Cucamonga,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PersonalCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "91739",
+                "primaryCategory": {
+                    "categoryId": "6169",
+                    "categoryName": "Impala"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "0",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "58000.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "58000.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P4DT17H12M34S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "US",
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Impala SS Champagne Tan, Mint Condition, Super Sport, 2 door hardtop",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Impala-SS-/261585100452?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "47789"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "30.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/mOQfTQXfuuPu4HGSsU9_l7g/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "141370944516",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-10-07T10:52:28.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-08-08T10:47:28.000Z"
+                },
+                "location": "San Mateo,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "94401",
+                "primaryCategory": {
+                    "categoryId": "6170",
+                    "categoryName": "Malibu"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98926192"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "13988.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P26DT9H59M41S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Malibu LS 2011 LS Used 2.4L I4 16V FWD Sedan OnStar",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Malibu-LS-/141370944516?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "54746"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "5.0"
+                },
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/mfMBX8e-vrvgR-dSmJFjVyw/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "141371867199",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-10-08T09:46:45.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-08-09T09:41:45.000Z"
+                },
+                "location": "San Jose,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "95113",
+                "primaryCategory": {
+                    "categoryId": "166650",
+                    "categoryName": "Traverse"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "98944876"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "27599.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "27599.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P27DT8H53M58S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Traverse AWD 4dr LTZ AWD 4dr LTZ SUV Leather OnStar Privacy Glass Towing Pkg Daytime Running Lights",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Traverse-AWD-4dr-LTZ-/141371867199?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "19630000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "91000"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "335.0"
+                },
+                "galleryURL": "http://thumbs1.ebaystatic.com/m/myV84_yih1ZXVnUJLmSkIRA/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "151402885096",
+                "listingInfo": {
+                    "bestOfferEnabled": "false",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-09-12T21:17:28.000Z",
+                    "gift": "false",
+                    "listingType": "Auction",
+                    "startTime": "2014-09-05T21:17:28.000Z"
+                },
+                "location": "Huntington Beach,CA,USA",
+                "paymentMethod": [
+                    "MOCC",
+                    "PayPal",
+                    "PersonalCheck",
+                    "CashInPerson"
+                ],
+                "postalCode": "92646",
+                "primaryCategory": {
+                    "categoryId": "6167",
+                    "categoryName": "Corvair"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "bidCount": "7",
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1575.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "1575.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P1DT20H24M41S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": [
+                        "US",
+                        "CA",
+                        "AU",
+                        "DE",
+                        "JP"
+                    ],
+                    "shippingType": "NotSpecified"
+                },
+                "title": "Chevrolet : Corvair monza 1963 Corvair Monza with 91000 original miles factory AC Corvair always covered",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Corvair-monza-/151402885096?pt=US_Cars_Trucks"
+            },
+            {
+                "attribute": [
+                    {
+                        "name": "Year",
+                        "value": "20110000"
+                    },
+                    {
+                        "name": "Miles",
+                        "value": "24456"
+                    }
+                ],
+                "autoPay": "false",
+                "condition": {
+                    "conditionDisplayName": "Used",
+                    "conditionId": "3000"
+                },
+                "country": "US",
+                "distance": {
+                    "_unit": "mi",
+                    "value": "5.0"
+                },
+                "galleryURL": "http://thumbs4.ebaystatic.com/m/mUFDSSDGfKHX-PEaQGglgVg/140.jpg",
+                "globalId": "EBAY-MOTOR",
+                "isMultiVariationListing": "false",
+                "itemId": "251641671055",
+                "listingInfo": {
+                    "bestOfferEnabled": "true",
+                    "buyItNowAvailable": "false",
+                    "endTime": "2014-10-10T08:05:12.000Z",
+                    "gift": "false",
+                    "listingType": "Classified",
+                    "startTime": "2014-09-10T08:00:12.000Z"
+                },
+                "location": "Santa Clara,CA,USA",
+                "paymentMethod": "PaymentSeeDescription",
+                "postalCode": "95051",
+                "primaryCategory": {
+                    "categoryId": "173650",
+                    "categoryName": "Volt"
+                },
+                "productId": {
+                    "_type": "ReferenceID",
+                    "value": "167367758"
+                },
+                "returnsAccepted": "false",
+                "sellingStatus": {
+                    "convertedCurrentPrice": {
+                        "_currencyId": "USD",
+                        "value": "20981.0"
+                    },
+                    "currentPrice": {
+                        "_currencyId": "USD",
+                        "value": "20981.0"
+                    },
+                    "sellingState": "Active",
+                    "timeLeft": "P29DT7H12M25S"
+                },
+                "shippingInfo": {
+                    "expeditedShipping": "false",
+                    "oneDayShippingAvailable": "false",
+                    "shipToLocations": "None",
+                    "shippingType": "FreePickup"
+                },
+                "title": "Chevrolet : Volt Base Hatchback 4-Door 2011 Used Front-wheel Drive Hatchback OnStar Premium Bose",
+                "topRatedListing": "false",
+                "viewItemURL": "http://www.ebay.com/itm/Chevrolet-Volt-Base-Hatchback-4-Door-/251641671055?pt=US_Cars_Trucks"
+            }
+        ]
+    },
+    "timestamp": "2014-09-11T00:52:47.379Z",
+    "version": "1.12.0"
+}

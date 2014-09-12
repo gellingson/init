@@ -1,4 +1,6 @@
 
+import datetime
+import time
 import json
 
 from bunch import Bunch
@@ -101,8 +103,10 @@ def index(request, filter=None):
                     "filter": {
                         "range": {
                             "listing_date": {
-                                "from": '2014-09-03',
-                                "to": '2014-09-06'
+                                "from": datetime.date.fromtimestamp(
+                                    time.time()-86400).__str__(),
+                                "to": datetime.date.fromtimestamp(
+                                    time.time()+86400).__str__()
                             }
                         }
                     }

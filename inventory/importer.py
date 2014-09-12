@@ -10,9 +10,11 @@
 # builtin modules used
 import argparse
 from base64 import b64decode
+from collections import defaultdict
 import datetime
+from decimal import Decimal
 import errno
-import json
+import simplejson as json  # handles Decimal fields; regular json does not
 import logging
 import os
 import re
@@ -121,6 +123,26 @@ def load_refdata_cache(session):
 
 # regularize methods will take a string input that may be "messy" or
 # vary a bit from site to site and regularize/standardize it
+
+
+# def regularize_latlon
+#
+# take in a string that should contain a lat or lon number
+# and return the lat or lon as a Decimal, or None. Note that
+# exactly 0.0 is considered invalid and will become None
+#
+# GEE TODO: handle notation in minutes & seconds
+#
+def regularize_latlon(num_string):
+    if num_string:
+        try:
+            latlon = Decimal(num_string)
+            if latlon != Decimal(0) and abs(latlon) <= Decimal(180):
+                return latlon
+        except ValueError:
+            pass
+    return None
+
 
 # def regularize_price
 #
@@ -1197,11 +1219,6 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
         response = api.execute('findItemsAdvanced', api_request)
         r = response.dict()
         if r['ack'] != 'Success':
-            # Hmm, when I get an error back from eBay the response can't be
-            # JSON dumped for some reason. This command barfs saying it isn't
-            # JSON serializable:
-            # print(response.json().dump())
-            print(response.json())
             logging.error('eBay reports failure: {}'.format(response))
             break # note: breaks out of loop over pages
         # _count may be empty, or '0', or 0, or... who knows, but skip it
@@ -1329,6 +1346,232 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
     return list_of_listings, inventory_marker
 
 
+# process_3taps_posting()
+#
+# Extracts info from a 3taps polling API posting structure
+#
+# Broken out just to make code more readable & maintainable
+#
+def process_3taps_posting(session, item, classified, counts, inv_settings):
+    ok = True
+    item = Bunch(item) # for convenience
+    logging.debug('3taps ITEM: {}'.format(item.id))
+    listing = Listing()
+    listing.source_type = 'C'
+    listing.source_id = classified.id
+    listing.source_textid = classified.textid
+    listing.source = classified.full_name
+
+    # there are three possible places to find year/make/model from 3taps:
+    # annotations, the listing heading, or the full listing html.
+    # grab the first 2, the 3rd contingently, and keep the best-looking.
+
+    # a few notes on feed quality:
+    # carsd seems to have consistent year/make/model in annotations
+    # autod usually has all three in annotations but not always
+    # hmngs usually has all three in annotations, and it is clearly a
+    #   straight parse of the heading, e.g.:
+    #   heading: "2006 Cadillac XLR-V 31k MILES Loaded! Supercharged!",
+    #   annotations.model: " XLR-V 31k MILES Loaded! Supercharged!",
+    #   (make/model category info appears to be unused)
+    #   (model field even retains a leading space, heh)
+    #   (hemmings seems to enforce/regularize year/make/model at the
+    #    beginning of the heading but then permit more verbiage)
+    # craig sometimes has year in annocations but usually not the others
+
+    an_model_year = he_model_year = ht_model_year = None
+    an_make = he_make = ht_make = None
+    an_model = he_model = ht_model = None
+
+    # from the annotations:
+    if 'year' in item.annotations:
+        an_model_year = item.annotations['year'].strip()
+    if 'make' in item.annotations:
+        an_make = item.annotations['make'].strip()
+    if 'model' in item.annotations:
+        an_model = item.annotations['model'].strip()
+    # now regularize them (if we found all three annotations)
+    if an_model_year and an_make and an_model:
+        (an_model_year,
+         an_make,
+         an_model) = regularize_year_make_model(
+             ' '.join([an_model_year, an_make, an_model]))
+
+    # from the heading
+    if 'heading' in item and item.heading: # present and non-empty
+        (he_model_year,
+         he_make,
+         he_model) = regularize_year_make_model(item.heading)
+
+    # for cl, annotations are often WRONG, so always go to the html
+    # (but fall back to the annotations if we have to). The html
+    # contains one ore more <p class="attrgroup">... one of which
+    # often contains a <span> with Y/M/M info.
+    # GEE TODO: some of the other attrgroup spans are also interesting
+    if classified.textid == 'craig' and 'html' in item:
+        html = None
+        try:
+            html = b64decode(item.html)
+        except:  # GEE TODO: figure out how to catch 'binascii.Error'
+            logging.error('Failed to decode item html for item %s',
+                          item.external_id)
+        if html:
+            soup = BeautifulSoup(html)
+            for p in soup.find_all(class_='attrgroup'):
+                for span in p.find_all('span'):
+                    if not listing.model_year or not listing.make:
+                        (ht_model_year,
+                         ht_make,
+                         ht_model) = regularize_year_make_model(span.text)
+                        listing.model_year = ht_model_year
+                        listing.make = ht_make
+                        listing.model = ht_model
+    if not listing.model_year:
+        if an_model_year and an_model_year > '1800' and an_model_year < '2020':
+            listing.model_year = an_model_year
+        else:
+            listing.model_year = he_model_year
+    if not listing.make or not listing.model:
+        if an_make:
+            listing.make = an_make
+            if an_model:  # take any model found with the winning make
+                listing.model = an_model
+            else:
+                listing.model = he_model
+        else:
+            listing.make = he_make
+            if he_model:
+                listing.model = he_model
+            else:
+                listing.model = an_model
+
+    # year/make/model we ended up with [and what we started from]
+    # GEE TODO: cl 1996 1996 nissan pulsar -> model=1996 :(. Can fix that one (header was right, annotations and html were wrong)
+    if classified.textid == 'craig':
+        logging.debug('Final year/make/model: %s %s %s [an: %s %s %s, h: %s, html: %s %s %s]',
+                      listing.model_year, listing.make, listing.model,
+                      an_model_year, an_make, an_model, item.heading,
+                      ht_model_year, ht_make, ht_model)
+    else:
+        logging.debug('Final year/make/model: %s %s %s [an: %s %s %s, h: %s]',
+                      listing.model_year, listing.make, listing.model,
+                      an_model_year, an_make, an_model, item.heading)
+
+    try:
+        listing.pic_href = item.images[0]['full']
+    except (KeyError, IndexError):
+        listing.pic_href = 'N/A'
+    listing.listing_href = item.external_url
+    # use the source identifier to minimize dupes
+    listing.local_id = item.external_id
+    # keep the 3taps ID around too (at least the latest one)
+    listing.stock_no = item.id
+    if not listing.local_id:
+        # some feeds (e.g. autod) *occasionally* lack the local_id;
+        # fall back to stock_no
+        logging.warning('listing for a %s %s %s has no local ID; ' +
+                        'using 3taps ID %s',
+                        listing.model_year, listing.make, listing.model,
+                        listing.stock_no)
+        listing.local_id = listing.stock_no
+
+    # location - from annotations
+    # one note on quality: sometimes the feeds have USA-05602 zip and
+    # lat/lon; other times (notably hmngs) they have "plain" 5-digit
+    # zips and no lat/lon or other breakouts (like state or metro). In
+    # any case, lets try to end up with zip/postal code, lat/lon, and
+    # city&state (this last just to avoid a lookup at display time).
+    # GEE TODO: more i18n!
+
+    if 'location' in item:
+        if 'lat' in item.location:
+            listing.lat = regularize_latlon(item.location['lat'])
+        if 'long' in item.location: # note 3taps uses long, we use lon
+            listing.lon = regularize_latlon(item.location['long'])
+        if 'zipcode' in item.location:
+            listing.zip = item.location['zipcode'].strip()
+            if listing.zip.startswith('USA-'):
+                listing.zip = listing.zip[4:]
+            z = session.query(Zipcode).filter_by(zip=listing.zip).first()
+            if z:
+                listing.location_text = '{}, {}'.format(z.city, z.state_code)
+                if not (listing.lat and listing.lon):
+                    listing.lat = z.lat
+                    listing.lon = z.lon
+
+    if not (listing.lat and listing.lon and listing.zip and listing.location_text):
+        logging.info("location information bad: {} {} {} {}".format(
+            listing.lat, listing.lon, listing.location_text, listing.zip))
+        counts['badloc'] += 1
+    # mileage -- just check annotations; otherwise leave null
+    if 'mileage' in item.annotations:
+        # GEE TODO: put this in a regularize() method & add complexity (e.g. dropping tenths)
+        try:
+            listing.mileage = int(re.sub(r'[,]', '', item.annotations['mileage']))
+        except ValueError:
+            pass
+
+    # colors -- just check annotations; otherwise leave null
+    if 'exteriorColor' in item.annotations:
+        listing.color = item.annotations['exteriorColor'].strip()
+    if 'interiorColor' in item.annotations:
+        listing.int_color = item.annotations['interiorColor'].strip()
+
+    # VIN -- isn't in any of the 3taps feeds (at least without
+    # checking html) so always leave it null
+
+    # GEE TODO: examine & use flagging info
+    if item.status == 'for_sale' and item.deleted is False:
+        listing.status = 'F' # 'F' -> For Sale
+    else:
+        listing.status = 'R' # 'R' -> Removed, unknown reason
+
+    listing.listing_text = item.heading
+
+    # price - may be @ top level or in the annotations
+    listing.price = regularize_price(item.price)
+    if listing.price == 0 and 'price' in item.annotations:
+        listing.price = regularize_price(item.annotations['price'])
+
+    # validate year/make/model (well, the first 2 are sufficient)
+    if not listing.model_year and not listing.model:
+        ok = False
+        logging.warning('skipping item with no year/make/model info: %s',
+                        listing.local_id)
+    else:
+        try:
+            int(listing.model_year)
+        except (ValueError, TypeError):
+            logging.warning('bad year [%s] for item %s',
+                            listing.model_year, listing.local_id)
+            listing.model_year = '1'
+
+    # be tougher on cl listings for now because there is so much junk
+    if ok and is_car_interesting(listing,
+                                 unknown_make_is_interesting=(
+                                     classified.textid != 'craig')):
+        listing.add_tag('interesting')
+        logging.debug('interesting car %s %s %s',
+                      listing.model_year, listing.make, listing.model)
+    else:
+        if 'limited' in inv_settings:
+            ok = False # throw it away for limited inventory stages
+        logging.debug('UNinteresting car %s %s %s',
+                      listing.model_year, listing.make, listing.model)
+
+    # a few more CL junk-data tests: drop records that fail
+    if ok and classified.textid == 'craig' and not listing.has_tag('interesting'):
+        if not listing.model_year or listing.model_year < '1800':
+            logging.warning('skipping item with no useful year: %s',
+                            item)                
+            ok = False
+        if not listing.model or listing.model == 'None':
+            logging.warning('skipping item with no useful model: %s',
+                            item)
+            ok = False
+    return ok, listing
+
+
 # pull_3taps_inventory()
 #
 # Pulls listings (for some source/classified) via the 3taps api
@@ -1365,10 +1608,6 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
 # 	limits pulls to local area (see notes)
 # 	limits pulls to "interesting" cars (see notes)
 #
-# GEE TODO clean up the classified (and dealer) db entries/table structures
-# for now, this method goes in custom_pull_method and the anchor goes in
-# the extract_car_list_func field
-#
 def pull_3taps_inventory(classified, inventory_marker=None, session=None):
 
     # implicit param from environment:
@@ -1386,8 +1625,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
         pass # run from the passed-in point
     else:
         # caller doesn't specify; start from the anchor in classified
-        # see TODO - anchor is in temporary storage location
-        inventory_marker = classified.extract_car_list_func
+        inventory_marker = classified.anchor
 
     logging.info('Pulling inventory from 3taps for %s starting with marker %s',
                  classified.textid, inventory_marker)
@@ -1438,176 +1676,11 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
         return None, None
 
     logging.info('Number of car listings found: {}'.format(len(r['postings'])))
+
+    counts = defaultdict(int)  # track some data/import quality measures
+
     for item in r['postings']:
-        ok = True
-        item = Bunch(item) # for convenience
-        logging.debug('3taps ITEM: {}'.format(item.id))
-        listing = Listing()
-        listing.source_type = 'C'
-        listing.source_id = classified.id
-        listing.source_textid = classified.textid
-
-        # there are three possible places to find year/make/model from 3taps:
-        # annotations, the listing heading, or the full listing html.
-        # grab the first 2, the 3rd contingently, and keep the best-looking.
-
-        # a few notes on feed quality:
-        # carsd seems to have consistent year/make/model in annotations
-        # autod usually has all three but not always
-        # craig sometimes has year, but usually not the other two
-
-        an_model_year = he_model_year = ht_model_year = None
-        an_make = he_make = ht_make = None
-        an_model = he_model = ht_model = None
-
-        # from the annotations:
-        if 'year' in item.annotations:
-            an_model_year = item.annotations['year']
-        if 'make' in item.annotations:
-            an_make = item.annotations['make']
-        if 'model' in item.annotations:
-            an_model = item.annotations['model']
-        # now regularize them (if we found all three annotations)
-        if an_model_year and an_make and an_model:
-            (an_model_year,
-             an_make,
-             an_model) = regularize_year_make_model(
-                 ' '.join([an_model_year, an_make, an_model]))
-
-        # from the heading
-        if 'heading' in item and item.heading: # present and non-empty
-            (he_model_year,
-             he_make,
-             he_model) = regularize_year_make_model(item.heading)
-
-        # for cl, annotations are often WRONG, so always go to the html
-        # (but fall back to the annotations if we have to). The html
-        # contains one ore more <p class="attrgroup">... one of which
-        # often contains a <span> with Y/M/M info.
-        # GEE TODO: some of the other attrgroup spans are also interesting
-        if classified.textid == 'craig' and 'html' in item:
-            html = None
-            try:
-                html = b64decode(item.html)
-            except:  # GEE TODO: figure out how to catch 'binascii.Error'
-                logging.error('Failed to decode item html for item %s',
-                              item.external_id)
-            if html:
-                soup = BeautifulSoup(html)
-                for p in soup.find_all(class_='attrgroup'):
-                    for span in p.find_all('span'):
-                        if not listing.model_year or not listing.make:
-                            (ht_model_year,
-                             ht_make,
-                             ht_model) = regularize_year_make_model(span.text)
-                            listing.model_year = ht_model_year
-                            listing.make = ht_make
-                            listing.model = ht_model
-        if not listing.model_year:
-            if an_model_year and an_model_year > '1800' and an_model_year < '2020':
-                listing.model_year = an_model_year
-            else:
-                listing.model_year = he_model_year
-        if not listing.make or not listing.model:
-            if an_make:
-                listing.make = an_make
-                if an_model:  # take any model found with the winning make
-                    listing.model = an_model
-                else:
-                    listing.model = he_model
-            else:
-                listing.make = he_make
-                if he_model:
-                    listing.model = he_model
-                else:
-                    listing.model = an_model
-
-        # year/make/model we ended up with [and what we started from]
-        # GEE TODO: cl 1996 1996 nissan pulsar -> model=1996 :(. Can fix that one (header was right, annotations and html were wrong)
-        if classified.textid == 'craig':
-            logging.debug('Final year/make/model: %s %s %s [an: %s %s %s, h: %s, html: %s %s %s]',
-                          listing.model_year, listing.make, listing.model,
-                          an_model_year, an_make, an_model, item.heading,
-                          ht_model_year, ht_make, ht_model)
-        else:
-            logging.debug('Final year/make/model: %s %s %s [an: %s %s %s, h: %s]',
-                          listing.model_year, listing.make, listing.model,
-                          an_model_year, an_make, an_model, item.heading)
-
-        try:
-            listing.pic_href = item.images[0]['full']
-        except (KeyError, IndexError):
-            listing.pic_href = 'N/A'
-        listing.listing_href = item.external_url
-        # use the source identifier to minimize dupes
-        listing.local_id = item.external_id
-        # keep the 3taps ID around too (at least the latest one)
-        listing.stock_no = item.id
-        if not listing.local_id:
-            # some feeds (e.g. autod) *occasionally* lack the local_id;
-            # fall back to stock_no
-            logging.warning('listing for a %s %s %s has no local ID; ' +
-                            'using 3taps ID %s',
-                            listing.model_year, listing.make, listing.model,
-                            listing.stock_no)
-            listing.local_id = listing.stock_no
-
-        if 'location' in item:
-            if 'lat' in item.location:
-                listing.lat = item.location['lat']
-            if 'long' in item.location: # note 3taps uses long, we use lon
-                listing.lon = item.location['long']
-            # add fall back to other location info if lat/long is unreliable?
-
-        # GEE TODO: examine & use flagging info
-        if item.status == 'for_sale' and item.deleted is False:
-            listing.status = 'F' # 'F' -> For Sale
-        else:
-            listing.status = 'R' # 'R' -> Removed, unknown reason
-
-        listing.listing_text = item.heading
-
-        #try:
-        #    listing.price = regularize_price(item.annotations['price'])
-        #except ValueError:
-        listing.price = regularize_price(item.price)
-
-        # validate year/make/model (well, the first 2 are sufficient)
-        if not listing.model_year and not listing.model:
-            ok = False
-            logging.warning('skipping item with no year/make/model info: %s',
-                            listing.local_id)
-        else:
-            try:
-                int(listing.model_year)
-            except (ValueError, TypeError):
-                logging.warning('bad year [%s] for item %s',
-                                listing.model_year, listing.local_id)
-                listing.model_year = '1'
-
-        # be tougher on cl listings for now because there is so much junk
-        if ok and is_car_interesting(listing,
-                                     unknown_make_is_interesting=(
-                                         classified.textid != 'craig')):
-            listing.add_tag('interesting')
-            logging.debug('interesting car %s %s %s',
-                          listing.model_year, listing.make, listing.model)
-        else:
-            if 'limited' in inv_settings:
-                ok = False # throw it away for limited inventory stages
-            logging.debug('UNinteresting car %s %s %s',
-                          listing.model_year, listing.make, listing.model)
-
-        # a few more CL junk-data tests: drop records that fail
-        if ok and classified.textid == 'craig' and not listing.has_tag('interesting'):
-            if not listing.model_year or listing.model_year < '1800':
-                logging.warning('skipping item with no useful year: %s',
-                                item)                
-                ok = False
-            if not listing.model or listing.model == 'None':
-                logging.warning('skipping item with no useful model: %s',
-                                item)
-                ok = False
+        ok, listing = process_3taps_posting(session, item, classified, counts, inv_settings)
 
         if ok:
             tagify(listing)
@@ -1617,14 +1690,13 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
             # debug not warn b/c we're throwing out lots of stuff
             logging.debug('skipped listing: {}'.format(listing))
 
-        # END LOOP over listings in the feed pull
-
+    # report on outcomes
     logging.info('Loaded %s cars from 3taps for %s',
                  str(len(list_of_listings)), classified.textid)
 
     # update the classified record with the new 3taps anchor AND
     # send the same value back as the inventory marker.
-    classified.extract_car_list_func = r['anchor']
+    classified.anchor = r['anchor']
     inventory_marker = r['anchor']
 
     # note: 3taps doesn't tell us when/if we are caught up -- we just won't see
@@ -1936,38 +2008,14 @@ def index_listing(es, listing, session):
             # if we got some other flavor of listing then hope it is safe
             listing_d = listing
 
-        # now invent some virtual derived fields
+        # create a virtual location field that es understands from the lat/lon
+        # I don't like this hackery here but otherwise I have to combine the
+        # lat/lon into a single varchar field on the db record (ick) or do a
+        # MySQL geopoint thing & make es understand that (yikes)....
 
-        # create a virtual location field from the lat/lon
         if listing_d.lat and listing_d.lon:
             listing_d.location = {
                 'lat': listing_d.lat, 'lon': listing_d.lon}
-
-        # create a virtual city field from lat/lon OR dealership info
-        d = None
-        c = None
-        if listing_d.source_type == 'D':
-            d = session.query(Dealership).filter_by(id=listing_d.source_id).one()
-        else:
-            c = session.query(Classified).filter_by(id=listing_d.source_id).one()
-        if d:
-            listing_d.city = '{}, {}'.format(d.city, d.state)
-        elif listing_d.lat and listing_d.lon:
-            print("lat/lon = {}/{}".format(listing_d.lat, listing_d.lon))
-            try:
-                zipcode = session.query(Zipcode).filter_by(lat=listing_d.lat,
-                                                           lon=listing_d.lon).one()
-                listing_d.city = '{}, {}'.format(zipcode.city, zipcode.state_code)
-            except NoResultFound:
-                print("oops - couldn't back-find zipcode from lat/lon")
-                listing_d.city = None
-        else:
-            listing_d.city = None
-        # create a virtual pretty-source field
-        if d:
-            listing_d.source = d.full_name
-        else:
-            listing_d.source = c.full_name
 
         es.index(index="carbyr-index", doc_type="listing-type",
                  id=listing_d['id'], body=listing_d)

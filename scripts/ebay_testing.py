@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 #
 # this script is just a hacked-up copy of an ebaysdk script suitable for
@@ -17,7 +18,7 @@ def getparms():
 
     
 def find():
-    print("finding")
+
     api = finding(debug=True, appid=None, config_file='../conf/ebay.yaml',warnings=True)
     api_request = {
         #'keywords': u'niño',
@@ -26,18 +27,20 @@ def find():
         'buyerPostalCode': 95112,
 #        'keywords': u'Corvette',
         'itemFilter': [
-            {'name': 'MaxDistance', 'value': 100},
-            {'name': 'MaxYear', 'value': 1964},
+            {'name': 'MaxDistance', 'value': 500},
             ],
         'aspectFilter': [
             {'aspectName': 'Model Year',
-             'aspectValueName': '2002'
+             'aspectValueName': '1963'
              },
             {'aspectName': 'Model Year',
-             'aspectValueName': '2003'
+             'aspectValueName': '1964'
+             },
+            {'aspectName': 'Model Year',
+             'aspectValueName': '2011'
              },
             {'aspectName': 'Make',
-             'aspectValueName': 'Toyota'},
+             'aspectValueName': 'Chevrolet'},
             ],
         'affiliate': {'trackingId': 1},
         'sortOrder': 'YearAscending',
@@ -45,6 +48,8 @@ def find():
         }
     response = api.execute('findItemsAdvanced', api_request)
     cars = response.json()
+    carsj = json.loads(cars)
+    print(json.dumps(carsj, indent=4, sort_keys=True))
     r = response.dict()
     for car in r['searchResult']['item']:
         print('postal code is : {}'.format(car['postalCode']))
@@ -53,6 +58,5 @@ def find():
     return response, cars
 
 if __name__ == "__main__":
-    print("ho")
     find()
     print("done")

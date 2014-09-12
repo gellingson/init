@@ -75,6 +75,13 @@ local_id	   varchar(255),
 stock_no	   varchar(255),
 lat            float,
 lon            float,
+location_text  varchar(50),
+zip            varchar(10),
+source         varchar(50),
+color          varchar(20),
+int_color      varchar(20),
+vin            varchar(20),
+mileage        int,
 tags           varchar(2048),
 listing_date   DATETIME,
 removal_date   DATETIME,
@@ -84,6 +91,32 @@ primary key (id)
 create index sourceidx on listing(source_type, source_id, local_id);
 create index sourcetextidx on listing(source_textid);
 
+# LISTING_SOURCEINFO
+#
+# stores the listing entry and detail html pairs that we see for
+# each entry, straight from the source. The entry field will contain
+# an html or json entry as appropriate to the source. The detail_html
+# will be html; detail_enc will be:
+# b for b64 encoded
+# t for plain utf-8 text
+# ... as a convenience; we won't bother to b64decode if we don't need to
+#
+# note that some entries will lack listing_id and maybe local_id
+#
+create table listing_sourceinfo(
+id	   		   int unsigned not null auto_increment,
+source_type    char,
+source_id      int unsigned,
+local_id       varchar(255),
+proc_time      datetime,
+listing_id     int unsigned,
+entry		   text,
+detail_enc     char,
+detail_html    text,
+primary key (id),
+foreign key (listing_id) references listing(id),
+index (source_type, source_id, proc_time)
+);
 
 # MAKE
 #
@@ -243,6 +276,7 @@ custom_pull_func varchar(1024),
 extract_car_list_func varchar(1024),
 listing_from_list_item_func varchar(1024),
 parse_listing_func varchar(1024),
+anchor varchar(1024),
 inventory_url varchar(1024),
 owner_account_id int,
 lat float,
@@ -255,7 +289,7 @@ rename table dealership_activity_log to dealership_activity_log_backup;
 create table dealership_activity_log(
 id                int unsigned not null auto_increment,
 dealership_id int,
-activity_timpestamp datetime,
+activity_timestamp datetime,
 action_code varchar(32),
 message varchar(1024),
 primary key (id)
