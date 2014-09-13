@@ -25,6 +25,41 @@ h4 {
   border: 1px solid rgba(86,61,124,.2);
 }
 
+/* see http://dabblet.com/gist/4711695 */
+.img-crop,
+.img-crop img{
+	width: 100%;
+}
+.img-crop{
+	overflow: hidden;
+	/* remove white-space for inline-block elements */
+	letter-spacing: -0.31em; /* webkit */
+	*letter-spacing: normal; /* reset IE < 8 */
+	word-spacing: -0.43em; /* IE < 8 && gecko */
+}
+.img-crop:before,
+.img-crop img{
+	display: inline-block;
+	vertical-align: middle;
+}
+.img-crop:before{
+	/* pseudo element to vertically align image to */
+	content: "";
+
+	/* Magic Number */
+	/* Set this to your desired height(to width) ratio */
+	padding-top: 75%; /* % of original image width */
+}
+.img-crop img{
+	/* removes(sorta) image from the flow */
+	padding-left: 100%;
+	margin: -999em -100%;
+}
+/* end of: gist */
+.pic-cell {
+/*  max-height: 100px; */
+}	
+
 [class*="col-"] {
   padding-top: 15px;
   padding-bottom: 15px;
@@ -50,9 +85,16 @@ h4 {
 }
 
 .zip {
-	width: 40px;
+	display: inline-block;
+	width: 80px;
+	vertical-align: middle;
 }
 
-zip {
-	width: 60px;
+.label-between {
+	display: inline-block;
+	padding-top: 15px;
+	padding-left: 10px;
+	padding-right: 10px;
+	font-weight: normal;
+	vertical-align: middle;
 }

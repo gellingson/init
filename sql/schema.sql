@@ -97,8 +97,9 @@ create index sourcetextidx on listing(source_textid);
 # each entry, straight from the source. The entry field will contain
 # an html or json entry as appropriate to the source. The detail_html
 # will be html; detail_enc will be:
-# b for b64 encoded
-# t for plain utf-8 text
+# B for b64 encoded
+# T for plain utf-8 text
+# X for nothing (not loaded)
 # ... as a convenience; we won't bother to b64decode if we don't need to
 #
 # note that some entries will lack listing_id and maybe local_id
@@ -407,5 +408,5 @@ county varchar(100),
 lat float,
 lon float,
 primary key(zip),
-index states(state_code));
+index statecityidx(state_code, city_upper));
 create index latlonidx on zipcode(lat, lon);

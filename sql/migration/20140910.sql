@@ -36,3 +36,7 @@ int_color      varchar(20),
 vin            varchar(20),
 mileage        int unsigned
 );
+
+alter table zipcode drop index states;
+
+alter table zipcode add index statecityidx(state_code, city_upper);

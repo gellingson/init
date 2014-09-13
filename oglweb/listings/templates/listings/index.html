@@ -35,7 +35,7 @@
 	</div>
 	<div class="container">
 	  <div class="page-header">
-		<h2> Search more listings faster with Carbyr...</h2>
+		<h2> Cars for enthusiasts...</h2>
 		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
 		<form class="" role="form" action="{{ post_url }}" method="get">
@@ -43,15 +43,16 @@
 		  <div class="form-group">
 			<div class="input-group">
 			  <label class="sr-only" for="search_string">Search criteria:</label>
-			  <input type="text" placeholder="find me..." class="form-control" name="search_string" />
+			  <input type="text" placeholder="find me..." class="form-control" name="search_string" id="search_string"/>
 			  <span class="input-group-btn">
 				<button type="submit" class="btn btn-success">Search</button>
 			  </span>
 			</div>
-			<div class="input-group">
-			  <input type="checkbox" class="checkbox-inline" class="form-control" name="limit">
-			  Limit to cars near   
- 			  <input type="zip" class="text-inline" placeholder="zip code" class="form-control" name="zip" size="20"/>
+			<div class="input-group form-inline">
+			  <input type="checkbox" class="checkbox-inline" name="limit" id="limit">
+			  <label for="limit" class="label-between">Limit to cars near</label>
+			  <label for="zip" class="sr-only">zipcode</label>
+ 			  <input type="text" class="zip" placeholder="zip code" class="form-control" name="zip" id="zip" size="20"/>
 			</div>
 		  </div>
 		</form>
@@ -67,7 +68,7 @@
 			  <a href='{{ item.listing_href }}'>
 				<div class="col-md-3">
 				  {% if item.pic_href %}
-				    <img class="img-responsive img-rounded" src='{{ item.pic_href }}'>
+				    <img class="img-crop img-rounded" foo="responsive img-responsive-heightlimit img-rounded" src='{{ item.pic_href }}'>
 				  {% else %}
 					<p> No photo available. </p>
 				  {% endif %}
