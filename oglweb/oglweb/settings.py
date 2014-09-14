@@ -26,7 +26,9 @@ TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
 TEMPLATE_DEBUG = True
 
 # must be populated when DEBUG is False (ie on "public" servers)
-ALLOWED_HOSTS = [os.environ.get('OGL_SERVER_HOSTNAMES', '')]
+ALLOWED_HOSTS = ''
+if os.environ.get('OGL_SERVER_HOSTNAMES', ''):
+    ALLOWED_HOSTS = os.environ.get('OGL_SERVER_HOSTNAMES', '').split(',')
 
 # Application definition
 

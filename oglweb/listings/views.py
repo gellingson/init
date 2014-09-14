@@ -83,7 +83,7 @@ def index(request, filter=None):
     except MultiValueDictKeyError:
         pass  # no criteria specified; get recent listings
         
-    print('params:', search_string, limit, zip)
+    #print('params:', search_string, limit, zip)
 
     es = Elasticsearch()
     if search_string:
@@ -138,7 +138,6 @@ def index(request, filter=None):
     querybody = {"query": {"filtered": {}}}
 
     if search_term:
-        print("WTF: " + json.dumps(search_term))
         querybody['query']['filtered']['query'] = search_term
     if geolimit_term or filter_term:
         querybody['query']['filtered']['filter'] = {}
@@ -148,7 +147,7 @@ def index(request, filter=None):
         if filter_term:
             querybody['query']['filtered']['filter']['and'].append(filter_term)
             
-    print(json.dumps(querybody, indent=4, sort_keys=True))
+    #print(json.dumps(querybody, indent=4, sort_keys=True))
     search_resp = es.search(index='carbyr-index',
                             doc_type='listing-type',
                             size=50,
