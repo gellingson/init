@@ -1896,6 +1896,10 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
 #
 def import_from_dealer(dealer, session, es):
 
+    # clear out existing sourceinfo records (this table grows FAST)
+    clear_listing_sourceinfo(session, 'D', dealer.id)
+    session.commit()
+
     # paint current records so we can mark-as-removed any that no longer exist
     mark_listings_pending_delete('D', dealer.id, session)
     session.commit()
@@ -1947,6 +1951,10 @@ def import_from_dealer(dealer, session, es):
 #
 def import_from_classified(classified, session, es):
 
+    # clear out existing sourceinfo records (this table grows FAST)
+    clear_listing_sourceinfo(session, 'C', classified.id)
+    session.commit()
+
     # 3taps provides polling w/ only new/updated records in the stream, so
     # we explicitly get deletes/expirations/etc. All other sites we need
     # to treat disappearance of the listing as cause for cancellation
@@ -1995,6 +2003,29 @@ def import_from_classified(classified, session, es):
     logging.info('Completed inventory pull for {}'.format(classified.textid))
 
     return True
+
+
+# clear_listing_sourceinfo()
+#
+# Nukes listing_sourceinfo records
+#
+# parameters:
+#   source_type, source_id: if only type is provided, will clear
+#     everything for the given type
+#
+def clear_listing_sourceinfo(session, source_type, source_id=None):
+    stmt = "delete from listing_sourceinfo where source_type = :source_type"
+    parms = {'source_type': source_type}
+    if source_id:
+        stmt += " and source_id = :source_id"
+        parms['source_id'] = source_id
+    result = session.execute(stmt, parms)
+    if source_id:
+        logging.debug('Deleted listing_sourceinfo for all %s', source_type)
+    else:
+        logging.debug('Deleted listing_sourceinfo for %s %s',
+                      source_type, source_id)
+    return result.rowcount
 
 
 # mark_listings_pending_delete()
