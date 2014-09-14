@@ -20,7 +20,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 SECRET_KEY = '@^z4z&io2apa&^+(_afrvd=f(31suab!8kg&+4##2as!li1i$u'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(os.environ.get('OGL_SERVER_DEBUG', ''))
+DEBUG = bool(os.environ.get('OGL_SERVER_DEBUG', '') == 'TRUE')
 
 TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
 TEMPLATE_DEBUG = True
