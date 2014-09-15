@@ -8,6 +8,7 @@
 # builtin modules used
 import sys
 import argparse
+import datetime
 import re
 import json
 import urllib.request, urllib.error, urllib.parse
@@ -24,11 +25,8 @@ from ebaysdk.finding import Connection as ebaysdk_finding
 from elasticsearch import Elasticsearch
 import elasticsearch.exceptions
 import pymysql as db
-from  sqlalchemy.orm.exc import NoResultFound
 
 # our stuff
-from orm.models import Dealership, Classified, Listing, Zipcode, ZipcodeTemp
-from orm.session import session
 
 listing_type_map = {
     "properties": {
@@ -151,20 +149,46 @@ print(index_resp)
 # alternatively, we could just put the mapping into an existing index
 #mapping_resp = es.indices.put_mapping(index='carbyr-index',doc_type='listing-type',body=listing_type_map)
 #print("result:\n{}".format(json.dumps(mapping_resp, indent=2, sort_keys=True)))
+
 mapping_resp = es.indices.get_mapping(index="carbyr-index")
 print("new mapping:\n{}".format(json.dumps(mapping_resp, indent=2, sort_keys=True)))
 
-listings = session.query(Listing).filter_by(status='F')
-for listing in listings:
-    db_listing = Bunch(dict(listing))
+con = None
+try:
+    con = db.connect(os.environ['OGL_DB_HOST'],
+                     os.environ['OGL_DB_USERACCOUNT'],
+                     os.environ['OGL_DB_USERACCOUNT_PASSWORD'],
+                     os.environ['OGL_DB'],
+                     charset='utf8')
+except KeyError:
+    print("Please set environment variables for OGL DB connectivity and rerun.")
+    sys.exit(1)
+
+count = 0
+print(str(datetime.datetime.now()), "Records processed:", count)
+c = con.cursor(db.cursors.SSDictCursor) # get result as a dict rather than a list for prettier interaction, and store result set server side
+c.execute("""select * from listing where status = 'F'""")
+db_listing = c.fetchone()  # fetchmany doesn't work with SSDictCursor, unfortunately....
+while db_listing is not None:
+    if db_listing['lat'] and db_listing['lon']:
+        db_listing['location'] = {'lat': db_listing['lat'], 'lon': db_listing['lon']}
+        index_resp = es.index(index="carbyr-index",
+                              doc_type="listing-type",
+                              id=db_listing['id'],
+                              body=db_listing)
+        count += 1
+        if (count % 100) == 0:
+            print(str(datetime.datetime.now()), "Records processed:", count)
+    db_listing = c.fetchone()
     
-    # create a virtual location field from the lat/lon
-    if db_listing.lat and db_listing.lon:
-        db_listing.location = {
-            'lat': db_listing.lat, 'lon': db_listing.lon}
-
-    index_resp = es.index(index="carbyr-index",
-                          doc_type="listing-type",
-                          id=db_listing['id'],
-                          body=db_listing)
-
+result = c.fetchmany(size=1000)
+while result:
+    for db_listing in result:
+        if db_listing['lat'] and db_listing['lon']:
+            db_listing['location'] = {
+                'lat': db_listing['lat'], 'lon': db_listing['lon']}
+        index_resp = es.index(index="carbyr-index",
+                              doc_type="listing-type",
+                              id=db_listing['id'],
+                              body=db_listing)
+    result = c.fetchmany()
