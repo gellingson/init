@@ -301,7 +301,7 @@ def regularize_year_make_model(year_make_model_string):
             make = None
             model = None
 
-        return (str(year), make, model)  # backconvert year to string
+    return str(year), make, model  # backconvert year to string
 
 
 # regularize_url()
@@ -1509,6 +1509,10 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
 def process_3taps_posting(session, item, classified, counts):
     ok = True
     item = Bunch(item) # for convenience
+    anno = item.get('annotations')
+    if anno is None:
+        anno = {}  # so we don't have to "if anno" everywhere before get()
+
     logging.debug('3taps ITEM: {}'.format(item.id))
     listing = Listing()
     listing.source_type = 'C'
@@ -1565,9 +1569,9 @@ def process_3taps_posting(session, item, classified, counts):
     # from the annotations:
     (an_model_year,
      an_make,
-     an_model) = regularize_year_make_model_fields(item.annotations.get('year'),
-                                                   item.annotations.get('make'),
-                                                   item.annotations.get('model'))
+     an_model) = regularize_year_make_model_fields(anno.get('year'),
+                                                   anno.get('make'),
+                                                   anno.get('model'))
     # from the heading
     (he_model_year,
      he_make,
@@ -1687,19 +1691,19 @@ def process_3taps_posting(session, item, classified, counts):
         counts['badloc'] += 1
 
     # mileage -- just check annotations; otherwise leave null
-    if item.annotations.get('mileage'):
+    if anno.get('mileage'):
         # GEE TODO: put this in a regularize() method & add complexity (e.g. dropping tenths)
         try:
-            listing.mileage = int(re.sub(r',', '', item.annotations['mileage']))
+            listing.mileage = int(re.sub(r',', '', anno['mileage']))
         except ValueError:
             pass
 
     # colors -- just check annotations; otherwise leave null
     # some sources (e.g. hmngs) have this pretty often; others (e.g. carsd) not
-    if item.annotations.get('exteriorColor'):
-        listing.color = item.annotations['exteriorColor'].strip()
-    if item.annotations.get('interiorColor'):
-        listing.int_color = item.annotations['interiorColor'].strip()
+    if anno.get('exteriorColor'):
+        listing.color = anno['exteriorColor'].strip()
+    if anno.get('interiorColor'):
+        listing.int_color = anno['interiorColor'].strip()
 
     # VIN -- isn't in any of the 3taps feeds (at least without
     # checking html) so always leave it null
@@ -1709,8 +1713,8 @@ def process_3taps_posting(session, item, classified, counts):
 
     # price - may be @ top level or in the annotations
     listing.price = regularize_price(item.price)
-    if listing.price == 0 and 'price' in item.annotations:
-        listing.price = regularize_price(item.annotations['price'])
+    if listing.price == 0 and 'price' in anno:
+        listing.price = regularize_price(anno['price'])
 
     return ok, listing, lsinfo
 
