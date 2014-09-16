@@ -168,7 +168,7 @@ count = 0
 print(str(datetime.datetime.now()), "Records processed:", count)
 c = con.cursor(db.cursors.SSDictCursor) # get result as a dict rather than a list for prettier interaction, and store result set server side
 c.execute("""select * from listing where status = 'F'""")
-db_listing = c.fetchone()  # fetchmany doesn't work with SSDictCursor, unfortunately....
+db_listing = c.fetchone()
 while db_listing is not None:
     if db_listing['lat'] and db_listing['lon']:
         db_listing['location'] = {'lat': db_listing['lat'], 'lon': db_listing['lon']}
@@ -177,18 +177,19 @@ while db_listing is not None:
                               id=db_listing['id'],
                               body=db_listing)
         count += 1
-        if (count % 100) == 0:
+        if (count % 1000) == 0:
             print(str(datetime.datetime.now()), "Records processed:", count)
     db_listing = c.fetchone()
-    
-result = c.fetchmany(size=1000)
-while result:
-    for db_listing in result:
-        if db_listing['lat'] and db_listing['lon']:
-            db_listing['location'] = {
-                'lat': db_listing['lat'], 'lon': db_listing['lon']}
-        index_resp = es.index(index="carbyr-index",
-                              doc_type="listing-type",
-                              id=db_listing['id'],
-                              body=db_listing)
-    result = c.fetchmany()
+
+# fetchmany doesn't work with SSDictCursor, unfortunately....
+#result = c.fetchmany(size=1000)
+#while result:
+#    for db_listing in result:
+#        if db_listing['lat'] and db_listing['lon']:
+#            db_listing['location'] = {
+#                'lat': db_listing['lat'], 'lon': db_listing['lon']}
+#        index_resp = es.index(index="carbyr-index",
+#                              doc_type="listing-type",
+#                              id=db_listing['id'],
+#                              body=db_listing)
+#    result = c.fetchmany()
