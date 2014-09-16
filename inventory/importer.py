@@ -347,7 +347,7 @@ def regularize_url(href_in, base_url=None,
                         href_out = href_candidate  # good enough, hopefully
             except:
                 pass  # well, that didn't work
-    print('regularized href={} from input href={}'.format(href_out, href_in))
+    logging.debug('regularized href=%s from input href=%s', href_out, href_in)
     return href_out
 
 
@@ -1283,8 +1283,9 @@ def process_ebay_listing(session, item, classified, counts):
     try:
         int(listing.model_year)
     except (ValueError, TypeError):
-        logging.warning('bad year [%s] for item %s',
-                        listing.model_year, listing.local_id)
+        counts['badyear'] += 1
+#        logging.warning('bad year [%s] for item %s',
+#                        listing.model_year, listing.local_id)
         listing.model_year = '1'
 
     return ok, listing, lsinfo
@@ -1512,6 +1513,9 @@ def process_3taps_posting(session, item, classified, counts):
     anno = item.get('annotations')
     if anno is None:
         anno = {}  # so we don't have to "if anno" everywhere before get()
+    # copy out html so we can put it ONLY in the detail field of the lsinfo
+    html = item.get('html')
+    item.html = None
 
     logging.debug('3taps ITEM: {}'.format(item.id))
     listing = Listing()
@@ -1525,7 +1529,7 @@ def process_3taps_posting(session, item, classified, counts):
     lsinfo.source_id = classified.id
     lsinfo.entry = json.dumps(item)
     lsinfo.detail_enc = 'B'
-    lsinfo.detail = item.get('html')
+    lsinfo.detail = html
 
     # local_id & stock_no
     # the source identifier to minimizes dupes (3taps ID changes each update)
@@ -1584,15 +1588,15 @@ def process_3taps_posting(session, item, classified, counts):
     # often contains a <span> with Y/M/M info.
     # GEE TODO: some of the other attrgroup spans are also interesting
     ht_model_year = ht_make = ht_model = None
-    if classified.textid == 'craig' and item.get('html'):
-        html = None
+    if classified.textid == 'craig' and html:
+        html_decoded = None
         try:
-            html = b64decode(item.html)
+            html_decoded = b64decode(html)
         except:  # GEE TODO: figure out how to catch 'binascii.Error'
             logging.error('Failed to decode item html for item %s',
                           item.external_id)
-        if html:
-            soup = BeautifulSoup(html)
+        if html_decoded:
+            soup = BeautifulSoup(html_decoded)
             for p in soup.find_all(class_='attrgroup'):
                 for span in p.find_all('span'):
                     if not listing.model_year or not listing.make:
@@ -1605,7 +1609,7 @@ def process_3taps_posting(session, item, classified, counts):
             # and store the decoded version since we've bothered to make it
             if lsinfo.detail_enc == 'B':
                 lsinfo.detail_enc = 'T'
-                lsinfo.detail = html
+                lsinfo.detail = html_decoded
     if not listing.model_year:  # from the html...
         if an_model_year and an_model_year > '1800' and an_model_year < '2020':
             listing.model_year = an_model_year
@@ -1636,8 +1640,9 @@ def process_3taps_posting(session, item, classified, counts):
         try:
             int(listing.model_year)
         except (ValueError, TypeError):
-            logging.warning('bad year [%s] for item %s',
-                            listing.model_year, listing.local_id)
+            counts['badyear'] += 1
+#            logging.warning('bad year [%s] for item %s',
+#                            listing.model_year, listing.local_id)
             listing.model_year = '1'
 
     # logging what year/make/model we ended up with [and what we started from]
@@ -1789,7 +1794,10 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
            'category,location,external_id,external_url,'
            'heading,body,timestamp,timestamp_deleted,expires'
            ',language,price,currency,images,annotations,'
-           'deleted,flagged_status,state,status,html')
+           'deleted,flagged_status,state,status')
+    # html is LARGE -- especially for some sites. Only pull it for craig...
+    if classified.textid == 'craig':
+        url += ',html'
     url_params = ['&source={}'.format(classified.textid.upper())]
     url_params.append('&anchor={}'.format(inventory_marker))
     if 'local' in inv_settings:
