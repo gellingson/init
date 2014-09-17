@@ -28,7 +28,7 @@ h4 {
 /* see http://dabblet.com/gist/4711695 */
 .img-crop,
 .img-crop img{
-	width: 100%;
+	max-width: 100%;
 }
 .img-crop{
 	overflow: hidden;
