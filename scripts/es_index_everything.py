@@ -92,6 +92,10 @@ listing_type_map = {
         "price": {
             "type": "long"
         },
+        "removal_date": {
+            "format": "dateOptionalTime",
+            "type": "date"
+        },
         "source": {
             "type" : "string"
         },
@@ -112,10 +116,6 @@ listing_type_map = {
         },
         "tags": {
             "type": "string"
-        },
-        "timestamp": {
-            "format": "dateOptionalTime",
-            "type": "date"
         },
         "vin": {
             "type": "string"
