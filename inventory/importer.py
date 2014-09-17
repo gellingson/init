@@ -900,6 +900,8 @@ def specialty_parse_listing(listing, entry, detail):
 #
 def pull_dealer_inventory(dealer, session=None):
 
+    logging.info('Beginning inventory pull for {}'.format(dealer.textid))
+
     # implicit param from environment:
     # [currently unused in dealer pulls, but for consistency & future use...]
     # inv_settings = os.environ.get('OGL_INV_SETTINGS', '')
@@ -942,7 +944,11 @@ def pull_dealer_inventory(dealer, session=None):
             listing.source_type = 'D'
             listing.source_id = dealer.id
             listing.source_textid = dealer.textid
-
+            listing.source = dealer.full_name
+            listing.lat = dealer.lat
+            listing.lon = dealer.lon
+            listing.location_text = '{}, {}'.format(dealer.city, dealer.state)
+            listing.zip = dealer.zip
             # for some sites the full entry is actually a parent or sibling
             # or similar permutation of the list item we just grabbed
             myfunc = eval(dealer.listing_from_list_item_func)
@@ -1151,7 +1157,8 @@ def pull_dealer_inventory(dealer, session=None):
 #
 # NOTES: NOT WRITTEN YET; need to understand if this really != dealer method
 #
-def pull_classified_inventory(classified, inventory_marker=None, session=None):
+def pull_classified_inventory(classified, session,
+                              inventory_marker=None, dblog=False):
     return [], [], [], inventory_marker
 
 def ebay_attr_get(item, attr_name):
@@ -1178,7 +1185,7 @@ def ebay_attr_get(item, attr_name):
 # returns an ok flag, a Listing object, and a ListingSourceinfo object
 # ... and also modifies the running totals in counts
 #
-def process_ebay_listing(session, item, classified, counts):
+def process_ebay_listing(session, item, classified, counts, dblog=False):
     ok = True
     item = Bunch(item) # for convenience
     logging.debug('eBay ITEM: {}'.format(item['itemId']))
@@ -1188,12 +1195,14 @@ def process_ebay_listing(session, item, classified, counts):
     listing.source_textid = classified.textid
     listing.source = classified.full_name
 
-    lsinfo = ListingSourceinfo()
-    lsinfo.source_type = 'C'
-    lsinfo.source_id = classified.id
-    lsinfo.entry = json.dumps(item)
-    lsinfo.detail_enc = 'X'
-    lsinfo.detail = None
+    lsinfo = None
+    if dblog:
+        lsinfo = ListingSourceinfo()
+        lsinfo.source_type = 'C'
+        lsinfo.source_id = classified.id
+        lsinfo.entry = json.dumps(item)
+        lsinfo.detail_enc = 'X'
+        lsinfo.detail = None
 
     # local_id & stock_no
     listing.local_id = item.itemId
@@ -1324,7 +1333,8 @@ def process_ebay_listing(session, item, classified, counts):
 # and 'local' pull is interpreted as:
 # * 'local' = 150 miles of 95112, and
 #
-def pull_ebay_inventory(classified, inventory_marker=None, session=None):
+def pull_ebay_inventory(classified, session,
+                        inventory_marker=None, dblog=False):
 
     # implicit param from environment:
     inv_settings = os.environ.get('OGL_INV_SETTINGS', '')
@@ -1433,7 +1443,8 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
                      r['searchResult']['_count'])
         for item in r['searchResult']['item']:
             ok, listing, lsinfo = process_ebay_listing(session, item,
-                                                       classified, counts)
+                                                       classified, counts,
+                                                       dblog=dblog)
             # ok to date means we got something potentially useful
 
             # now filter out records we don't want per inv_settings etc
@@ -1471,7 +1482,9 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
             break
         # END LOOP over all inventory pages
 
-    logging.info('Loaded ' + str(len(accepted_listings)) + ' cars from ebay')
+    if accepted_listings:
+        logging.info('Loaeded %s cars from ebay',
+                     str(len(accepted_listings)))
 
     # do we increment sub-batch (color) or move to the next batch?
     if inventory_marker['sub']:
@@ -1507,7 +1520,7 @@ def pull_ebay_inventory(classified, inventory_marker=None, session=None):
 # returns an ok flag, a Listing object, and a ListingSourceinfo object
 # ... and also modifies the running totals in counts
 #
-def process_3taps_posting(session, item, classified, counts):
+def process_3taps_posting(session, item, classified, counts, dblog=False):
     ok = True
     item = Bunch(item) # for convenience
     anno = item.get('annotations')
@@ -1524,12 +1537,14 @@ def process_3taps_posting(session, item, classified, counts):
     listing.source_textid = classified.textid
     listing.source = classified.full_name
 
-    lsinfo = ListingSourceinfo()
-    lsinfo.source_type = 'C'
-    lsinfo.source_id = classified.id
-    lsinfo.entry = json.dumps(item)
-    lsinfo.detail_enc = 'B'
-    lsinfo.detail = html
+    lsinfo = None
+    if dblog:
+        lsinfo = ListingSourceinfo()
+        lsinfo.source_type = 'C'
+        lsinfo.source_id = classified.id
+        lsinfo.entry = json.dumps(item)
+        lsinfo.detail_enc = 'B'
+        lsinfo.detail = html
 
     # local_id & stock_no
     # the source identifier to minimizes dupes (3taps ID changes each update)
@@ -1545,6 +1560,14 @@ def process_3taps_posting(session, item, classified, counts):
                         listing.stock_no)
         listing.local_id = listing.stock_no
 
+    if (item.deleted or item.expires or item.flagged_status or
+        item.state != 'available' or item.status != 'for_sale'):
+        counts['inactive'] += 1
+        logging.info('maybe-not-active: d/e/f/s/s=%s/%s/%s/%s/%s',
+                     str(item.deleted), str(item.expires),
+                     str(item.flagged_status), str(item.state),
+                     str(item.status))
+        
     # status
     # GEE TODO: examine & use flagging info
     if item.status == 'for_sale' and item.deleted is False:
@@ -1607,7 +1630,7 @@ def process_3taps_posting(session, item, classified, counts):
                         listing.make = ht_make
                         listing.model = ht_model
             # and store the decoded version since we've bothered to make it
-            if lsinfo.detail_enc == 'B':
+            if dblog and lsinfo.detail_enc == 'B':
                 lsinfo.detail_enc = 'T'
                 lsinfo.detail = html_decoded
     if not listing.model_year:  # from the html...
@@ -1636,6 +1659,8 @@ def process_3taps_posting(session, item, classified, counts):
         ok = False
         logging.warning('skipping item with no year/make/model info: %s',
                         listing.local_id)
+        counts['badmakemodel'] += 1
+        
     else:
         try:
             int(listing.model_year)
@@ -1720,6 +1745,8 @@ def process_3taps_posting(session, item, classified, counts):
     listing.price = regularize_price(item.price)
     if listing.price == 0 and 'price' in anno:
         listing.price = regularize_price(anno['price'])
+    if listing.price == 0:
+        counts['badprice'] += 1
 
     return ok, listing, lsinfo
 
@@ -1762,7 +1789,8 @@ def process_3taps_posting(session, item, classified, counts):
 # 	limits pulls to local area (see notes)
 # 	limits pulls to "interesting" cars (see notes)
 #
-def pull_3taps_inventory(classified, inventory_marker=None, session=None):
+def pull_3taps_inventory(classified, session,
+                         inventory_marker=None, dblog=False):
 
     # implicit param from environment:
     inv_settings = os.environ.get('OGL_INV_SETTINGS', '')
@@ -1809,7 +1837,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
         logging.debug('NOT limiting to local cars')
 
     url = url + ''.join(url_params)
-    logging.debug('inventory URL is: {}'.format(url))
+    logging.info('inventory URL is: {}'.format(url))
 
     try:
         req = urllib.request.Request(url, headers=_HDRS)
@@ -1839,7 +1867,8 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
 
     for item in r['postings']:
         ok, listing, lsinfo = process_3taps_posting(session, item,
-                                                    classified, counts)
+                                                    classified, counts,
+                                                    dblog=dblog)
 
         # ok to date means we got something potentially useful
 
@@ -1851,6 +1880,7 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
                                       classified.textid != 'craig')):
                 listing.add_tag('interesting')
             elif 'limited' in inv_settings:
+                counts['uninteresting'] += 1
                 ok = False # throw it away for limited inventory stages
 
         # a few more CL junk-data tests: drop records that fail
@@ -1866,16 +1896,21 @@ def pull_3taps_inventory(classified, inventory_marker=None, session=None):
         if ok:
             tagify(listing)
             accepted_listings.append(listing)
-            accepted_lsinfos.append(lsinfo)
+            if dblog:
+                accepted_lsinfos.append(lsinfo)
             logging.debug('pulled listing: {}'.format(listing))
         else:
             # debug not warn b/c we're throwing out lots of stuff
             logging.debug('skipped listing: {}'.format(listing))
-            rejected_lsinfos.append(lsinfo)
+            if dblog:
+                rejected_lsinfos.append(lsinfo)
 
     # report on outcomes
-    logging.info('Loaded %s cars from 3taps for %s',
-                 str(len(accepted_listings)), classified.textid)
+    if accepted_listings:
+        logging.info('Loaded %s cars from 3taps for %s',
+                     str(len(accepted_listings)), classified.textid)
+    for key in counts:
+        logging.info(' - %s: %s', key, str(counts[key]))
 
     # update the classified record with the new 3taps anchor AND
     # send the same value back as the inventory marker.
@@ -1917,7 +1952,7 @@ def import_from_dealer(dealer, session, es):
     session.commit()
 
     # get the current listings on the dealer's website inventory
-    listings = pull_dealer_inventory(dealer, session=session)
+    listings = pull_dealer_inventory(dealer, session)
 
     # now put the located records in the db & es index
     # GEE TODO: switch this over to use record_listings()
@@ -1961,7 +1996,9 @@ def import_from_dealer(dealer, session, es):
 #
 # NOTE: no longer supporting writing files or skipping db or indexing
 #
-def import_from_classified(classified, session, es):
+def import_from_classified(classified, session, es, dblog=False):
+
+    logging.info('Beginning inventory pull for {}'.format(classified.textid))
 
     # clear out existing sourceinfo records (this table grows FAST)
     clear_listing_sourceinfo(session, 'C', classified.id)
@@ -1992,9 +2029,8 @@ def import_from_classified(classified, session, es):
         (listings,
          accepted_lsinfos,
          rejected_lsinfos,
-         inventory_marker) = f(classified,
-                               inventory_marker=inventory_marker,
-                               session=session)
+         inventory_marker) = f(classified, session,
+                               inventory_marker=inventory_marker, dblog=dblog)
 
         # record listings and lsinfos in the db (this method commits!)
         record_listings(listings, accepted_lsinfos, rejected_lsinfos,
@@ -2216,20 +2252,21 @@ def record_listings(listings, accepted_lsinfos, rejected_lsinfos,
 
     # now using those db_listings with ids we can continue...
 
-    # store lsinfos for future debugging/reference
-    if (db_listings and accepted_lsinfos):
-        accepted_lsinfos_with_listings = zip(accepted_lsinfos, db_listings)
-        for lsinfo, ls in accepted_lsinfos_with_listings:
-            lsinfo.listing_id = ls.id
-            session.add(lsinfo)
-    if (rejected_lsinfos):
-        for lsinfo in rejected_lsinfos:
-            session.add(lsinfo)
-    session.commit()  # commit again for the lsinfos
-
     # put the listings in the text index
     for listing in db_listings:
         index_listing(es, listing, session)
+
+    if accepted_lsinfos or rejected_lsinfos:
+        # store lsinfos for future debugging/reference
+        if (db_listings and accepted_lsinfos):
+            accepted_lsinfos_with_listings = zip(accepted_lsinfos, db_listings)
+            for lsinfo, ls in accepted_lsinfos_with_listings:
+                lsinfo.listing_id = ls.id
+                session.add(lsinfo)
+        if (rejected_lsinfos):
+            for lsinfo in rejected_lsinfos:
+                session.add(lsinfo)
+        session.commit()  # commit again for the lsinfos
     return
 
 
