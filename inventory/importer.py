@@ -1223,9 +1223,15 @@ def process_ebay_listing(session, item, classified, counts, dblog=False):
      listing.model) = regularize_year_make_model_fields(year, make, model)
     # GEE TODO ^^ alternatively could often get more info from title
 
-    # pic_href
-    listing.pic_href = regularize_url(item.get('galleryURL'),
-                                      absolute_only=True)
+    # pic_href -- get the larger format one if there is one
+    # GEE TODO: would be better to actually load the page and get a real image
+    # rather than only having the little image for most listings :(
+    if item.get('galleryPlusPictureURL'):
+        listing.pic_href = regularize_url(item.get('galleryPlusPictureURL'),
+                                          absolute_only=True)
+    else:
+        listing.pic_href = regularize_url(item.get('galleryURL'),
+                                          absolute_only=True)
 
     # listing_href
     listing.listing_href = regularize_url(item.get('viewItemURL'),
