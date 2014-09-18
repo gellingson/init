@@ -2256,17 +2256,21 @@ def record_listings(listings, accepted_lsinfos, rejected_lsinfos,
     for listing in db_listings:
         index_listing(es, listing, session)
 
-    if accepted_lsinfos or rejected_lsinfos:
-        # store lsinfos for future debugging/reference
-        if (db_listings and accepted_lsinfos):
-            accepted_lsinfos_with_listings = zip(accepted_lsinfos, db_listings)
-            for lsinfo, ls in accepted_lsinfos_with_listings:
+    # store lsinfos for future debugging/reference
+    if (db_listings and accepted_lsinfos):
+        accepted_lsinfos_with_listings = zip(accepted_lsinfos, db_listings)
+        for lsinfo, ls in accepted_lsinfos_with_listings:
+            if lsinfo and ls:
                 lsinfo.listing_id = ls.id
                 session.add(lsinfo)
-        if (rejected_lsinfos):
-            for lsinfo in rejected_lsinfos:
-                session.add(lsinfo)
-        session.commit()  # commit again for the lsinfos
+            elif ls:
+                logging.warn('db_listing without ls_info')
+            elif lsinfo: 
+                logging.warn('ls_info without db_listing')
+    if (rejected_lsinfos):
+        for lsinfo in rejected_lsinfos:
+            session.add(lsinfo)
+    session.commit()  # commit again for the lsinfos
     return
 
 
@@ -2344,7 +2348,7 @@ def text_store_listing(list_dir, listing):
 # ============================================================================
 
 def process_command_line():
-    # initialize the parser object:
+
     parser = argparse.ArgumentParser(description='Imports car listings')
     parser.add_argument('--noindex', dest='index', action='store_const',
                         const=False, default=True,
