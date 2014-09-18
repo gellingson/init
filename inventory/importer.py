@@ -1464,12 +1464,14 @@ def pull_ebay_inventory(classified, session,
             if ok:
                 tagify(listing)
                 accepted_listings.append(listing)
-                accepted_lsinfos.append(lsinfo)
+                if dblog:
+                    accepted_lsinfos.append(lsinfo)
                 logging.debug('pulled listing: {}'.format(listing))
             else:
                 # debug not warn b/c we're throwing out lots of stuff
                 logging.debug('skipped listing: {}'.format(listing))
-                rejected_lsinfos.append(lsinfo)
+                if dblog:
+                    rejected_lsinfos.append(lsinfo)
 
             # END LOOP over listings on the page
 
