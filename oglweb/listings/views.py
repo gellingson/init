@@ -114,12 +114,21 @@ def index(request, filter=None):
                 }
             }
 
+    ziperror = False
+    lat = lon = 0
+    if not zip:
+        zip = "95112"
+    try:
+        zipcode = Zipcode.objects.get(zip=zip)
+        lat = float(zipcode.lat)
+        lon = float(zipcode.lon)
+    except Zipcode.DoesNotExist:
+        ziperror = True
+
     if limit=="on" and zip:
-        # GEE TODO: get lat/lon from zip
-        try:
-            zipcode = Zipcode.objects.get(zip=zip)
-            lat = float(zipcode.lat)
-            lon = float(zipcode.lon)
+        if ziperror:
+            error_message = 'Unknown zip code "{}"; geographic limit not applied.'.format(zip)
+        else:
             geolimit_term = {
                 "geo_distance" : {
                     "distance": "100mi",
@@ -133,11 +142,22 @@ def index(request, filter=None):
                 search_string = search_string + ", near " + zip
             else:
                 search_string = "cars near " + zip
-        except Zipcode.DoesNotExist:
-            error_message = 'Unknown zip code "{}"; geographic limit not applied.'.format(zip)
+        
+    sort_term = [
+        {
+            "_geo_distance": {
+                "location": {
+                    "lat": lat,
+                    "lon": lon
+                },
+                "order": "asc",
+                "unit": "mi"
+            }
+        }
+    ]
 
+    # assemble the pieces
     querybody = {"query": {"filtered": {}}}
-
     if search_term:
         querybody['query']['filtered']['query'] = search_term
     if geolimit_term or filter_term:
@@ -147,8 +167,10 @@ def index(request, filter=None):
             querybody['query']['filtered']['filter']['and'].append(geolimit_term)
         if filter_term:
             querybody['query']['filtered']['filter']['and'].append(filter_term)
+    if sort_term:
+        querybody['sort'] = sort_term
             
-    #print(json.dumps(querybody, indent=4, sort_keys=True))
+    print(json.dumps(querybody, indent=4, sort_keys=True))
     search_resp = es.search(index='carbyr-index',
                             doc_type='listing-type',
                             size=50,
