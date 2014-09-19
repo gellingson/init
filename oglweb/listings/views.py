@@ -11,8 +11,9 @@ from django.shortcuts import render, get_object_or_404
 from django.utils.datastructures import MultiValueDictKeyError
 
 from elasticsearch import Elasticsearch
+from elasticsearch.exceptions import NotFoundError
 
-from listings.models import Zipcode
+from listings.models import Zipcode, Listing
 from listings.display_utils import prettify_listing
 
 # GLOBALS
@@ -39,9 +40,25 @@ def about(request, filter=None):
         return render(request, 'listings/about.html', context)
 
 
-def index(request, filter=None):
+def listingadmin(request, error_message=None):
+    return index(request, admin=True)
 
-    error_message = None
+
+def adminflag(request, id=None):
+    #id = request.GET['listing_id']
+    if id:
+        es = Elasticsearch()
+        es.delete(index="carbyr-index",
+                  doc_type="listing-type",
+                  id=id)
+        listing = Listing.objects.get(pk=id)
+        listing.status = 'X'
+        # GEE TODO: hmm, error_message won't make it through the redirect, and neither will the query string. Need to improve this!
+        error_message = 'Flagged item {}: {} {} {}'.format(id, listing.model_year, listing.make, listing.model)
+        return HttpResponseRedirect(reverse('allcarsadmin'))
+
+def index(request, filter=None, admin=False, error_message=None):
+
     context = {}
 
     # querybody components
@@ -185,5 +202,8 @@ def index(request, filter=None):
     if error_message:
         context['error_message'] = error_message
 
-    return render(request, 'listings/index.html', context)
+    if admin:
+        return render(request, 'listings/listingadmin.html', context)
+    else:
+        return render(request, 'listings/index.html', context)
 
