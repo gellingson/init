@@ -11,6 +11,11 @@ body {
   border: 1px solid #eee;
   border-width: 0 0 1px;
   border-radius: 0;
+  max-height: 50px;
+}
+
+.navbar-header {
+  max-height: 50px;
 }
 
 h4 {
