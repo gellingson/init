@@ -207,3 +207,8 @@ def index(request, filter=None, admin=False, error_message=None):
     else:
         return render(request, 'listings/index.html', context)
 
+
+def test(request):
+    context = {'fubar': 'barfu'}
+    print("WTF")
+    return render(request, 'listings/test.html', context)

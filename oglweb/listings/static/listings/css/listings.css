@@ -1,5 +1,5 @@
 body {
-  min-height: 2000px;
+  //min-height: 2000px;
   padding-top: 50px;
   padding-bottom: 20px;
   margin-bottom: 60px;
@@ -21,10 +21,6 @@ body {
 h4 {
   margin-top: 25px;
 }
-
-#.col-md-3 {
-#  max-height: 150px;
-#}
 
 .row {
   margin-bottom: 20px;
@@ -106,4 +102,122 @@ h4 {
 	padding-right: 10px;
 	font-weight: normal;
 	vertical-align: middle;
+}
+
+/*
+*****************************************
+Added by Stephanie
+*****************************************
+*/
+
+.thumbnail
+{
+	padding: 15px;
+	min-height: 100%;
+	background-color: #eee;
+	background-color: rgba(86,61,124,.15);
+	border: 1px solid #ddd;
+	border: 1px solid rgba(86,61,124,.2);
+}
+
+.thumbnail hr
+{
+	border: 0;
+	border-bottom: 1px solid #ddd;
+	border-bottom: 1px solid rgba(86,61,124,.2);
+}
+
+.thumbnail-photo
+{
+	max-width: 100%;
+	min-height: 160px;
+	max-height: 240px;
+	overflow: hidden;
+	border-radius: 6px;
+	position: relative;
+}
+
+.thumbnail-photo img
+{
+	max-width: 100%;
+	border-radius: 6px;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	left: 0;
+	margin: auto;
+}
+
+.thumbnail-photo p
+{
+	width: 100%;
+	height: 100%;
+	background: white;
+	border: 1px solid #c0c0c0;
+	text-align: center;
+	padding: 20px;
+	border-radius: 6px;
+}
+
+.thumbnail .caption
+{
+	color: inherit;
+}
+
+.hidden
+{
+	display: none;
+}
+
+.unhidden
+{
+	display: block;
+}
+
+.searchform
+{
+	margin-top: 30px;
+}
+
+.toolbox-container
+{
+	padding-bottom: 30px;
+}
+
+.toolbox
+{
+	padding: 15px;
+	min-height: 250px;
+	background-color: #eee;
+	background-color: rgba(86,61,124,.15);
+	border: 1px solid #ddd;
+	border: 1px solid rgba(86,61,124,.2);
+	border-radius: 6px;
+}
+
+.toolbox h5
+{
+	margin: 0 0 20px 0;
+	text-align: center;
+	font-size: 110%;
+	font-weight: bold;
+}
+
+.toolbox hr
+{
+	border: 0;
+	border-bottom: 1px solid lightgrey;
+}
+
+.toolbox .glyphicon
+{
+	padding-right: 15px;
+}
+
+.toolbox .source
+{
+	width: 50%;
+	float: left;
+	margin: 0 0 10px 0;
 }

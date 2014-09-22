@@ -21,6 +21,7 @@ urlpatterns = [
     url(r'^cars/(?P<filter>[a-z]+)/about$', views.about, name='filter-about'),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^cars/$', views.index, name='allcars'),
+    url(r'^test/$', views.test, name='test'),
     url(r'^carsadmin/$', views.listingadmin, name='allcarsadmin'),
     url(r'^carsadmin/adminflag/(?P<id>[0-9]+)$', views.adminflag, name='adminflag'),
     url(r'^cars/rss/$', ListingsFeed(), name='rss'),
