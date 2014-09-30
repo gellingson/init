@@ -1,0 +1,102 @@
+{% extends "listings/listingsbase.html" %}
+{% load staticfiles %}
+
+{% block title %}Carbyr: beta interface{% endblock %}
+	{% block navbar %}
+	<div class="navbar navbar-fixed-top navbar-default" role="navigation">
+	  <div class="container">
+		<div class="navbar-header">
+		  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+			<span class="sr-only">Toggle navigation</span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+		  </button>
+		  <div class="navbar-brand">
+			<a href="/cars/"><img src="{% static 'listings/images/logosmall.png' %}"></a>
+		  </div>
+		  <div class="navbar-slogan">
+			<b>Cars for enthusiasts...</b>
+		  </div>
+		</div>
+		<div class="navbar-collapse collapse">
+		  <ul class="nav navbar-nav navbar-right">
+			<li><a href="about">About</a></li>
+		  </ul>
+		</div>
+	  </div>
+	</div>
+	{% endblock navbar %}
+  	  {% block header %}
+	  <div class="page-header">
+		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+		<form class="searchform" role="form" action="{{ abs_url }}" method="get">
+		  {% csrf_token %}
+		  <div class="input-group" style="float: right; margin-left: 20px;">
+			<a class="btn btn-default fixed-150" id="MSOButton">More Options</a>
+		  </div>
+		  <div class="form-group">
+			<div class="input-group">
+			  <label class="sr-only" for="search_string">Search criteria:</label>
+			  <input type="text" placeholder="find me..." class="form-control" name="search_string" id="search_string"/>
+			  <span class="input-group-btn">
+				<button type="submit" class="btn btn-success">Search</button>
+			  </span>
+			</div>
+		  </div>
+		  <div class="input-group form-inline toolbox-container hidden toolbox-row" id="MSOPanel">
+			<div class="col-sm-4">
+			  <input type="checkbox" class="checkbox-inline" name="limit" id="limit">
+			  <label for="limit" class="label-between">Limit to cars near</label>
+			  <label for="zip" class="sr-only">zipcode</label>
+ 			  <input type="text" class="zip" placeholder="zip code" class="form-control" name="zip" id="zip" size="20"/>
+			</div>
+			<div class="col-sm-4">
+			  <input type="checkbox" class="checkbox-inline" name="picreqd" id="picreqd">
+			  <label for="picreqd" class="label-between">Listings with photos only</label>
+			</div>
+			<div class="col-sm-4">
+			  <label for="yearfrom" class="label-between">Model year</label>
+			  <input type="text" class="shortbox" id="yearfrom"/>
+			  <label for="yearto" class="label-between">to</label>
+			  <input type="text" class="shortbox" id="yearto"/>
+			</div>
+		  </div>
+		  <div class="input-group form-inline toolbox-container toolbox-row" id="Queries">
+			<div class="toolbox">
+			  <h5>Recent and Saved Searches</h5>
+			  {% if recents %}
+			  {% for search in recents %}
+			  <a class="btn btn-default" href="{{ abs_url }}s/{{ search.id }}/"><span class="glyphicon glyphicon-time"></span>{{ search.desc }}</a>
+			  {% endfor %}
+			  {% endif %}
+			  {% if more_recents %}
+			  <div class="btn-group">
+				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+				  More Recents... <span class="caret"></span>
+				</button>
+				<ul class="dropdown-menu" role="menu">
+				  {% for search in more_recents %}
+				  <li><a href="{{ abs_url }}?s={{ search.id }}">{{ search.desc }}</a></li>
+				  {% endfor %}
+				</ul>
+			  </div>
+			  {% endif %}
+			  <button class="btn btn-default" id="search2"><span class="glyphicon glyphicon-heart"></span>Search 2</button>
+			  <button class="btn btn-default" id="search3"><span class="glyphicon glyphicon-ok-circle"></span>Search 3</button>
+			</div>
+		  </div>
+		</form>
+		<div class="text-info note">
+		  <span id="showing">showing: {{ search_desc }} </span>
+		  {% if search_id %}
+		  <span><a href="/savesearch/{{ search_id }}"><span class="glyphicon glyphicon-plus"></span>Save this search as a favorite...</a> </span>
+		  {% endif %}
+		</div>
+	  </div>
+  	  {% endblock header %}
+{% block scripts %}
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<script src="{% static 'listings/js/bootstrap.min.js' %}"></script>
+	<script src="{% static 'listings/js/listings.js' %}"></script>
+{% endblock scripts %}

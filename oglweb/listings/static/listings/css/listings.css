@@ -1,28 +1,46 @@
 body {
-  //min-height: 2000px;
   padding-top: 50px;
   padding-bottom: 20px;
   margin-bottom: 60px;
 }
 
-.container-nav {
-  background-color: #f8f8f8;
-  border-color: #e7e7e7;
-  border: 1px solid #eee;
-  border-width: 0 0 1px;
-  border-radius: 0;
-  max-height: 50px;
+.fixed-150 {
+	width: 150px;
 }
-
+/* have to be .navbar-default to get scrolling around fixed-top position and pulldown on narrow screens
+ ... so we have to just override the color & border */
+.navbar-default {
+	background-color: #ffffff;
+	border-width: 0px;
+}
+.navbar-brand {
+  padding: 0px 0px;
+}
+.navbar-slogan {
+	float:left;
+	color: #000;
+	padding-top: 24px;
+	padding-left: 8px;
+	font-size: 18px;
+	font-weight: bold;
+}
 .navbar-header {
-  max-height: 50px;
+  max-height: 60px;
 }
 
 h4 {
   margin-top: 25px;
 }
 
-.row {
+.toolbox-row {
+  margin-right: 0px;
+  margin-left: 0px;
+  width: 100%;
+}
+
+.listing-row {
+  margin-right: 0px;
+  margin-left: 0px;
   margin-bottom: 20px;
   background-color: #eee;
   background-color: rgba(86,61,124,.15);
@@ -39,7 +57,7 @@ h4 {
 	overflow: hidden;
 	/* remove white-space for inline-block elements */
 	letter-spacing: -0.31em; /* webkit */
-	*letter-spacing: normal; /* reset IE < 8 */
+	letter-spacing: normal; /* reset IE < 8 */
 	word-spacing: -0.43em; /* IE < 8 && gecko */
 }
 .img-crop:before,
@@ -91,7 +109,13 @@ h4 {
 
 .zip {
 	display: inline-block;
-	width: 80px;
+	width: 60px;
+	vertical-align: middle;
+}
+
+.shortbox {
+	display: inline-block;
+	width: 60px;
 	vertical-align: middle;
 }
 
@@ -170,11 +194,6 @@ Added by Stephanie
 	display: none;
 }
 
-.unhidden
-{
-	display: block;
-}
-
 .searchform
 {
 	margin-top: 30px;
@@ -188,7 +207,7 @@ Added by Stephanie
 .toolbox
 {
 	padding: 15px;
-	min-height: 250px;
+	min-height: 100px;
 	background-color: #eee;
 	background-color: rgba(86,61,124,.15);
 	border: 1px solid #ddd;
@@ -200,7 +219,7 @@ Added by Stephanie
 {
 	margin: 0 0 20px 0;
 	text-align: center;
-	font-size: 110%;
+	font-size: 100%;
 	font-weight: bold;
 }
 
@@ -212,12 +231,11 @@ Added by Stephanie
 
 .toolbox .glyphicon
 {
-	padding-right: 15px;
+	padding-right: 5px;
 }
 
-.toolbox .source
+.note .glyphicon
 {
-	width: 50%;
-	float: left;
-	margin: 0 0 10px 0;
+	padding-left: 30px;
+	padding-right: 5px;
 }

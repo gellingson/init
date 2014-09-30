@@ -106,3 +106,15 @@ STATIC_URL = '/static/'
 # note that this is ONLY used by collectfiles, not while serving the files, so
 # it *is* safe to reference env variables that may not be set while serving.
 STATIC_ROOT = os.path.join(os.environ.get('OGL_STAGE','/home/ubuntu'),'../static')
+
+TEMPLATE_CONTEXT_PROCESSORS=(
+    "django.contrib.auth.context_processors.auth",
+    "django.core.context_processors.debug",
+    "django.core.context_processors.i18n",
+    "django.core.context_processors.media",
+    "django.core.context_processors.static",
+    "django.core.context_processors.tz",
+    "django.contrib.messages.context_processors.messages",
+    # above are "default" (although not spec'd in settings.py?)
+    # below are added for OGL
+    "django.core.context_processors.request")

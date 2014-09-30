@@ -8,13 +8,15 @@
 	<meta name="description" content="">
 	<meta name="author" content="">
 
-	<title>Carbyr: enthusiast search</title>
-
+	<title>{% block title %}Carbyr: enthusiast search{% endblock title %}</title>
+	{% block stylesheets %}
 	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/bootstrap.css' %}" />
 	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/listings.css' %}" />
+	{% endblock stylesheets %}
   </head>
 
   <body>
+	{% block navbar %}
 	<div class="navbar navbar-default navbar-fixed-top" role="navigation">
 	  <div class="container">
 		<div class="navbar-header">
@@ -34,7 +36,9 @@
 		</div>
 	  </div>
 	</div>
+	{% endblock navbar %}
 	<div class="container">
+  	  {% block header %}
 	  <div class="page-header">
 		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
@@ -57,14 +61,16 @@
 		  </div>
 		</form>
 		<div>
-		  <p class="text-info note">showing: {{ search_criteria }}</p>
+		  <p class="text-info note">showing: {{ search_desc }}</p>
 		</div>
 	  </div>
+  	  {% endblock header %}
+  	  {% block listings %}
 	  <div class="listings">
 
 		{% if listings %}
 		  {% for item in listings %}
-		    <div class="row">
+		    <div class="row listing-row">
 			  <a href='{{ item.listing_href }}'>
 				<div class="col-md-3">
 				  {% if item.pic_href %}
@@ -90,9 +96,11 @@
 		  <p>No cars... specify (different) search criteria....</p>
 		{% endif %}
 	  </div>
+  	  {% endblock listings %}
 	</div>
-
+{% block scripts %}
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 	<script src="{% static 'listings/js/bootstrap.min.js' %}"></script>
+{% endblock scripts %}
   </body>
 </html>

@@ -1,0 +1,18 @@
+		<form class="" role="form" action="{{ post_url }}" method="get">
+		  {% csrf_token %}
+		  <div class="form-group">
+			<div class="input-group">
+			  <label class="sr-only" for="search_string">Search criteria:</label>
+			  <input type="text" placeholder="find me..." class="form-control" name="search_string" id="search_string"/>
+			  <span class="input-group-btn">
+				<button type="submit" class="btn btn-success">Search</button>
+			  </span>
+			</div>
+			<div class="input-group form-inline">
+			  <input type="checkbox" class="checkbox-inline" name="limit" id="limit">
+			  <label for="limit" class="label-between">Limit to cars near</label>
+			  <label for="zip" class="sr-only">zipcode</label>
+ 			  <input type="text" class="zip" placeholder="zip code" class="form-control" name="zip" id="zip" size="20"/>
+			</div>
+		  </div>
+		</form>
