@@ -1568,13 +1568,17 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
                         listing.stock_no)
         listing.local_id = listing.stock_no
 
-    if (item.deleted or item.expires or item.flagged_status or
-        item.state != 'available' or item.status != 'for_sale'):
+    # GEE: expirations are now on cl listings, but @ +6weeks. No use.
+    #if item.expires:
+    #  ... set removal_date and add code to check expiry in searches & removal
+
+    if item.deleted or item.expires or item.flagged_status or
+        item.state != 'available' or item.status != 'for_sale':
         counts['inactive'] += 1
-        logging.info('maybe-not-active: d/e/f/s/s=%s/%s/%s/%s/%s',
-                     str(item.deleted), str(item.expires),
-                     str(item.flagged_status), str(item.state),
-                     str(item.status))
+        logging.debug('maybe-not-active: d/e/f/s/s=%s/%s/%s/%s/%s',
+                      str(item.deleted), str(item.expires),
+                      str(item.flagged_status), str(item.state),
+                      str(item.status))
         
     # status
     # GEE TODO: examine & use flagging info
@@ -1751,10 +1755,11 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
 
     # price - may be @ top level or in the annotations
     listing.price = regularize_price(item.price)
-    if listing.price == 0 and 'price' in anno:
+    if listing.price <= 1000 and 'price' in anno:
         listing.price = regularize_price(anno['price'])
-    if listing.price == 0:
+    if listing.price <= 100:
         counts['badprice'] += 1
+        # GEE TODO: check to see if we can salvage any of these via raw html?
 
     return ok, listing, lsinfo
 
@@ -1897,8 +1902,12 @@ def pull_3taps_inventory(classified, session,
                 logging.warning('skipping item with no useful year: %s',
                                 item)                
                 ok = False
-            if not listing.model or listing.model == 'None':
+            elif not listing.model or listing.model == 'None':
                 logging.warning('skipping item with no useful model: %s',
+                                item)
+                ok = False
+            elif listing.price < 100:
+                logging.warning('skipping item with no useful price: %s',
                                 item)
                 ok = False
         if ok:
