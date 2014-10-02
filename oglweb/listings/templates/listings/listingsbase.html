@@ -14,10 +14,10 @@
 	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/listings.css' %}" />
 	{% endblock stylesheets %}
   </head>
-
   <body>
-	{% block navbar %}
-	<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	<div class="container">
+{% block navbar %}
+	<div class="navbar navbar-fixed-top navbar-default" role="navigation">
 	  <div class="container">
 		<div class="navbar-header">
 		  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -26,81 +26,210 @@
 			<span class="icon-bar"></span>
 			<span class="icon-bar"></span>
 		  </button>
-		  <a href="/cars/"><img src="{% static 'listings/images/logosmall.png' %}"></a>
-		  <span><b> Cars for enthusiasts...</b></span>
+		  <div class="navbar-brand">
+			<a href="/cars/">
+			  <picture>
+				<source srcset="carbyr-logo-70px 1x, carbyr-logo-70px-2x.png 2x">
+				<img src="{% static 'listings/images/carbyr-logo-70px.png' %}" alt="Carbyr">
+			  </picture>
+			</a>
+		  </div>
+		  <div class="navbar-slogan">
+			Cars for enthusiasts...
+		  </div>
 		</div>
 		<div class="navbar-collapse collapse">
 		  <ul class="nav navbar-nav navbar-right">
-			<li><a href="about">About</a></li>
+			<li><a href="/about">About Carbyr</a></li>
 		  </ul>
 		</div>
 	  </div>
 	</div>
-	{% endblock navbar %}
-	<div class="container">
-  	  {% block header %}
-	  <div class="page-header">
-		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
-
-		<form class="" role="form" action="{{ request.path_info }}" method="get">
-		  {% csrf_token %}
-		  <div class="form-group">
-			<div class="input-group">
-			  <label class="sr-only" for="search_string">Search criteria:</label>
-			  <input type="text" placeholder="find me..." class="form-control" name="search_string" id="search_string"/>
-			  <span class="input-group-btn">
-				<button type="submit" class="btn btn-success">Search</button>
-			  </span>
+{% endblock navbar %}
+{% block header %}
+	<div class="page-header">
+	  {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+	  <form class="searchform" role="form" action="{{ abs_url }}" method="get">
+		<ul class="nav nav-tabs" role="tablist">
+		  <li class="active"><a href="#simple" role="tab" data-toggle="tab">Simple</a></li>
+		  <li><a href="#advanced" role="tab" data-toggle="tab">Advanced</a></li>
+		  <li><a href="#saved" role="tab" data-toggle="tab">Saved</a></li>
+		</ul>
+		<div class="tab-content">
+		  <div class="tab-pane active" id="simple">
+			{% csrf_token %}
+			<div class="form-group">
+			  <div class="input-group">
+				<label class="sr-only" for="search_string">Search criteria:</label>
+				<input type="text" placeholder="find me..." class="form-control search-sync" name="search_string" id="search_string"/>
+				<span class="input-group-btn">
+				  <button type="submit" class="btn btn-success">Search</button>
+				</span>
+			  </div>
 			</div>
-			<div class="input-group form-inline">
+		  </div>
+		  <div class="tab-pane" id="advanced">
+			{% csrf_token %}
+			<div class="form-group">
+			  <div class="input-group">
+				<label class="sr-only" for="search_string_dup">Search criteria:</label>
+				<input type="text" placeholder="find me..." class="form-control search-sync" name="search_string" id="search_string_dup"/>
+				<span class="input-group-btn">
+				  <button type="submit" class="btn btn-success">Search</button>
+				</span>
+			  </div>
+			</div>
+			<div class="col-sm-4">
 			  <input type="checkbox" class="checkbox-inline" name="limit" id="limit">
 			  <label for="limit" class="label-between">Limit to cars near</label>
 			  <label for="zip" class="sr-only">zipcode</label>
  			  <input type="text" class="zip" placeholder="zip code" class="form-control" name="zip" id="zip" size="20"/>
 			</div>
-		  </div>
-		</form>
-		<div>
-		  <p class="text-info note">showing: {{ search_desc }}</p>
-		</div>
-	  </div>
-  	  {% endblock header %}
-  	  {% block listings %}
-	  <div class="listings">
-
-		{% if listings %}
-		  {% for item in listings %}
-		    <div class="row listing-row">
-			  <a href='{{ item.listing_href }}'>
-				<div class="col-md-3">
-				  {% if item.pic_href %}
-				    <img class="img-crop img-rounded" foo="img-crop  img-responsive-heightlimit img-rounded" src='{{ item.pic_href }}'>
-				  {% else %}
-					<p> No photo available. </p>
-				  {% endif %}
-				</div>
-				<div class="col-md-3">
-				  <p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
-				  <p><strong>{{ item.price }}</strong></p>
-				  {% if item.location_text %}
-				  <p>{{item.location_text}} ({{ item.source }})</p>
-				  {% else %}
-				  <p>({{ item.source }})</p>
-				  {% endif %}
-				</div>
-				<div class="col-md-6">{{ item.listing_text }}</div>
-			  </a>
+			<div class="col-sm-4">
+			  <p><i>Many more options coming soon...</i></p>
 			</div>
-		  {% endfor %}
-		{% else %}
-		  <p>No cars... specify (different) search criteria....</p>
-		{% endif %}
+		  </div>
+		  <div class="tab-pane" id="saved">
+			{% if favorites %}
+			<h5>Favorite Searches</h5>
+			{% for search in favorites %}
+			<a class="btn btn-default" href="{{ abs_url }}?s={{ search.id }}"><span class="glyphicon glyphicon-heart"></span>{{ search.desc }}</a>
+			{% endfor %}
+			{% endif %}
+			{% if recents %}
+			<h5>Recent Searches</h5>
+			{% for search in recents %}
+			<a class="btn btn-default" href="{{ abs_url }}?s={{ search.id }}"><span class="glyphicon glyphicon-time"></span>{{ search.desc }}</a>
+			{% endfor %}
+			{% endif %}
+			{% if more_recents %}
+			<div class="btn-group">
+			  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+				More Recents... <span class="caret"></span>
+			  </button>
+			  <ul class="dropdown-menu" role="menu">
+				{% for search in more_recents %}
+				<li><a href="{{ abs_url }}?s={{ search.id }}">{{ search.desc }}</a></li>
+				{% endfor %}
+			  </ul>
+			</div>
+			{% endif %}
+			{% if suggestions %}
+			<h5>More Ideas</h5>
+			{% for search in suggestions %}
+			<a class="btn btn-default" href="{{ abs_url }}?s={{ search.id }}"><span class="glyphicon glyphicon-ok-circle"></span>{{ search.desc }}</a>
+			{% endfor %}
+			{% endif %}
+		  </div>
+		</div>
+	  </form>
+	  <hr size="1" style="clear: both;" />
+	  <div class="row header-row">
+		<p class="float-left" id="showing">
+		  {% if search_type == 'F' %}Favorite search:{% else %}Showing:{% endif %} {{ search_desc }}
+		</p>
+		<p class="float-right">
+		  {% if search_id %}
+		  {% if search_type == 'F' %}
+		  <button class="btn-link" data-toggle="modal" data-target="#unSaveModal">
+			<span class="glyphicon glyphicon-minus"></span>Remove <span class="long">this from your list of favorites</span>
+		  </button>
+		  {% elif search_type != 'D' %}
+		  <button class="btn-link" data-toggle="modal" data-target="#saveModal">
+			<span class="glyphicon glyphicon-plus"></span>Save <span class="long">this search as a favorite</span>
+		  </button>
+		  {% endif %}
+		  {% endif %}
+		</p>
 	  </div>
-  	  {% endblock listings %}
 	</div>
+{% endblock header %}
+{% block listings %}
+	<div class="listings">
+	  {% if listings %}
+	  {% for item in listings %}
+	  <div class="row listing-row">
+		<a href='{{ item.listing_href }}'>
+		  <div class="col-md-3">
+			{% if item.pic_href %}
+			<img class="img-crop img-rounded" foo="img-crop  img-responsive-heightlimit img-rounded" src='{{ item.pic_href }}'>
+			{% else %}
+			<p> No photo available. </p>
+			{% endif %}
+		  </div>
+		  <div class="col-md-3">
+			<p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
+			<p><strong>{{ item.price }}</strong></p>
+			{% if item.location_text %}
+			<p>{{item.location_text}} ({{ item.source }})</p>
+			{% else %}
+			<p>({{ item.source }})</p>
+			{% endif %}
+		  </div>
+		  <div class="col-md-6">{{ item.listing_text }}
+		  </div>
+		</a>
+	  </div>
+	  {% endfor %}
+	  {% else %}
+	  <p>No cars... specify (different) search criteria....</p>
+	  {% endif %}
+	</div>
+{% endblock listings %}
 {% block scripts %}
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 	<script src="{% static 'listings/js/bootstrap.min.js' %}"></script>
+	<script src="{% static 'listings/js/listings.js' %}"></script>
 {% endblock scripts %}
+{% block dialogs %}
+	<div class="modal fade" id="saveModal" tabindex="-1" role="dialog" aria-labelledby="saveModalLabel" aria-hidden="true">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+			<h4 class="modal-title" id="saveModalLabel">Save this as a favorite search</h4>
+		  </div>
+		  <div class="modal-body">
+			<p>Favorite searches make it easy to manage your car search. As suitable cars enter (and leave) the market this list will automatically update; check back any time. </p>
+			<p>You can also choose to receive updates on saved searches through RSS or email [coming soon!].</p>
+		  </div>
+		  <form role="form" action="{{ abs_url }}" method="post">
+			{% csrf_token %}
+			<input type="hidden" name="save_id" value="{{ search_id }}">
+			<div class="modal-thingy">
+			  <label class="modal-label" for="save_desc">Name the search:</label>
+			  <input type="text" value="{{ search_desc }}" name="save_desc" id="save_desc"/>
+			</div>
+			<div class="modal-footer">
+			  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+			  <button type="submit" class="btn btn-primary">Save</button>
+			</div>
+		  </form>		
+		</div>
+	  </div>
+	</div>
+	<div class="modal fade" id="unSaveModal" tabindex="-1" role="dialog" aria-labelledby="unSaveModalLabel" aria-hidden="true">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+			<h4 class="modal-title" id="unSaveModalLabel">Confirm</h4>
+		  </div>
+		  <div class="modal-body">
+			<p>Confirm removing favorite search: {{ search_desc }}? </p>
+		  </div>
+		  <form role="form" action="{{ abs_url }}" method="post">
+			{% csrf_token %}
+			<input type="hidden" name="unsave_id" value="{{ search_id }}">
+			<div class="modal-footer">
+			  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+			  <button type="submit" class="btn btn-primary">Confirm</button>
+			</div>
+		  </form>		
+		</div>
+	  </div>
+	</div>
+{% endblock dialogs %}
+	</div>
   </body>
 </html>

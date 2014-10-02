@@ -1,11 +1,21 @@
 
+// keep search box on simple & advanced tabs in sync
+$(document).ready(function(){
+	$(".search-sync").keyup(function(){
+		$(".search-sync").val($(this).val());
+	});
+});
+
+// GEE TODO: should be unused, clean these up
+
+// v 0.2 jquery toggle
 $('#MSOButton').on('click', function(e) {
 	$('#MSOPanel').toggleClass('hidden');
 	$(this).text($('#MSOPanel').hasClass('hidden') ? 'More Options' : 'Simple Search');
 //	$(this).find('span').toggleClass('glyphicon-collapse-down glyphicon-collapse-up');
 })
 
-// GEE TODO: should be unused, clean these up
+// v0.1 non-jquery way to togglt
 function toggleMSO() {
 	// get the MSO
 	var MSO_drawer = document.getElementById('MSO');

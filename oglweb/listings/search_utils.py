@@ -20,6 +20,7 @@ def handle_search_args(request, filter=None, base_url = None, search_id=None):
 
     args = Bunch()
     args.errors = {}
+    args.sort = "relevance"
 
     # POST params
     args.save_id = request.POST.get('save_id', '')
@@ -117,18 +118,19 @@ def build_query(args):
                     }
                 }
             }
-        
-    sort_term = [
-        {
-            "_geo_distance": {
-                "location": {
-                    "lat": args.lat,
-                    "lon": args.lon
-                },
-                "order": "asc",
-                "unit": "mi"
+    sort_term = None
+    if args.sort == 'nearest':
+        sort_term = [
+            {
+                "_geo_distance": {
+                    "location": {
+                        "lat": args.lat,
+                        "lon": args.lon
+                    },
+                    "order": "asc",
+                    "unit": "mi"
+                }
             }
-        }
     ]
 
     # assemble the pieces

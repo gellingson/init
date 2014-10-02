@@ -7,17 +7,15 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="description" content="">
 	<meta name="author" content="">
-
 	<title>{% block title %}Carbyr: enthusiast search{% endblock title %}</title>
 {% block stylesheets %}
 	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/bootstrap.css' %}" />
 	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/listings.css' %}" />
 {% endblock stylesheets %}
   </head>
-
   <body>
-{% block navbar %}
-	<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+	{% block navbar %}
+	<div class="navbar navbar-fixed-top navbar-default" role="navigation">
 	  <div class="container">
 		<div class="navbar-header">
 		  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -26,17 +24,26 @@
 			<span class="icon-bar"></span>
 			<span class="icon-bar"></span>
 		  </button>
-		  <a href="/cars/"><img src="{% static 'listings/images/logosmall.png' %}"></a>
-		  <span><b> Cars for enthusiasts...</b></span>
+		  <div class="navbar-brand">
+			<a href="/cars/">
+			  <picture>
+				<source srcset="carbyr-logo-70px 1x, carbyr-logo-70px-2x.png 2x">
+				<img src="{% static 'listings/images/carbyr-logo-70px.png' %}" alt="Carbyr">
+			  </picture>
+			</a>
+		  </div>
+		  <div class="navbar-slogan">
+			Cars for enthusiasts
+		  </div>
 		</div>
 		<div class="navbar-collapse collapse">
 		  <ul class="nav navbar-nav navbar-right">
-			<li><a href="about">About</a></li>
+			<li><a href="/about">About Carbyr</a></li>
 		  </ul>
 		</div>
 	  </div>
 	</div>
-{% endblock navbar %}
+	{% endblock navbar %}
 {% block page %}
 	<div class="container">
 	  <p> This page unintentionally left blank. </p>
