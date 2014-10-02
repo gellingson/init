@@ -12,7 +12,12 @@
 			<span class="icon-bar"></span>
 		  </button>
 		  <div class="navbar-brand">
-			<a href="/cars/"><picture><source srcset="carbyr-logo-70px 1x, carbyr-logo-70px-2x.png 2x"><img src="{% static 'listings/images/carbyr-logo-70px.png' %}" alt="Carbyr"></picture></a>
+			<a href="/cars/">
+			  <picture>
+				<source srcset="carbyr-logo-70px 1x, carbyr-logo-70px-2x.png 2x">
+				<img src="{% static 'listings/images/carbyr-logo-70px.png' %}" alt="Carbyr">
+			  </picture>
+			</a>
 		  </div>
 		  <div class="navbar-slogan">
 			Cars for enthusiasts...
@@ -27,15 +32,15 @@
 	  </div>
 	</div>
 	{% endblock navbar %}
-  	  {% block header %}
+  	{% block header %}
 	  <div class="page-header">
 		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 		<form class="searchform" role="form" action="{{ abs_url }}" method="get">
 		  {% csrf_token %}
 		  <div class="form-group">
-		  <div class="input-group input-group-moves">
-			<a class="btn btn-info fixed-150" id="MSOButton">More Options</a>
-		  </div>
+			<div class="input-group input-group-moves">
+			  <a class="btn btn-info fixed-150" id="MSOButton">More Options</a>
+			</div>
 			<div class="input-group">
 			  <label class="sr-only" for="search_string">Search criteria:</label>
 			  <input type="text" placeholder="find me..." class="form-control" name="search_string" id="search_string"/>
@@ -62,54 +67,55 @@
 			  <input type="text" class="shortbox" id="yearto"/>
 			</div>
 		  </div>
-			<div class="toolbox">
-			  <h5>My Searches</h5>
-			  {% if recents %}
-			  {% for search in recents %}
-			  <a class="btn btn-default" href="{{ abs_url }}s/{{ search.id }}/"><span class="glyphicon glyphicon-time"></span>{{ search.desc }}</a>
-			  {% endfor %}
-			  {% endif %}
-			  {% if more_recents %}
-			  <div class="btn-group">
-				<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-				  More Recents... <span class="caret"></span>
-				</button>
-				<ul class="dropdown-menu" role="menu">
-				  {% for search in more_recents %}
-				  <li><a href="{{ abs_url }}?s={{ search.id }}">{{ search.desc }}</a></li>
-				  {% endfor %}
-				</ul>
-			  </div>
-			  {% endif %}
-			  {% if favorites %}
-			  {% for search in favorites %}
-			  <a class="btn btn-default" href="{{ abs_url }}s/{{ search.id }}/"><span class="glyphicon glyphicon-heart"></span>{{ search.desc }}</a>
-			  {% endfor %}
-			  {% endif %}
-			  {% if suggestions %}
-			  {% for search in suggestions %}
-			  <a class="btn btn-default" href="{{ abs_url }}s/{{ search.id }}/"><span class="glyphicon glyphicon-ok-circle"></span>{{ search.desc }}</a>
-			  {% endfor %}
-			  {% endif %}
+		  <div class="toolbox">
+			<h5>My Searches</h5>
+			{% if recents %}
+			{% for search in recents %}
+			<a class="btn btn-default" href="{{ abs_url }}s/{{ search.id }}/"><span class="glyphicon glyphicon-time"></span>{{ search.desc }}</a>
+			{% endfor %}
+			{% endif %}
+			{% if more_recents %}
+			<div class="btn-group">
+			  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+				More Recents... <span class="caret"></span>
+			  </button>
+			  <ul class="dropdown-menu" role="menu">
+				{% for search in more_recents %}
+				<li><a href="{{ abs_url }}?s={{ search.id }}">{{ search.desc }}</a></li>
+				{% endfor %}
+			  </ul>
 			</div>
+			{% endif %}
+			{% if favorites %}
+			{% for search in favorites %}
+			<a class="btn btn-default" href="{{ abs_url }}s/{{ search.id }}/"><span class="glyphicon glyphicon-heart"></span>{{ search.desc }}</a>
+			{% endfor %}
+			{% endif %}
+			{% if suggestions %}
+			{% for search in suggestions %}
+			<a class="btn btn-default" href="{{ abs_url }}s/{{ search.id }}/"><span class="glyphicon glyphicon-ok-circle"></span>{{ search.desc }}</a>
+			{% endfor %}
+			{% endif %}
 		  </div>
 		</form>
-<div class="fff">
-		<div class="col-md-6">
-		  <span class="note" id="showing">showing: {{ search_desc }} </span>
+		<div class="row header-row">
+		  <p class="float-left" id="showing">
+			{% if search_type == 'F' %}Favorite search:{% else %}Showing:{% endif %} {{ search_desc }}
+		  </p>
+		  <p class="float-right">
+			{% if search_id %}
+			{% if search_type == 'F' %}
+			<button class="btn-link" data-toggle="modal" data-target="#unSaveModal">
+			  <span class="glyphicon glyphicon-minus"></span>Remove <span class="long">this from your list of favorites</span>
+			</button>
+			{% elif search_type != 'D' %}
+			<button class="btn-link" data-toggle="modal" data-target="#saveModal">
+			  <span class="glyphicon glyphicon-plus"></span>Save <span class="long">this search as a favorite</span>
+			</button>
+			{% endif %}
+			{% endif %}
+		  </p>
 		</div>
-		{% if search_id %}
-		{% if search_type == 'F' %}
-		<div class="col-md-6 rightj">
-		  Favorite: <a href="#moreinfo">More Info</a> or <a data-toggle="modal" data-target="#unSaveModal">Remove it</a> from your list of favorites.
-		</div>
-		{% else %}
-		<div class="col-md-6 rightj">
-		  <a data-toggle="modal" data-target="#saveModal"><span class="glyphicon glyphicon-plus"></span>Save this search as a favorite...</a>
-		</div>
-		{% endif %}
-		{% endif %}
-</div>
 	  </div>
   	  {% endblock header %}
 {% block scripts %}

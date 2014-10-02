@@ -230,7 +230,7 @@ Added by Stephanie
 	border-bottom: 1px solid lightgrey;
 }
 
-.toolbox .glyphicon
+.toolbox,.header-row .glyphicon
 {
 	padding-right: 5px;
 }
@@ -247,9 +247,27 @@ Added by Stephanie
 	margin-bottom: 30px;
 }
 
-.rightj
+.btn-link
 {
-	text-align: right;
+	margin-bottom: 0px;
+	buffer-bottom: 0px;
+}
+.header-row
+{
+  margin-right: 0px;
+  margin-left: 0px;
+  margin-top: 20px;
+  margin-bottom: -20px;
+}
+
+.float-left
+{
+	float: left;
+}
+
+.float-right
+{
+	float: right;
 }
 
 .fff
@@ -266,10 +284,19 @@ Added by Stephanie
 	
 }
 
+.page-header
+{
+}
+.long {
+	display: none;
+}
 .input-group-moves {
 	display: inline-block
 }
 @media (min-width: 768px) {
+	.long {
+		display: inline;
+	}
 	.input-group-moves {
 		float:right;
 		margin-left: 20px;
