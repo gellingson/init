@@ -17,7 +17,7 @@ from elasticsearch.exceptions import NotFoundError
 from listings.constants import *
 from listings.display_utils import prettify_listing
 from listings.models import Zipcode, Listing
-from listings.search_utils import handle_search_args, build_query
+from listings.search_utils import handle_search_args, build_query, save_query, unsave_query
 
 # Create your views here.
 
@@ -52,7 +52,9 @@ def adminflag(request, id=None):
 
 
 def index(request, filter=None, base_url=None, search_id=None, template=LISTINGSBASE, error_message=None):
-    print('base_url is "{}"'.format(base_url))
+    search_type = None
+    request.session['insider'] = True  # been here, seen this
+
     args = handle_search_args(request, filter, base_url, search_id)
     if args.errors:
         # handle catastrophic errors
@@ -65,25 +67,50 @@ def index(request, filter=None, base_url=None, search_id=None, template=LISTINGS
             else:
                 error_message = 'ZIP code not understood; unable to sort by distance.'
 
+    # handle save-query modal
+    if args.save_id and args.save_desc:
+        args.search_id = save_query(args.save_id, args.save_desc, request)
+    elif args.unsave_id:
+        unsave_query(args.unsave_id, request)
+
     recents = request.session.get('recents', [])
+    favorites = request.session.get('favorites', [])
+    # GEE TODO: put these in a db...
+    # ... and be intelligent about which ones to pull for display
+    suggested_lib = SUGGESTED_SEARCH_LIST  # all suggested searches
+    suggestions = SUGGESTED_SEARCH_LIST  # the ones selected to show now
     stored_search = None
     if args.search_id:
         # look in recents
-        if recents:
+        if recents and args.search_id.startswith('R'):
             for search in recents:
                 if search['id'] == args.search_id:
                     stored_search = search
+                    search_type = 'R'
                     break
-        # GEE TODO and in stored searches and canned searches
+        if favorites and args.search_id.startswith('F'):
+            for search in favorites:
+                if search['id'] == args.search_id:
+                    stored_search = search
+                    search_type = 'F'
+                    break
+        if suggested_lib and args.search_id.startswith('_'):
+            for search in suggested_lib:
+                if search == args.search_id:
+                    stored_search = suggested_lib[search]
+                    search_type = 'S'
+                    break
 
     search_desc = querybody = None
     if stored_search:  # then do it
+        search_id = stored_search['id']
         search_desc = stored_search['desc']
         querybody = stored_search['query']
     else:  # new search via the search form params
-        search_desc, querybody = build_query(args)
+        querybody, search_desc, search_type = build_query(args)
 
-    if search_desc == 'recently-listed cars':
+    print(querybody)
+    if search_type == 'D':
         pass
     elif recents and recents[0]['desc'] == search_desc: # GEE TODO: match any recent in the list
         # same query as last one, or nearly; update any minor change
@@ -109,6 +136,8 @@ def index(request, filter=None, base_url=None, search_id=None, template=LISTINGS
 
     context = {}
     context['recents'] = []
+    context['favorites'] = []
+    context['suggestions'] = []
     i = 0
     if recents:
         for search in recents:
@@ -119,23 +148,35 @@ def index(request, filter=None, base_url=None, search_id=None, template=LISTINGS
                 if i == 3:
                     context['more_recents'] = []
                 context['more_recents'].append(search)
+    if favorites:
+        for search in favorites:
+            context['favorites'].append(search)
+    if suggestions:
+        for search in suggestions:
+            context['suggestions'].append(suggestions[search])
 
     context['listings'] = listings
     context['search_desc'] = search_desc
-    if recents:  # GEE TODO: ... and this isn't already a saved search
+    # if showing a stored or suggested search use that id, not from recents
+    # (the search will also be entered in the recents array with an Rid)
+    if stored_search:
+        context['search_id'] = stored_search['id']
+    elif recents:
         context['search_id'] = recents[0]['id']
+
+    context['search_type'] = search_type
+
     if error_message:
         context['error_message'] = error_message
     if base_url:
         context['abs_url'] = '/' + base_url
+
     return render(request, template, context)
 
 
 def test(request, base_url=None, search_id=None):
-    return index(request, template=LISTINGSTEST, base_url=base_url, search_id=search_id, error_message='You are using the beta Carbyr interface.')
+    return index(request, template=LISTINGSTEST, base_url=base_url, search_id=search_id)
 
 
 def oldtest(request):
     return render(request, 'listings/oldtest.html')
-
-

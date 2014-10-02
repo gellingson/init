@@ -23,6 +23,7 @@ body {
 	padding-left: 8px;
 	font-size: 18px;
 	font-weight: bold;
+	display: none;
 }
 .navbar-header {
   max-height: 60px;
@@ -201,7 +202,7 @@ Added by Stephanie
 
 .toolbox-container
 {
-	padding-bottom: 30px;
+	padding-bottom: 10px;
 }
 
 .toolbox
@@ -238,4 +239,55 @@ Added by Stephanie
 {
 	padding-left: 30px;
 	padding-right: 5px;
+}
+
+.modal-thingy
+{
+	text-align: center;
+	margin-bottom: 30px;
+}
+
+.rightj
+{
+	text-align: right;
+}
+
+.fff
+{
+	margin-bottom: 45px;
+}
+.dynthing
+{
+	
+}
+
+.dynlist
+{
+	
+}
+
+.input-group-moves {
+	display: inline-block
+}
+@media (min-width: 768px) {
+	.input-group-moves {
+		float:right;
+		margin-left: 20px;
+	}
+	.navbar-slogan {
+		display: block !important
+	}
+	.dynthing {
+		width: auto;
+		border-rop; 0;
+	}
+	.dynthing.collapse {
+		display: block !important;
+		height: auto !important;
+		padding-bottom: 0;
+		overflow: visible !important;
+	}
+	.navbar-collapse.in {
+		overflow-y: visible;
+	}
 }

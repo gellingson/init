@@ -30,6 +30,37 @@
 	  <div class="page-header">
 		{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 		{% short_form %}
+		<ul class="nav nav-tabs nav-justified">
+		  <li class="active"><a href="#">Search</a></li>
+		  <li><a href="#">My Searches</a></li>
+	      <li><a href="#">My Cars</a></li>
+	      <li><a href="#">More</a></li>
+		</ul>
+		  <div class="input-group form-inline toolbox-container toolbox-row" id="Queries">
+			<div class="dynthing">
+			  <ul class="dynlist">
+				<li><a href="#">one</a></li>
+				<li><a href="#">two</a></li>
+				<li><a href="#">three</a></li>
+				<li><a href="#">four</a></li>
+			  </ul>
+			</div>
+		<div class="panel-group" id="accordion">
+		  <div class="panel panel-default">
+			<div class="panel-heading">
+			  <h4 class="panel-title">
+				<a data-toggle="collapse" data-parent="#accordion" href="#collapseOne">
+				  More Search Options
+				</a>
+			  </h4>
+			</div>
+		    <div id="collapseOne" class="panel-collapse collapse in">
+			  <div class="panel-body">
+				this is all the search options etc
+			  </div>
+			</div>
+		  </div>
+		</div>
 		<div>
 		  <p class="text-info note">showing: {{ search_criteria }}</p>
 		</div>

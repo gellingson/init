@@ -18,10 +18,15 @@ from listings.constants import *
 
 def handle_search_args(request, filter=None, base_url = None, search_id=None):
 
-    # GET params
     args = Bunch()
     args.errors = {}
 
+    # POST params
+    args.save_id = request.POST.get('save_id', '')
+    args.save_desc = request.POST.get('save_desc', '')
+    args.unsave_id = request.POST.get('unsave_id', '')
+
+    # GET params
     if base_url:
         args.base_url = base_url
     else:
@@ -31,6 +36,7 @@ def handle_search_args(request, filter=None, base_url = None, search_id=None):
         args.search_id = search_id
     else:
         args.search_id = request.GET.get('s','')
+
     args.search_string = request.GET.get('search_string', '')
 
     try:
@@ -68,6 +74,7 @@ def build_query(args):
     filter_term = args.get('filter_term', None)
     geolimit_term = ''
     search_term = ''
+    search_type = 'U'  # presume we have some args from user (checked below)
 
     if args.search_string:
         search_term = {
@@ -81,6 +88,7 @@ def build_query(args):
             # no criteria at all; don't retrieve everything; give
             # cars from the last few days
             args.search_string = "recently-listed cars"
+            search_type = 'D'  # default search
             search_term = {
                 "constant_score": {
                     "filter": {
@@ -147,4 +155,39 @@ def build_query(args):
         search_desc = args.search_string
 
     # return the user-friendly description and the actual es query body
-    return search_desc, querybody
+    return querybody, search_desc, search_type
+
+
+def save_query(id, desc, request):
+    recents = request.session.get('recents', [])
+    favorites = request.session.get('favorites', [])
+    from_search = None
+    # id will normally be in recents[0] but let's be flexible just in case
+    if recents and id.startswith('R'):
+        for search in recents:
+            if search['id'] == id:
+                from_search = search.copy()
+                break
+    if from_search:
+        from_search['id'] = 'F' + from_search['id'][1:]
+        from_search['desc'] = desc
+        favorites.append(from_search)
+        request.session['favorites'] = favorites
+        return from_search['id']  # show it now...
+    # else fail silently
+    return None
+
+
+def unsave_query(id, request):
+    favorites = request.session.get('favorites', [])
+    if favorites:
+        i = 0
+        while i < len(favorites):
+            print(id)
+            if favorites[i]['id'] == id:
+                print("waka waka")
+                favorites.pop(i)
+                request.session['favorites'] = favorites
+                break
+            i += 1
+    return

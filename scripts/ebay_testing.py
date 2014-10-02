@@ -44,7 +44,8 @@ def find():
             ],
         'affiliate': {'trackingId': 1},
         'sortOrder': 'YearAscending',
-        'outputSelector': 'categoryHistogram',
+#        'outputSelector': 'categoryHistogram',  # example has initcap on Cat too??
+        'outputSelector': ['PictureURLLarge', 'PictureURLSuperSize'],
         }
     response = api.execute('findItemsAdvanced', api_request)
     cars = response.json()
