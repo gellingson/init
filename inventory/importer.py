@@ -1223,15 +1223,13 @@ def process_ebay_listing(session, item, classified, counts, dblog=False):
      listing.model) = regularize_year_make_model_fields(year, make, model)
     # GEE TODO ^^ alternatively could often get more info from title
 
-    # pic_href -- get the larger format one if there is one
-    # GEE TODO: would be better to actually load the page and get a real image
-    # rather than only having the little image for most listings :(
-    if item.get('galleryPlusPictureURL'):
-        listing.pic_href = regularize_url(item.get('galleryPlusPictureURL'),
-                                          absolute_only=True)
-    else:
-        listing.pic_href = regularize_url(item.get('galleryURL'),
-                                          absolute_only=True)
+    # pic_href -- get the biggest one we can for now
+    # GEE TODO: probably should be storing mult sizes on our side
+    listing.pic_href = regularize_url(item.get('pictureURLSuperSize', '') or
+                                      item.get('pictureURLLarge', '') or
+                                      item.get('galleryPlusPictureURL') or
+                                      item.get('galleryURL'),
+                                      absolute_only=True)
 
     # listing_href
     listing.listing_href = regularize_url(item.get('viewItemURL'),
@@ -1395,8 +1393,9 @@ def pull_ebay_inventory(classified, session,
         'sortOrder': 'CountryDescending',
         'paginationInput': {
             'entriesPerPage': 100, # max allowed; higher would be ignored
-            'pageNumber': 1}
-        }
+            'pageNumber': 1},
+        'outputSelector': ['PictureURLLarge', 'PictureURLSuperSize'],
+    }
 
     if 'local' in inv_settings:
         logging.debug('limiting to local cars')
@@ -1491,7 +1490,7 @@ def pull_ebay_inventory(classified, session,
         # END LOOP over all inventory pages
 
     if accepted_listings:
-        logging.info('Loaeded %s cars from ebay',
+        logging.info('Loaded %s cars from ebay',
                      str(len(accepted_listings)))
 
     # do we increment sub-batch (color) or move to the next batch?
@@ -1572,8 +1571,8 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
     #if item.expires:
     #  ... set removal_date and add code to check expiry in searches & removal
 
-    if item.deleted or item.expires or item.flagged_status or
-        item.state != 'available' or item.status != 'for_sale':
+    if (item.deleted or item.flagged_status or
+          item.state != 'available' or item.status != 'for_sale'):
         counts['inactive'] += 1
         logging.debug('maybe-not-active: d/e/f/s/s=%s/%s/%s/%s/%s',
                       str(item.deleted), str(item.expires),
