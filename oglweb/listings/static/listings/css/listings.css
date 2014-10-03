@@ -230,7 +230,8 @@ Added by Stephanie
 	border-bottom: 1px solid lightgrey;
 }
 
-.toolbox,.header-row .glyphicon
+.header-row .glyphicon,
+.btn .glyphicon
 {
 	padding-right: 5px;
 }
