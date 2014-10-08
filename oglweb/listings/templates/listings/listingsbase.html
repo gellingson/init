@@ -7,6 +7,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="description" content="">
 	<meta name="author" content="">
+	<link rel="icon" type="image/x-icon" href="{% static 'listings/images/carbyr-favicon-32-24-16.ico' %}">
 
 	<title>{% block title %}Carbyr: enthusiast search{% endblock title %}</title>
 	{% block stylesheets %}
@@ -196,7 +197,7 @@
 		  <form role="form" action="{{ abs_url }}" method="post">
 			{% csrf_token %}
 			<input type="hidden" name="save_id" value="{{ search_id }}">
-			<div class="modal-thingy">
+			<div class="modal-center">
 			  <label class="modal-label" for="save_desc">Name the search:</label>
 			  <input type="text" value="{{ search_desc }}" name="save_desc" id="save_desc"/>
 			</div>

@@ -117,4 +117,6 @@ TEMPLATE_CONTEXT_PROCESSORS=(
     "django.contrib.messages.context_processors.messages",
     # above are "default" (although not spec'd in settings.py?)
     # below are added for OGL
-    "django.core.context_processors.request")
+    "django.core.context_processors.request",
+    "listings.context_processors.basic_context",
+)

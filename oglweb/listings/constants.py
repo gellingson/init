@@ -3,10 +3,11 @@
 
 # TEMPLATE NAMES
 
+HOMEPAGE = 'listings/homepage.html'
+ABOUTPAGE = 'listings/about.html'
 LISTINGSBASE = 'listings/listingsbase.html'
 LISTINGSADMIN = 'listings/listingsadmin.html'
 LISTINGSTEST = 'listings/listingstest.html'
-ABOUTBASE = 'listings/about.html'
 
 # GEE TODO -- should probably move these to the db
 # for now, to add a filter (sub-site) add it here & in db section below

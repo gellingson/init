@@ -26,7 +26,7 @@ body {
 	display: none;
 }
 .navbar-header {
-  max-height: 60px;
+  height: 70px;
 }
 
 h4 {
@@ -96,12 +96,18 @@ h4 {
 
 .jumbotron {
 	margin-bottom: 0px;
-	background-image: url(../images/jumbotronbackground.jpg);
 	background-position: 0% 25%;
 	background-size: cover;
 	background-repeat: no-repeat;
 	color: white;
 	text-shadow: black 0.3em 0.3em 0.3em;
+	background-image: url(../images/jumbotronbackground.jpg);
+}
+.jumbo-sim {
+	background-image: url(../images/sim_banner2.jpg) !important;
+}
+.jumbo-vette {
+	background-image: url(../images/vette_banner2.jpg) !important;
 }
 
 .pull-right {
@@ -242,7 +248,7 @@ Added by Stephanie
 	padding-right: 5px;
 }
 
-.modal-thingy
+.modal-center
 {
 	text-align: center;
 	margin-bottom: 30px;
@@ -281,6 +287,10 @@ Added by Stephanie
 	margin-bottom: 45px;
 }
 
+.leadspan
+{
+	font-weight: bold;
+}
 .page-header
 {
 }
@@ -303,7 +313,7 @@ Added by Stephanie
 	}
 	.dynthing {
 		width: auto;
-		border-rop; 0;
+		border: 0px;
 	}
 	.dynthing.collapse {
 		display: block !important;

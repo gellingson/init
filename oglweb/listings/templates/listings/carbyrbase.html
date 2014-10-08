@@ -8,10 +8,13 @@
 	<meta name="description" content="">
 	<meta name="author" content="">
 	<title>{% block title %}Carbyr: enthusiast search{% endblock title %}</title>
+	<link rel="icon" type="image/x-icon" href="{% static 'listings/images/carbyr-favicon-32-24-16.ico' %}">
 {% block stylesheets %}
 	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/bootstrap.css' %}" />
 	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/listings.css' %}" />
 {% endblock stylesheets %}
+{% block extrastylesheets %}
+{% endblock extrastylesheets %}
   </head>
   <body>
 	{% block navbar %}
@@ -25,7 +28,11 @@
 			<span class="icon-bar"></span>
 		  </button>
 		  <div class="navbar-brand">
+		{% if ogl_alpha_user %}
 			<a href="/cars/">
+		{% else %}
+			<a href="/">
+		{% endif %}
 			  <picture>
 				<source srcset="carbyr-logo-70px 1x, carbyr-logo-70px-2x.png 2x">
 				<img src="{% static 'listings/images/carbyr-logo-70px.png' %}" alt="Carbyr">
@@ -52,6 +59,7 @@
 {% block scripts %}
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 	<script src="{% static 'listings/js/bootstrap.min.js' %}"></script>
+	<script src="{% static 'listings/js/listings.js' %}"></script>
 {% endblock scripts %}
 {% block dialogs %}
 {% endblock dialogs %}

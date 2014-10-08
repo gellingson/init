@@ -22,20 +22,13 @@ from listings.search_utils import handle_search_args, build_query, save_query, u
 # Create your views here.
 
 def homepage(request):
-    context = {'fubar': 'barfu'}
-    return render(request, 'listings/homepage.html', context)
+    context = {}
+    return render(request, HOMEPAGE, context)
 
 
 def about(request, filter=None):
-    context = {'fubar': 'barfu'}
-    if filter=='miatas':
-        return render(request, 'listings/miatas-about.html', context)
-    else:
-        return render(request, ABOUTBASE, context)
-
-
-def listingadmin(request, error_message=None):
-    return index(request, template=LISTINGSADMIN)
+    context = {}
+    return render(request, ABOUTPAGE, context)
 
 
 def adminflag(request, id=None):
@@ -50,10 +43,13 @@ def adminflag(request, id=None):
         error_message = 'Flagged item {}: {} {} {}'.format(id, listing.model_year, listing.make, listing.model)
         return HttpResponseRedirect(reverse('allcarsadmin'))
 
-
-def index(request, filter=None, base_url=None, search_id=None, template=LISTINGSBASE, error_message=None):
+# cars()
+#
+# this is the primary view for car search/results viewing
+#
+def cars(request, filter=None, base_url=None, search_id=None, template=LISTINGSBASE, error_message=None):
     search_type = None
-    request.session['insider'] = True  # been here, seen this
+    request.session['ogl_alpha_user'] = True  # been here, seen this = IN
 
     args = handle_search_args(request, filter, base_url, search_id)
     if args.errors:
@@ -174,9 +170,24 @@ def index(request, filter=None, base_url=None, search_id=None, template=LISTINGS
     return render(request, template, context)
 
 
-def test(request, base_url=None, search_id=None):
-    return index(request, template=LISTINGSTEST, base_url=base_url, search_id=search_id)
+# cars_test()
+#
+# this wraps cars() and adds/modifies the interface to be
+# whatever is being worked on & isn't ready to share yet
+#
+def cars_test(request, base_url=None, search_id=None):
+    return cars(request, template=LISTINGSTEST, base_url=base_url, search_id=search_id)
+
+# should not be visited; convenience method for showing the blank base template
+def blank(request):
+    return render(request, 'listings/carbyrbase.html', context)
 
 
+# GEE TODO: remove this; it's temporary way to display a fixed html
 def oldtest(request):
     return render(request, 'listings/oldtest.html')
+
+
+# GEE TODO: kill this and incorporate admin into the primary template?
+def listingadmin(request, error_message=None):
+    return index(request, template=LISTINGSADMIN)

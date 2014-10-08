@@ -1,57 +1,95 @@
+{% extends "listings/carbyrbase.html" %}
 {% load staticfiles %}
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="">
-    <!--link rel="icon" href="../../favicon.ico"-->
-
-    <title>Carbyr: car search for car enthusiasts</title>
-
-	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/bootstrap.css' %}" />
-	<link rel="stylesheet" type="text/css" href="{% static 'listings/css/listings.css' %}" />
-
-  </head>
-
-  <body>
-
-	<div class="navbar navbar-default navbar-fixed-top" role="navigation">
-	  <div class="container">
-		<div class="navbar-header">
-		  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-			<span class="sr-only">Toggle navigation</span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-		  </button>
-		  <a href="/"><img src="{% static 'listings/images/logosmall.png' %}"></a>
-		</div>
-		<div class="navbar-collapse collapse">
-		  <ul class="nav navbar-nav navbar-right">
-			<li><a href="/about">About</a></li>
-		  </ul>
-		</div>
-	  </div>
-	</div>
-
-    <div class="jumbotron">
+{% block title %}About Carbyr{% endblock %}
+{% block extrastylesheets %}
+	<link href="//cdn-images.mailchimp.com/embedcode/classic-081711.css" rel="stylesheet" type="text/css">
+{% endblock extrastylesheets %}
+{% block page %}
+    <div class="jumbotron jumbo-sim">
       <div class="container">
+		{% if ogl_alpha_user %}
+        <h1>Carbyr</h1>
+        <p>(pre-release early access)</p>
+		<p>More cars. Better search.</p>
+        <p>Find it, drive it, love it!</p>
+		{% else %}
         <h1>Carbyr is coming soon!</h1>
         <p>More cars. Better search.</p>
         <p>Find it, drive it, love it!</p>
-        <p><a class="btn btn-primary btn-lg" role="button" href="mailto:info@carbyr.com">Sign up to be notified &raquo;</a></p>      </div>
+        <p><button class="btn btn-primary btn-lg" data-toggle="modal" data-target="#mc_embed_signup">Sign up to be notified &raquo;</button></p>
+		{% endif %}
+	  </div>
     </div>
 
-    </div> <!-- /container -->
+	{% if ogl_alpha_user %}
+	<div class="container">
+	  <div class="row">
+        <div class="col-md-4">
+          <h2>Thanks for joining us!</h2>
+          <p>Welcome to the Carbyr pre-release. We hope you enjoy Carbyr and through that you find great cars.</p>
+		  <p>However, this is not yet the final product:</p>
+		  <ul>
+			<li>Not all features are complete</li>
+			<li>There may be some bumps as we work</li>
+			<li>Our inventory of cars will be steadily improving (in both quantity and quality)</li>
+		  </ul>
+          <p>Carbyr will be the best way to find your next car but <span class="leadspan"> we need your help.</span> Please give us feedback! Where we are on the right track, let us know. Where we do not yet meet your needs, tell us what to prioritize. When we goof up, tell us so we can fix it! You can send us feedback <a href="mailto:feedback@carbyr.com">via email</a>. You can also reach us on twitter as @onegeelabs (the company behind the carbyr product).</p>
+        </div>
+        <div class="col-md-4">
+          <h2>About Carbyr</h2>
+          <p>Carbyr will provide the world's best car search for car enthusiasts.</p>
+		  <p>(Note the future tense: Carbyr is pre-launch!)</p>
+		  <p><span class="leadspan">Carbyr is NOT another classified site.</span> The world has plenty of those. We don't take classified ad postings, and we don't charge sellers (or dealers) to list vehicles.</p>
+		  <p><span class="leadspan">Carbyr is your car search hub.</span> We index car listings from across the web and share them here for the convenience of YOU, the buyer.</p>
+		  <p>One Carbyr search scours classified and auction sites, enthusiast forums, and dealership inventories -- more interesting cars than any other single site or app.</p>
+		  <p>Note that word "interesting." Carbyr is a Camry-free zone. No car appliances here. We are enthusiasts, and if you are reading this you probably care about cars too. We have left out some of the high-volume blandmobiles to reduce the size of the haystack, and we are committed to building the best search tools to help you sift out a specific needle (to torture the metaphor) to put in your garage. </p>
+        </div>
+        <div class="col-md-4">
+          <h2>Tell me more!</h2>
+          <p>Not good with waiting? :) Want to help us make carbyr better, faster? Want to get your cars into carbyr, or to write about us?</p>
+		  <p><a href="mailto:info@carbyr.com">Email us at info@carbyr.com</a> or tweet us at @onegeelabs.</p>
+		  <p>Speaking of twitter, we want to remind you that we're pre-launch. Go ahead and share the link with your brother but we're not quite ready for the whole world to land on us at once. Please do us the favor of not sharing widely about Carbyr on social media... yet!</p>
+		</div>
+    </div>
+	{% endif %}
+
+	<hr>
+
     <div class="pull-right">
       <footer>
         <p>&copy; Carbyr 2014</p>
       </footer>
     </div>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-	<script src="{% static 'listings/js/bootstrap.min.js' %}"></script>
-  </body>
-</html>
+{% endblock page %}
+{% block dialogs %}
+	<div id="mc_embed_signup" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="signupModalLabel" aria-hidden="true">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <form role="form" action="//carbyr.us9.list-manage.com/subscribe/post?u=810fd2e25a294601dd3506b65&amp;id=cc1eb7e691" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank" novalidate>
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+			<h4 class="modal-title">Join us!</h4>	  
+		  </div>
+		  <div class="modal-body">
+			<p>Sign up for our mailing list to be notified as early access spots open and to stay in the loop as Carbyr launches. (We won't misuse your email; unsubscribe any time; etc.)</p>
+			<div class="form-group">
+			  <label for="mce-EMAIL">Email Address: </label>
+			  <input type="email" value="" name="EMAIL" class="required email" id="mce-EMAIL">
+			</div>
+			<div id="mce-responses" class="clear">
+			  <div class="response" id="mce-error-response" style="display:none"></div>
+			  <div class="response" id="mce-success-response" style="display:none"></div>
+			</div>
+			<div style="position: absolute; left: -5000px;">
+			  <input type="text" name="b_810fd2e25a294601dd3506b65_cc1eb7e691" tabindex="-1" value="">
+			</div>
+		  </div>
+		  <div class="modal-footer">
+			<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+			<button type="submit" class="btn btn-primary">Subscribe</button>
+		  </div>
+		  </form>
+		</div>
+	  </div>
+	</div>
+{% endblock dialogs %}
