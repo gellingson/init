@@ -5,8 +5,11 @@ import time
 # third party modules used
 from bunch import Bunch
 from django.utils.datastructures import MultiValueDictKeyError
+from elasticsearch import Elasticsearch
+from elasticsearch.exceptions import NotFoundError
 
 # OGL modules used
+from listings.display_utils import prettify_listing
 from listings.models import Zipcode
 from listings.constants import *
 
@@ -66,7 +69,7 @@ def handle_search_args(request, filter=None, base_url = None, search_id=None):
         else:
             args.errors['invalid_filter'] = True
 
-    print('params:', str(args))
+    #print('params:', str(args))
     return args
 
 
@@ -180,14 +183,26 @@ def save_query(id, desc, request):
     return None
 
 
+def get_listings(querybody, number=50, offset=0):
+    es = Elasticsearch()
+    search_resp = es.search(index='carbyr-index',
+                            doc_type='listing-type',
+                            size=number,
+                            from_=offset,
+                            body=querybody)
+    listings = []
+    for item in search_resp['hits']['hits']:
+        es_listing = prettify_listing(Bunch(item['_source']))
+        listings.append(es_listing)
+    return search_resp['hits']['total'], listings
+
+
 def unsave_query(id, request):
     favorites = request.session.get('favorites', [])
     if favorites:
         i = 0
         while i < len(favorites):
-            print(id)
             if favorites[i]['id'] == id:
-                print("waka waka")
                 favorites.pop(i)
                 request.session['favorites'] = favorites
                 break

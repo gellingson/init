@@ -15,9 +15,8 @@ from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 
 from listings.constants import *
-from listings.display_utils import prettify_listing
 from listings.models import Zipcode, Listing
-from listings.search_utils import handle_search_args, build_query, save_query, unsave_query
+from listings.search_utils import handle_search_args, build_query, save_query, unsave_query, get_listings
 
 # Create your views here.
 
@@ -42,6 +41,31 @@ def adminflag(request, id=None):
         # GEE TODO: hmm, error_message won't make it through the redirect, and neither will the query string. Need to improve this!
         error_message = 'Flagged item {}: {} {} {}'.format(id, listing.model_year, listing.make, listing.model)
         return HttpResponseRedirect(reverse('allcarsadmin'))
+
+
+# cars_api()
+#
+# pulls just the listings section (the listing items themselves and
+# a next-page link) as a mini-page
+#
+# NOTES:
+# for now this is used as an ajax endpoint for additional pages of listings
+#
+def cars_api(request, search_id=None, number=50, offset=0):
+    number = int(number)
+    offset = int(offset)
+    if not search_id:
+        recents = request.session.get('recents', [])
+        querybody = recents[0]['query']
+    # GEE TODO: handle cases other than addl pages of the most recent search!
+    total_hits, listings = get_listings(querybody, number=number, offset=offset)
+    context = {}
+    # this api may be pulling any page of the results; are there even more?
+    if total_hits > (offset + number):
+        context['next_page_offset'] = offset + number
+    context['listings'] = listings
+    return render(request, LISTINGSAPI, context)
+
 
 # cars()
 #
@@ -105,7 +129,7 @@ def cars(request, filter=None, base_url=None, search_id=None, template=LISTINGSB
     else:  # new search via the search form params
         querybody, search_desc, search_type = build_query(args)
 
-    print(querybody)
+    #print(querybody)
     if search_type == 'D':
         pass
     elif recents and recents[0]['desc'] == search_desc: # GEE TODO: match any recent in the list
@@ -120,17 +144,11 @@ def cars(request, filter=None, base_url=None, search_id=None, template=LISTINGSB
 
     request.session['recents'] = recents
 
-    es = Elasticsearch()
-    search_resp = es.search(index='carbyr-index',
-                            doc_type='listing-type',
-                            size=50,
-                            body=querybody)
-    listings = []
-    for item in search_resp['hits']['hits']:
-        es_listing = prettify_listing(Bunch(item['_source']))
-        listings.append(es_listing)
-
+    total_hits, listings = get_listings(querybody)
     context = {}
+    # this func is always doing the first page; will there be more?
+    if total_hits > len(listings):
+        context['next_page_offset'] = len(listings)
     context['recents'] = []
     context['favorites'] = []
     context['suggestions'] = []

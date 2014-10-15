@@ -131,10 +131,20 @@
 	  {% else %}
 	  <p>No cars... specify (different) search criteria....</p>
 	  {% endif %}
+	  {% if next_page_offset %}
+	  <div class="hidden">
+		<a class="more-listings-link" href="/carsapi/{{ next_page_offset }}/50"/>
+	  </div>
+	  {% endif %}
 	</div>
 {% endblock listings %}
 	</div>
 {% endblock page %}
+{% block extrascripts %}
+	<script src="{% static 'listings/js/waypoints.min.js' %}"></script>
+	<script src="{% static 'listings/js/waypoints-infinite.min.js' %}"></script>
+	<script src="{% static 'listings/js/cars.js' %}"></script>
+{% endblock extrascripts %}	
 {% block dialogs %}
 	<div class="modal fade" id="saveModal" tabindex="-1" role="dialog" aria-labelledby="saveModalLabel" aria-hidden="true">
 	  <div class="modal-dialog">

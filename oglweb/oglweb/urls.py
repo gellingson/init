@@ -17,6 +17,7 @@ urlpatterns = [
     url(r'^about$', views.about, name='about'),
     # GEE TODO: /about and /cars/about -> the same place; clean that up
     url(r'^cars/about$', views.about, name='about'),
+    url(r'^carsapi/(?P<offset>[0-9]+)/(?P<number>[0-9]+)$', views.cars_api, name='cars_api'),
     url(r'^(?P<base_url>cars/)(?P<filter>[a-zA-Z]+)/about$', views.about, name='filter-about'),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^(?P<base_url>blank/)$', views.blank, name='blank'),

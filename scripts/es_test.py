@@ -151,12 +151,12 @@ es = Elasticsearch()
 #get_resp = es.get(index="carbyr-index", doc_type="listing-type", id=1)#['_source']
 #print('\nget returns this _source: {}'.format(json.dumps(get_resp, indent=2, sort_keys=True)))
 
-#search_resp = es.search(index="carbyr-index", doc_type="listing-type", q='make:furd')
-#print('\nsearch response: {}'.format(json.dumps(search_resp, indent=2, sort_keys=True)))
+search_resp = es.search(index="carbyr-index", doc_type="listing-type", size=2, q='make:ford')
+print('\nsearch response: {}'.format(json.dumps(search_resp, indent=2, sort_keys=True)))
 
 #search_resp = es.search(index="mytestindex", doc_type="mytype", body=querybody2)
-search_resp = es.search(index="carbyr-index", doc_type="listing-type", body=querybody3)
-print('\nsearch response: {}'.format(json.dumps(search_resp, indent=2, sort_keys=True)))
+#search_resp = es.search(index="carbyr-index", doc_type="listing-type", body=querybody3)
+#print('\nsearch response: {}'.format(json.dumps(search_resp, indent=2, sort_keys=True)))
 
 #search_resp = es.search(index="carbyr-index", doc_type="listing-type", size=50,
 #                        q='carbuffs')

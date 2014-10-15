@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="description" content="API response">
+  </head>
+  <body>
+	<div class="listings">
+	  {% if listings %}
+	  {% for item in listings %}
+	  <div class="row listing-row">
+		<a href='{{ item.listing_href }}'>
+		  <div class="col-md-3">
+			{% if item.pic_href %}
+			<img class="img-crop img-rounded" foo="img-crop  img-responsive-heightlimit img-rounded" src='{{ item.pic_href }}'>
+			{% else %}
+			<p> No photo available. </p>
+			{% endif %}
+		  </div>
+		  <div class="col-md-3">
+			<p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
+			<p><strong>{{ item.price }}</strong></p>
+			{% if item.location_text %}
+			<p>{{item.location_text}} ({{ item.source }})</p>
+			{% else %}
+			<p>({{ item.source }})</p>
+			{% endif %}
+		  </div>
+		  <div class="col-md-6">{{ item.listing_text }}
+		  </div>
+		</a>
+	  </div>
+	  {% endfor %}
+	  {% else %}
+	  <p>No cars... specify (different) search criteria....</p>
+	  {% endif %}
+	  {% if next_page_offset %}
+	  <div class="hidden">
+		<a class="more-listings-link" href="/carsapi/{{ next_page_offset }}/50"/>
+	  </div>
+	  {% endif %}
+	</div>
+  </body>
+</html>
