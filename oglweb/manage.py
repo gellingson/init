@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # GEE monkeypatch swapping pymysql in for mysqldb (since pymysql works with python3)
 try:
     import pymysql

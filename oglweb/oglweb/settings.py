@@ -39,7 +39,40 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'djrill',
     'listings',
+    # The Django sites framework is required for allauth
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    # ... include the providers you want to enable:
+    #'allauth.socialaccount.providers.amazon',
+    #'allauth.socialaccount.providers.angellist',
+    #'allauth.socialaccount.providers.bitbucket',
+    #'allauth.socialaccount.providers.bitly',
+    #'allauth.socialaccount.providers.coinbase',
+    #'allauth.socialaccount.providers.dropbox',
+    'allauth.socialaccount.providers.facebook',
+    #'allauth.socialaccount.providers.flickr',
+    #'allauth.socialaccount.providers.feedly',
+    #'allauth.socialaccount.providers.github',
+    'allauth.socialaccount.providers.google',
+    #'allauth.socialaccount.providers.hubic',
+    #'allauth.socialaccount.providers.instagram',
+    #'allauth.socialaccount.providers.linkedin',
+    #'allauth.socialaccount.providers.linkedin_oauth2',
+    #'allauth.socialaccount.providers.openid',
+    #'allauth.socialaccount.providers.persona',
+    #'allauth.socialaccount.providers.soundcloud',
+    #'allauth.socialaccount.providers.stackexchange',
+    #'allauth.socialaccount.providers.tumblr',
+    #'allauth.socialaccount.providers.twitch',
+    'allauth.socialaccount.providers.twitter',
+    #'allauth.socialaccount.providers.vimeo',
+    #'allauth.socialaccount.providers.vk',
+    #'allauth.socialaccount.providers.weibo',
+    #'allauth.socialaccount.providers.xing',
 )
 
 # This doesn't really belong here but I'm reusing the django on the home
@@ -71,10 +104,10 @@ DATABASES = {
         'HOST': os.environ.get('OGL_DB_HOST','localhost'),
         'NAME': os.environ.get('OGL_DB','carsdb'),
 # uncomment these lines and add password when/if you need to be admin (e.g. migrations)
-#        'USER': 'carsdbadmin',
-#        'PASSWORD': 'cars4Me',
-        'USER': os.environ.get('OGL_DB_USERACCOUNT','carsdbuser'),
-        'PASSWORD': os.environ.get('OGL_DB_USERACCOUNT_PASSWORD', 'nopassword'),
+        'USER': 'carsdbadmin',
+        'PASSWORD': 'cars4Me',
+#        'USER': os.environ.get('OGL_DB_USERACCOUNT','carsdbuser'),
+#        'PASSWORD': os.environ.get('OGL_DB_USERACCOUNT_PASSWORD', 'nopassword'),
         'CHARSET': 'utf8', # GEE this may apply only to creating test DBs??
     }
 }
@@ -119,4 +152,41 @@ TEMPLATE_CONTEXT_PROCESSORS=(
     # below are added for OGL
     "django.core.context_processors.request",
     "listings.context_processors.basic_context",
+    # allauth specific context processors
+    "allauth.account.context_processors.account",
+    "allauth.socialaccount.context_processors.socialaccount",
 )
+
+AUTHENTICATION_BACKENDS = (
+    # Needed to login by username in Django admin, regardless of `allauth`
+    "django.contrib.auth.backends.ModelBackend",
+    # `allauth` specific authentication methods, such as login by e-mail
+    "allauth.account.auth_backends.AuthenticationBackend",
+)
+
+# GEE TODO: understand what this does [added for allauth package]
+SITE_ID = 2
+SOCIALACCOUNT_AUTO_SIGNUP=False
+# settings for normal SMTP delivery via mandrill
+#EMAIL_HOST='smtp.mandrillapp.com'
+#EMAIL_PORT=587
+#EMAIL_HOST_USER='info@carbyr.com'
+#EMAIL_HOST_PASSWORD='0vGvsQOzdCdauh7ld9cpXA'
+#EMAIL_TIMEOUT=1
+# setting to just dump emails to stdout -- also doesn't seem to work
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# settings to deliver via djrill
+MANDRILL_API_KEY = '0vGvsQOzdCdauh7ld9cpXA'
+EMAIL_BACKEND = 'djrill.mail.backends.djrill.DjrillBackend'
+SOCIALACCOUNT_PROVIDERS = {
+    'facebook': {
+        'SCOPE': ['email', 'publish_stream'],
+        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'METHOD': 'oauth2',
+        'VERIFIED_EMAIL': False
+    },
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': { 'access_type': 'online' }
+    }
+}

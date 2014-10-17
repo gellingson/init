@@ -13,7 +13,7 @@ from django.shortcuts import render, get_object_or_404
 from django.template import RequestContext
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
-
+from django.core.mail import send_mail
 from listings.constants import *
 from listings.models import Zipcode, Listing
 from listings.search_utils import handle_search_args, build_query, save_query, unsave_query, get_listings
@@ -198,7 +198,15 @@ def cars_test(request, base_url=None, search_id=None):
 
 # should not be visited; convenience method for showing the blank base template
 def blank(request):
+    context = {}
     return render(request, 'listings/carbyrbase.html', context)
+
+
+# should not be visited; convenience method for showing the a static test page
+def statictest(request):
+    send_mail("it works","this will get sent through Mandrill", "info@carbyr.com", ["gee@onegee.com"])    
+    context = {}
+    return render(request, 'listings/carbyrtest.html', context)
 
 
 # GEE TODO: remove this; it's temporary way to display a fixed html

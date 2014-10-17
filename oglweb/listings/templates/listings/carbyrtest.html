@@ -1,0 +1,19 @@
+{% extends "listings/carbyrbase.html" %}
+{% load socialaccount %}
+{% load url from future %}
+{% block page %}
+<div class="container">
+  {% if user.is_authenticated %}
+  <p> links to log out or go to profile </p>
+  <a href="{% url 'account_logout' %}">Log Out</a>
+  <a href="/accounts/profile/">Account Profile</a>
+  {% else %}  
+  <p> internal signup:</p>
+  <a href="{% url 'account_signup' %}">Sign Up</a>
+  <p> fb login:</p>
+  <a href="{% provider_login_url "facebook" method="oauth2" %}">Facebook OAuth2</a>
+  <p> google login:</p>
+  <a href="{% provider_login_url "google" method="oauth2" %}">Google OAuth2</a>
+  {% endif %}
+</div>
+{% endblock page %}

@@ -15,6 +15,10 @@ urlpatterns = [
     # url(r'^$', oglviews.fubar, name='homepage'),
     url(r'^$', views.homepage, name='homepage'),
     url(r'^about$', views.about, name='about'),
+    url(r'^accounts/profile/$', views.blank, name='profile'),
+    url(r'^blank$', views.blank, name='blank'),
+    url(r'^statictest$', views.statictest, name='statictest'),
+    url(r'^accounts/', include('allauth.urls')),
     # GEE TODO: /about and /cars/about -> the same place; clean that up
     url(r'^cars/about$', views.about, name='about'),
     url(r'^carsapi/(?P<offset>[0-9]+)/(?P<number>[0-9]+)$', views.cars_api, name='cars_api'),
