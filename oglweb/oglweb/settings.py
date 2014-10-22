@@ -24,6 +24,15 @@ DEBUG = bool(os.environ.get('OGL_SERVER_DEBUG', '') == 'TRUE')
 
 TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
 TEMPLATE_DEBUG = True
+# crispy forms setup: note that using the cached template loaders
+# in dev defeats the auto-refresh logic of teh django test server :(
+#TEMPLATE_LOADERS = (
+#    ('django.template.loaders.cached.Loader', (
+#        'django.template.loaders.filesystem.Loader',
+#        'django.template.loaders.app_directories.Loader',
+#    )),
+#)
+CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
 # must be populated when DEBUG is False (ie on "public" servers)
 ALLOWED_HOSTS = ''
@@ -40,6 +49,8 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'djrill',
+    'crispy_forms',  # crispy is shit, but...
+    # this one is us!
     'listings',
     # The Django sites framework is required for allauth
     'django.contrib.sites',
@@ -152,6 +163,7 @@ TEMPLATE_CONTEXT_PROCESSORS=(
     # below are added for OGL
     "django.core.context_processors.request",
     "listings.context_processors.basic_context",
+    "listings.context_processors.crispy_context",
     # allauth specific context processors
     "allauth.account.context_processors.account",
     "allauth.socialaccount.context_processors.socialaccount",
@@ -165,24 +177,26 @@ AUTHENTICATION_BACKENDS = (
 )
 
 # GEE TODO: understand what this does [added for allauth package]
-SITE_ID = 2
-SOCIALACCOUNT_AUTO_SIGNUP=False
+SITE_ID = 2  # carbyr is id 2 in the Sites app
+SOCIALACCOUNT_AUTO_SIGNUP=True
 # settings for normal SMTP delivery via mandrill
 #EMAIL_HOST='smtp.mandrillapp.com'
 #EMAIL_PORT=587
 #EMAIL_HOST_USER='info@carbyr.com'
 #EMAIL_HOST_PASSWORD='0vGvsQOzdCdauh7ld9cpXA'
 #EMAIL_TIMEOUT=1
-# setting to just dump emails to stdout -- also doesn't seem to work
+# setting to just dump emails to stdout
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # settings to deliver via djrill
+SERVER_EMAIL = 'info@carbyr.com'  # this didn't work despite docs
+DEFAULT_FROM_EMAIL = 'info@carbyr.com'   # this one worked
 MANDRILL_API_KEY = '0vGvsQOzdCdauh7ld9cpXA'
 EMAIL_BACKEND = 'djrill.mail.backends.djrill.DjrillBackend'
 SOCIALACCOUNT_PROVIDERS = {
     'facebook': {
         'SCOPE': ['email', 'publish_stream'],
-        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
-        'METHOD': 'oauth2',
+#        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'METHOD': 'js_sdk',
         'VERIFIED_EMAIL': False
     },
     'google': {

@@ -1,0 +1,20 @@
+{% extends "account/accountbase.html" %}
+{% load i18n %}
+{% load url from future %}
+
+{% block tabcontents %}
+<div class="tab-content">
+  <h1>{% trans "Profile Information" %}</h1>
+{% if user.profile.avatar_url %}
+    <h3>Picture</h3>
+	<p class="picture-frame">
+	  <img alt="" src="{{user.profile.avatar_url}}" style="width: 256px; height: 256px">
+	</p>
+{% endif %}
+	<ul class="list-unstyled">
+	  <li>First name: <strong>{{user.first_name}}</strong></li>
+	  <li>Last name: <strong>{{user.last_name}}</strong></li>
+	  <li>Email: <strong>{{user.email}}</strong></li>
+	</ul>
+</div>
+{% endblock tabcontents %}

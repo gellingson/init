@@ -1,0 +1,29 @@
+{% extends "listings/carbyrbase.html" %}
+{% load i18n %}
+{% load url from future %}
+
+{% block title %}Account{% endblock title %}
+
+{% block page %}
+<div class="container">
+  <div class="page-header">
+	{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}	
+	<ul class="nav nav-tabs" role="tablist">
+	  {% url 'profile' as url_profile %}
+	  {% url 'account_email' as url_email %}
+	  {% url 'account_change_password' as url_password %}
+	  {% url 'account_set_password' as url_set_password %}
+	  {% url 'socialaccount_connections' as url_connections %}
+	  <li {% if request.path == url_profile %}class="active"{% endif %}><a href="{{ url_profile }}" role="tab">Profile</a></li>
+	  <li {% if request.path == url_email %}class="active"{% endif %}><a href="{{ url_email }}" role="tab">Emails</a></li>
+	  <li {% if request.path == url_password or request.path == url_set_password %}class="active"{% endif %}><a href="{{ url_password }}" role="tab">Password</a></li>
+	  <li {% if request.path == url_connections %}class="active"{% endif %}><a href="{{ url_connections }}" role="tab">Social</a></li>
+	  <li {% if request.path == url_settings %}class="active"{% endif %}><a href="#notyetimplemented" role="tab">Settings</a></li>
+	</ul>
+	{% block tabcontents %}
+	{% endblock tabcontents %}
+  </div>
+  {% block content %}
+  {% endblock content %}
+</div>
+{% endblock page %}

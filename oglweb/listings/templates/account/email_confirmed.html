@@ -1,0 +1,17 @@
+{% extends "listings/carbyrbase.html" %}
+
+{% load i18n %}
+{% load account %}
+
+{% block title %}{% trans "Confirm E-mail Address" %}{% endblock title %}
+
+
+{% block page %}
+<div class="container">
+<h1>{% trans "Confirm E-mail Address" %}</h1>
+
+{% user_display email_address.user as user_display %}
+        
+<p>{% blocktrans with email_address.email as email %}You have confirmed that <a href="mailto:{{email}}">{{ email }}</a> is an e-mail address for user {{ user_display }}.{% endblocktrans %}</p>
+</div>
+{% endblock page %}

@@ -3,7 +3,17 @@
 {% load url from future %}
 {% block page %}
 <div class="container">
+  <p> waka waka </p>
   {% if user.is_authenticated %}
+  <p> hello there!</p>
+  {% load account %}
+  <p> Hello, {% user_display user %}.</p>
+  {% get_social_accounts user as accounts %}
+  {% if accounts %}
+  {% for socialaccount in accounts %}
+  <p> you have social account: {{ socialaccount }} </p>
+  {% endfor %}
+  {% endif %}
   <p> links to log out or go to profile </p>
   <a href="{% url 'account_logout' %}">Log Out</a>
   <a href="/accounts/profile/">Account Profile</a>
@@ -12,6 +22,8 @@
   <a href="{% url 'account_signup' %}">Sign Up</a>
   <p> fb login:</p>
   <a href="{% provider_login_url "facebook" method="oauth2" %}">Facebook OAuth2</a>
+{% providers_media_js %}
+  <a href="{% provider_login_url "facebook" method="js_sdk" %}">Facebook Connect</a>
   <p> google login:</p>
   <a href="{% provider_login_url "google" method="oauth2" %}">Google OAuth2</a>
   {% endif %}

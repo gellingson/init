@@ -49,6 +49,11 @@ h4 {
   border: 1px solid rgba(86,61,124,.2);
 }
 
+.button-row {
+	padding-top: 25px;
+	padding-bottom: 25px;
+}
+
 /* see http://dabblet.com/gist/4711695 */
 .img-crop,
 .img-crop img{
@@ -83,11 +88,6 @@ h4 {
 .pic-cell {
 /*  max-height: 100px; */
 }	
-
-[class*="col-"] {
-  padding-top: 15px;
-  padding-bottom: 15px;
-}
 
 .note {
   padding-top: 15px;
@@ -267,6 +267,24 @@ Added by Stephanie
   margin-bottom: -20px;
 }
 
+h1 {
+	font-size: 120%;
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+.listing {
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+
+.textrow {
+	display: block;
+}
+.asteriskField
+{
+	display: none;
+}
 .float-left
 {
 	float: left;

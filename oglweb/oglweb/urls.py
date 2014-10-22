@@ -15,7 +15,7 @@ urlpatterns = [
     # url(r'^$', oglviews.fubar, name='homepage'),
     url(r'^$', views.homepage, name='homepage'),
     url(r'^about$', views.about, name='about'),
-    url(r'^accounts/profile/$', views.blank, name='profile'),
+    url(r'^accounts/profile/$', views.profile, name='profile'),
     url(r'^blank$', views.blank, name='blank'),
     url(r'^statictest$', views.statictest, name='statictest'),
     url(r'^accounts/', include('allauth.urls')),

@@ -7,6 +7,7 @@ import time
 # third party modules used
 #import simplejson as json
 from bunch import Bunch
+from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
@@ -28,6 +29,11 @@ def homepage(request):
 def about(request, filter=None):
     context = {}
     return render(request, ABOUTPAGE, context)
+
+@login_required
+def profile(request, filter=None):
+    context = {}
+    return render(request, 'account/profile.html', context)
 
 
 def adminflag(request, id=None):
@@ -196,15 +202,22 @@ def cars(request, filter=None, base_url=None, search_id=None, template=LISTINGSB
 def cars_test(request, base_url=None, search_id=None):
     return cars(request, template=LISTINGSTEST, base_url=base_url, search_id=search_id)
 
+
+# blank()
+#
 # should not be visited; convenience method for showing the blank base template
+#
 def blank(request):
     context = {}
     return render(request, 'listings/carbyrbase.html', context)
 
 
-# should not be visited; convenience method for showing the a static test page
+# statictest()
+#
+# should not be visited; convenience method for showing the static test page
+# ... but this page can be a reasonable place to throw something exploratory
+#
 def statictest(request):
-    send_mail("it works","this will get sent through Mandrill", "info@carbyr.com", ["gee@onegee.com"])    
     context = {}
     return render(request, 'listings/carbyrtest.html', context)
 
