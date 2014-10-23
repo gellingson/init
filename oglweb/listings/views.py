@@ -36,6 +36,11 @@ def profile(request, filter=None):
     return render(request, 'account/profile.html', context)
 
 
+def dashboard(request):
+    context = {}
+    return render(request, 'listings/dashboard.html', context)
+
+
 def adminflag(request, id=None):
     if id:
         es = Elasticsearch()

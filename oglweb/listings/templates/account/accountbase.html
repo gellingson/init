@@ -7,7 +7,6 @@
 {% block page %}
 <div class="container">
   <div class="page-header">
-	{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}	
 	<ul class="nav nav-tabs" role="tablist">
 	  {% url 'profile' as url_profile %}
 	  {% url 'account_email' as url_email %}
@@ -20,6 +19,14 @@
 	  <li {% if request.path == url_connections %}class="active"{% endif %}><a href="{{ url_connections }}" role="tab">Social</a></li>
 	  <li {% if request.path == url_settings %}class="active"{% endif %}><a href="#notyetimplemented" role="tab">Settings</a></li>
 	</ul>
+	{% if messages %}
+	<ul class="messages">
+	  {% for message in messages %}
+	  <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+	  {% endfor %}
+	</ul>
+	{% endif %}
+	{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}	
 	{% block tabcontents %}
 	{% endblock tabcontents %}
   </div>

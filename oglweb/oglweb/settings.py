@@ -176,9 +176,10 @@ AUTHENTICATION_BACKENDS = (
     "allauth.account.auth_backends.AuthenticationBackend",
 )
 
-# GEE TODO: understand what this does [added for allauth package]
+# allauth settings
 SITE_ID = 2  # carbyr is id 2 in the Sites app
-SOCIALACCOUNT_AUTO_SIGNUP=True
+SOCIALACCOUNT_AUTO_SIGNUP=False
+
 # settings for normal SMTP delivery via mandrill
 #EMAIL_HOST='smtp.mandrillapp.com'
 #EMAIL_PORT=587

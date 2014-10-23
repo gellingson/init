@@ -1,0 +1,39 @@
+{% extends "listings/carbyrbase.html" %}
+{% load account %}
+
+{% block page %}
+<div class="container">
+  <h1>{% user_display user %}'s Dashboard</h1>
+  <p>Here are the cars you have saved:</p>
+	<div class="listings">
+	  {% if listings %}
+	  {% for item in listings %}
+	  <div class="row listing-row">
+		<a href='{{ item.listing_href }}'>
+		  <div class="col-md-4 listing">
+			{% if item.pic_href %}
+			<img class="img-crop img-rounded" foo="img-crop  img-responsive-heightlimit img-rounded" src='{{ item.pic_href }}'>
+			{% else %}
+			<p> No photo available. </p>
+			{% endif %}
+		  </div>
+		  <div class="col-md-4 listing">
+			<p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
+			<p><strong>{{ item.price }}</strong></p>
+			{% if item.location_text %}
+			<p>{{item.location_text}} ({{ item.source }})</p>
+			{% else %}
+			<p>({{ item.source }})</p>
+			{% endif %}
+		  </div>
+		  <div class="col-md-6 listing">{{ item.listing_text }}
+		  </div>
+		</a>
+	  </div>
+	  {% endfor %}
+	  {% else %}
+	  <p>You have no saved cars. If you mark a car as of interest from the search results it will appear here for easy reference.</p>
+	  {% endif %}
+	</div>
+</div>
+{% endblock page %}

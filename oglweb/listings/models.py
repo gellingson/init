@@ -8,8 +8,16 @@
 from __future__ import unicode_literals
 
 import datetime
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
+
+class SavedQuery():
+    id = models.IntegerField(primary_key=True)  # AutoField?
+    user_id = models.ForeignKey(settings.AUTH_USER_MODEL)
+    ref = models.CharField(max_length=24)
+    desc = models.CharField(max_length=80)
+    body = models.CharField(max_length=2048)
 
 
 class Classified(models.Model):

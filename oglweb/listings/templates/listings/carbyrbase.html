@@ -1,4 +1,5 @@
 {% load staticfiles %}
+{% load account %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -45,6 +46,20 @@
 		</div>
 		<div class="navbar-collapse collapse">
 		  <ul class="nav navbar-nav navbar-right">
+			{% if user.is_authenticated %}
+			<li class="dropdown">
+			  <a href="#" class="dropdown-toggle" data-toggle="dropdown">{% user_display user %}<span class="caret"></span></a>
+			  <ul class="dropdown-menu" role="menu">
+				<li><a href="/cars">Search</a></li>
+				<li><a href="/dashboard">Dashboard</a></li>
+				<li><a href="/accounts/profile">Profile</a></li>
+				<li class="divider"></li>
+				<li><a href="/accounts/logout">Sign Out</a></li>
+			  </ul>
+			</li>
+			{% else %}
+			<li><a href="/accounts/login">Log In</a></li>			
+			{% endif %}
 			<li><a href="/about">About Carbyr</a></li>
 		  </ul>
 		</div>

@@ -12,28 +12,28 @@
 
   <h1>{% trans "Sign In" %}</h1>
 
-<p>Sign in with an identity provider attached to your Carbyr account:</p>
-<div class="row button-row">
+  <p>Sign in with an identity provider attached to your Carbyr account:</p>
+  <div class="row button-row">
     {% include "socialaccount/snippets/provider_list.html" with process="login" %}
-</div>
-<div class="row">
-{% include "socialaccount/snippets/login_extra.html" %}
-</div>
-  <p>Or sign in with your Carbyr account credentials directly:</p>
-<form class="form-horizontal" method="POST" action="{% url 'account_login' %}">
-  {% csrf_token %}
-  {% crispy form horiz-form-helper %}
-  {% if redirect_field_value %}
-  <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-  {% endif %}
-  <div class="form-group">
-	<div class="col-sm-offset-2 col-sm-6">
-	  <button class="btn btn-primary" type="submit">{% trans "Sign In" %}</button>
-	  </div>
   </div>
-  <p>Forgot your password? <a class="button secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Reset it now." %}</a>
-  Don't have an account yet? <a href="{{ signup_url }}">sign up now!</a></p>
-</form>
+  <div class="row">
+	{% include "socialaccount/snippets/login_extra.html" %}
+  </div>
+  <p>Or sign in with your Carbyr account credentials directly:</p>
+  <form class="form-horizontal" method="POST" action="{% url 'account_login' %}">
+	{% csrf_token %}
+	{% crispy form horiz-form-helper %}
+	{% if redirect_field_value %}
+	<input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+	{% endif %}
+	<div class="form-group">
+	  <div class="col-sm-offset-2 col-sm-6">
+		<button class="btn btn-primary" type="submit">{% trans "Sign In" %}</button>
+	  </div>
+	</div>
+	<p>Forgot your password? <a class="button secondaryAction" href="{% url 'account_reset_password' %}">{% trans "Reset it now." %}</a>
+	  Don't have an account yet? <a href="{{ signup_url }}">sign up now!</a></p>
+  </form>
 </div>
 
 {% endblock page %}
