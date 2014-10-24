@@ -11,13 +11,22 @@ import datetime
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from jsonfield import JSONCharField
 
-class SavedQuery():
+class SavedQuery(models.Model):
     id = models.IntegerField(primary_key=True)  # AutoField?
-    user_id = models.ForeignKey(settings.AUTH_USER_MODEL)
+    querytype = models.CharField(max_length=1)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
     ref = models.CharField(max_length=24)
-    desc = models.CharField(max_length=80)
-    body = models.CharField(max_length=2048)
+    descr = models.CharField(max_length=80)
+    query = JSONCharField(max_length=2048)
+
+    def __str__(self):
+        return self.full_name
+
+    class Meta:
+        managed = False
+        db_table = 'saved_query'
 
 
 class Classified(models.Model):

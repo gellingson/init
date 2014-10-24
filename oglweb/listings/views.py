@@ -137,6 +137,7 @@ def cars(request, filter=None, base_url=None, search_id=None, template=LISTINGSB
         search_id = stored_search['id']
         search_desc = stored_search['desc']
         querybody = stored_search['query']
+        print('<{}>'.format(querybody))
     else:  # new search via the search form params
         querybody, search_desc, search_type = build_query(args)
 

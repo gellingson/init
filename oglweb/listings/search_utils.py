@@ -176,7 +176,17 @@ def save_query(id, desc, request):
     if from_search:
         from_search['id'] = 'F' + from_search['id'][1:]
         from_search['desc'] = desc
+        # already has query field set; keep it
         favorites.append(from_search)
+
+        if request.user.is_authenticated():
+            db_fav = SavedQuery()
+            db_fav.user = request.user
+            db_fav.ref = from_search['id']
+            db_fav.descr = from_search['desc']
+            db_fav.query = from_search['query']
+            db_fav.save()
+
         request.session['favorites'] = favorites
         return from_search['id']  # show it now...
     # else fail silently
@@ -203,7 +213,9 @@ def unsave_query(id, request):
         i = 0
         while i < len(favorites):
             if favorites[i]['id'] == id:
-                favorites.pop(i)
+                f = favorites.pop(i)
+                if request.user.is_authenticated():
+                    SavedQuery.objects.filter(user=request.user, ref=f['id']).delete()
                 request.session['favorites'] = favorites
                 break
             i += 1
