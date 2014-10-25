@@ -10,7 +10,7 @@ from elasticsearch.exceptions import NotFoundError
 
 # OGL modules used
 from listings.display_utils import prettify_listing
-from listings.models import Zipcode
+from listings.models import Zipcode, SavedQuery
 from listings.constants import *
 
 #

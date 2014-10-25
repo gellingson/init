@@ -10,12 +10,15 @@
   <h1>{% trans "Sign Up" %}</h1>
   <p>{% blocktrans %}Already have an account? <a href="{{ login_url }}">Sign in here.</a>{% endblocktrans %}</p>
 
-<p>Creating an account gives you more control over your Carbyr experience. With an account you can actively manage your search process here, access saved searches and cars on all your devices, and more.</p>
-<p>We recommend you use one of these identity providers to create your Carbyr account:</p>
-<div class="row button-row">
+  <p>Creating an account gives you more control over your Carbyr experience. With an account you can actively manage your search process here, access saved searches and cars on all your devices, and more.</p>
+  <p>We recommend you use one of these identity providers to create your Carbyr account:</p>
+  <div class="row button-row">
     {% include "socialaccount/snippets/provider_list.html" with process="login" %}
-</div>
-<p>... or you can create a username and password unique to Carbyr so you can log in directly:</p>
+  </div>
+  <div class="row">
+	{% include "socialaccount/snippets/login_extra.html" %}
+  </div>
+  <p>... or you can create a username and password unique to Carbyr so you can log in directly:</p>
   <form class="form-horizontal" id="signup_form" method="post" action="{% url 'account_signup' %}">
 	{% csrf_token %}
 	{% crispy form horiz-form-helper %}

@@ -1,6 +1,7 @@
 {% extends "account/accountbase.html" %}
 {% load i18n %}
 {% load url from future %}
+{% load crispy_forms_tags %}
 
 {% block tabcontents %}
 <div class="tab-content">
@@ -11,10 +12,33 @@
 	  <img alt="" src="{{user.profile.avatar_url}}" style="width: 256px; height: 256px">
 	</p>
 {% endif %}
-	<ul class="list-unstyled">
-	  <li>First name: <strong>{{user.first_name}}</strong></li>
-	  <li>Last name: <strong>{{user.last_name}}</strong></li>
-	  <li>Email: <strong>{{user.email}}</strong></li>
-	</ul>
+	<div id="readonly">
+	  <ul class="list-unstyled">
+		<li>First name: <strong>{{user.first_name}}</strong></li>
+		<li>Last name: <strong>{{user.last_name}}</strong></li>
+		<li>Username: <strong>{{user.username}}</strong></li>
+	  </ul>
+	  <button class="btn btn-primary" id="editprofile">Edit</button>
+	</div>
+	<div id="editform">
+	  <form class="form-horizontal" action="/accounts/profile/" method="post">
+		{% crispy form horiz-form-helper %}
+		<div class="form-group">
+		  <div class="col-sm-offset-2 col-sm-6">
+			<button class="btn btn-default" id="cancelbtn" type="button">Cancel</button>	  
+			<button class="btn btn-primary" type="submit" id="save">Save</button>
+		  </div>
+		</div>
+	  </form>
+	</div>
 </div>
 {% endblock tabcontents %}
+{% block extrascripts %}
+<script>
+$(document).ready(function() {
+$("#editform").hide();
+$("#editprofile").click(function(){$("#editform").show(); $("#readonly").hide()});
+$("#cancelbtn").click(function(){$("#editform").hide(); $("#readonly").show()});
+});
+</script>
+{% endblock extrascripts %}

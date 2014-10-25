@@ -16,6 +16,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 from django.core.mail import send_mail
 from listings.constants import *
+from listings.forms import UserForm
 from listings.models import Zipcode, Listing
 from listings.search_utils import handle_search_args, build_query, save_query, unsave_query, get_listings
 
@@ -31,8 +32,27 @@ def about(request, filter=None):
     return render(request, ABOUTPAGE, context)
 
 @login_required
-def profile(request, filter=None):
+def profile(request):
     context = {}
+    if request.method == 'POST':
+        form = UserForm(request.POST)
+        if form.is_valid():
+            print("valid form")
+            user = request.user
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            user.username = form.cleaned_data['username']
+            user.save()
+            # now continue as per get: display the profile incl hidden form
+        else:
+            print("invalid form?!" + form.errors.as_json())
+    form = UserForm(initial={
+        'id':request.user.id,
+        'first_name':request.user.first_name,
+        'last_name':request.user.last_name,
+        'username':request.user.username,
+    })
+    context['form'] = form
     return render(request, 'account/profile.html', context)
 
 
