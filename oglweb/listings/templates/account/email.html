@@ -1,6 +1,7 @@
 {% extends "account/accountbase.html" %}
 {% load i18n %}
 {% load url from future %}
+{% load crispy_forms_tags %}
 
 {% block tabcontents %}
 <div class="tab-content">
@@ -55,12 +56,16 @@
   <p><strong>{% trans 'Warning:'%}</strong> {% trans "You currently do not have any email address set up. Add an email address so you can receive notifications, reset your password, and more." %}</p>
   {% endif %}
 
-  <h4>{% trans "Add a new email address" %}</h4>
+  <h1>{% trans "Add a new email address" %}</h1>
 
-  <form method="post" action="{% url 'account_email' %}" class="form">
+  <form method="post" action="{% url 'account_email' %}" class="form-horizontal">
     {% csrf_token %}
-    {{ form.as_p}}
-    <button class="btn btn-primary" name="action_add" type="submit">{% trans "Add E-mail" %}</button>
+    {% crispy form horiz-form-helper %}
+	<div class="form-group">
+	  <div class="col-sm-offset-2 col-sm-6">
+		<button class="btn btn-primary" name="action_add" type="submit">{% trans "Add E-mail" %}</button>
+		</div>
+	</div>
   </form>
 </div>
 {% endblock tabcontents %}
