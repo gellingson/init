@@ -30,7 +30,11 @@ class UserForm(forms.Form):
         matches = User.objects.filter(username=uname)
         if matches:
             if id:
+                print(str(matches[0].id) + '/' + str(id))
                 # might be this guy....
                 if matches[0].id != id:
-                    self.add_error('username', "This username is already in use.")
+                    err = forms.ValidationError(
+                        "This username is already in use.",
+                        code="duplicate")
+                    self.add_error('username', err)
         return cleaned_data
