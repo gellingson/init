@@ -45,13 +45,15 @@ def profile(request):
             user.save()
             # now continue as per get: display the profile incl hidden form
         else:
+            context['show_form'] = True  # redisplay (with errors)
             print("invalid form?!" + form.errors.as_json())
-    form = UserForm(initial={
-        'id':request.user.id,
-        'first_name':request.user.first_name,
-        'last_name':request.user.last_name,
-        'username':request.user.username,
-    })
+    else:  # GET, ie not form submission; populate blank form
+        form = UserForm(initial={
+            'id':request.user.id,
+            'first_name':request.user.first_name,
+            'last_name':request.user.last_name,
+            'username':request.user.username,
+        })
     context['form'] = form
     return render(request, 'account/profile.html', context)
 

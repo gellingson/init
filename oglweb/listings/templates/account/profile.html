@@ -22,6 +22,7 @@
 	</div>
 	<div id="editform">
 	  <form class="form-horizontal" action="/accounts/profile/" method="post">
+		{% csrf_token %}
 		{% crispy form horiz-form-helper %}
 		<div class="form-group">
 		  <div class="col-sm-offset-2 col-sm-6">
@@ -36,7 +37,11 @@
 {% block extrascripts %}
 <script>
 $(document).ready(function() {
+{% if show_form %}
+$("#readonly").hide();
+{% else %}
 $("#editform").hide();
+{% endif %}
 $("#editprofile").click(function(){$("#editform").show(); $("#readonly").hide()});
 $("#cancelbtn").click(function(){$("#editform").hide(); $("#readonly").show()});
 });
