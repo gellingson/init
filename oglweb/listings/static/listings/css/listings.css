@@ -277,7 +277,10 @@ h1 {
   padding-top: 15px;
   padding-bottom: 15px;
 }
-
+.wideglyph {
+	padding-left: 10px;
+	padding-right: 10px;
+}
 .textrow {
 	display: block;
 }

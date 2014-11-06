@@ -13,8 +13,24 @@ from django.db import models
 from django.utils import timezone
 from jsonfield import JSONCharField
 
-class SavedQuery(models.Model):
+
+class SavedListing(models.Model):
     id = models.IntegerField(primary_key=True)  # AutoField?
+    user = models.ForeignKey(settings.AUTH_USER_MODEL)
+    listing = models.ForeignKey('Listing')
+    status = models.CharField(max_length=1)
+    note = models.CharField(max_length=2048, blank=True)
+
+    def __str__(self):
+        return "{} {}".format(self.id, self.note)
+
+    class Meta:
+        managed = False
+        db_table = 'saved_listing'
+
+
+
+class SavedQuery(models.Model):
     querytype = models.CharField(max_length=1)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
     ref = models.CharField(max_length=24)
@@ -22,7 +38,7 @@ class SavedQuery(models.Model):
     query = JSONCharField(max_length=2048)
 
     def __str__(self):
-        return self.full_name
+        return self.ref
 
     class Meta:
         managed = False

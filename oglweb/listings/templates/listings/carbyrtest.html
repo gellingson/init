@@ -27,5 +27,12 @@
   <p> google login:</p>
   <a href="{% provider_login_url "google" method="oauth2" %}">Google OAuth2</a>
   {% endif %}
+  <p> submit ajax post to favoritecar</p>
+  <form action="/ajax/savecar" method="post">
+	{% csrf_token %}
+	<label for="listing_id'">Listing ID:</label><input type="text" id="listing_id"/>
+	<button class="btn btn-default" value="submit">post</button>
+  </form>
+			
 </div>
 {% endblock page %}

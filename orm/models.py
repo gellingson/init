@@ -318,3 +318,24 @@ class ZipcodeTemp(Base):
     state_code = Column(String(2), index=True)
     lat = Column(Numeric(10, 7))
     lon = Column(Numeric(10, 7))
+
+
+class SavedQuery(IDMixIn, Base):
+    querytype = Column(String(1), nullable=False)
+    user_id = Column(Integer,
+                     ForeignKey('auth_user.id'))
+    listing_id = Column(Integer,
+                        ForeignKey('listing.id'))
+    status = Column(String(1), nullable=False)
+    ref = Column(String(24))
+    descr = Column(String(80))
+    note = Column(String(2048))
+
+
+class SavedListing(IDMixIn, Base):
+    user_id = Column(Integer,
+                     ForeignKey('auth_user.id'))
+    listing_id = Column(Integer,
+                        ForeignKey('listing.id'))
+    status = Column(String(1), nullable=False)
+    note = Column(String(2048))

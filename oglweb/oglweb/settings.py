@@ -50,6 +50,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'djrill',
     'crispy_forms',  # crispy is shit, but...
+    'django_ajax',
     # this one is us!
     'listings',
     # The Django sites framework is required for allauth

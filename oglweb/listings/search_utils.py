@@ -4,13 +4,14 @@ import time
 
 # third party modules used
 from bunch import Bunch
+
 from django.utils.datastructures import MultiValueDictKeyError
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 
 # OGL modules used
 from listings.display_utils import prettify_listing
-from listings.models import Zipcode, SavedQuery
+from listings.models import Zipcode, SavedQuery, Listing, SavedListing
 from listings.constants import *
 
 #
@@ -193,7 +194,16 @@ def save_query(id, desc, request):
     return None
 
 
-def get_listings(querybody, number=50, offset=0):
+def favdict_for_user(user):
+    fav_dict = {}
+    if user:
+        favs = SavedListing.objects.filter(user=user)
+        for fav in favs:
+            fav_dict[fav.listing_id] = fav
+    return fav_dict
+
+
+def get_listings(querybody, number=50, offset=0, user=None, mark_since=None):
     es = Elasticsearch()
     search_resp = es.search(index='carbyr-index',
                             doc_type='listing-type',
@@ -201,8 +211,14 @@ def get_listings(querybody, number=50, offset=0):
                             from_=offset,
                             body=querybody)
     listings = []
+
+    # if we know the user, see if they have any favorites
+    fav_dict = favdict_for_user(user)
+
     for item in search_resp['hits']['hits']:
-        es_listing = prettify_listing(Bunch(item['_source']))
+        es_listing = prettify_listing(Bunch(item['_source']),
+                                      favorites=fav_dict,
+                                      mark_since=mark_since)
         listings.append(es_listing)
     return search_resp['hits']['total'], listings
 
@@ -220,3 +236,63 @@ def unsave_query(id, request):
                 break
             i += 1
     return
+
+
+
+# unsave_car()
+#
+# removes a car from the user's list of saved listings
+# (both in the db and the cached data in the session)
+#
+# returns:
+# True if car was removed
+# False if there was an issue of any type
+#
+def unsave_car(session, listing_id):
+    # GEE TODO: this just works on the session; redo for db
+    sl_cache = [value for value in session.get('savedcars', []) if value != listing_id]
+    session['savedcars'] = sl_cache
+    return True
+
+
+# save_car()
+#
+# saves a car to the user's list of saved listings
+# (both in the db and the cached data in the session)
+#
+# True if saved
+# False if there was an issue
+# None if the car was already saved
+#
+def save_car(session, listing_id=0, listing=None):
+    # GEE TODO: this just works on the session; redo for db
+    if not listing:
+        if not listing_id:
+            return False  # heh, need a target
+        try:
+            listing = Listing.objects.get(pk=listing_id)
+        except (DoesNotExist, MultipleObjectsReturned) as e:
+            print("attempted to find listing id " +
+                  "{} failed with error {}".format(listing_id, e))
+            return False
+
+    # now we definitely have a listing, so get the cached list & insert
+    sl_cache = session.get('savedcars', [])
+    if listing.id in sl_cache:
+        print('one')
+        return None
+    sl_cache.append(listing.id)
+    session['savedcars'] = sl_cache
+    print('two')
+    return True
+
+
+def save_car_to_db(user, listing_id):
+    l = Listing()
+    l.id = listing_id
+    fav = SavedListing()
+    fav.listing = l
+    fav.user = user
+    fav.status = 'A'
+    fav.save()
+    return True

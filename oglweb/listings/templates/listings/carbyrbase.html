@@ -66,6 +66,7 @@
 	  </div>
 	</div>
 	{% endblock navbar %}
+	{% block messages %}
 	{% if messages %}
 	<div class="container">
 	  <ul class="messages">
@@ -75,6 +76,7 @@
 	  </ul>
 	</div>
 	{% endif %}
+	{% endblock messages %}
 {% block page %}
 	<div class="container">
 	  <p> This page unintentionally left blank. </p>
@@ -92,6 +94,7 @@
 {% block scripts %}
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 	<script src="{% static 'listings/js/bootstrap.min.js' %}"></script>
+	<script src="{% static 'django_ajax/js/jquery.ajax.min.js' %}"></script>
 	<script src="{% static 'listings/js/listings.js' %}"></script>
 {% endblock scripts %}
 {% block extrascripts %}

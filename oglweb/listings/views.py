@@ -12,13 +12,15 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.template import RequestContext
+from django_ajax.decorators import ajax
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 from django.core.mail import send_mail
 from listings.constants import *
 from listings.forms import UserForm
 from listings.models import Zipcode, Listing
-from listings.search_utils import handle_search_args, build_query, save_query, unsave_query, get_listings
+from listings.display_utils import prettify_listing
+from listings.search_utils import handle_search_args, build_query, save_query, unsave_query, get_listings, save_car, save_car_to_db, unsave_car, favdict_for_user
 
 # Create your views here.
 
@@ -58,8 +60,25 @@ def profile(request):
     return render(request, 'account/profile.html', context)
 
 
+@login_required
 def dashboard(request):
+
+    # get the favorites as a dict
+    fav_dict = favdict_for_user(request.user)
+    # and build a list of the listing records
+    fav_list = list(fav_dict.items())
+    listings = []
+    #for fav in fav_list:
+    #    listings.append(prettify_listing(Bunch(fav.listing), favorites=fav_dict))
+    listings = [ prettify_listing(Bunch(fav.listing.__dict__), favorites=fav_dict) for fav in list(fav_dict.values())]
+
+    # code that gets the favorites from the session (not the db)
+    #for listing_id in savedcars:
+    #    listings.append(prettify_listing(Bunch(Listing.objects.get(pk=listing_id)),
+    #                                     all_favorites=True))    
+
     context = {}
+    context['listings'] = listings
     return render(request, 'listings/dashboard.html', context)
 
 
@@ -91,7 +110,8 @@ def cars_api(request, search_id=None, number=50, offset=0):
         recents = request.session.get('recents', [])
         querybody = recents[0]['query']
     # GEE TODO: handle cases other than addl pages of the most recent search!
-    total_hits, listings = get_listings(querybody, number=number, offset=offset)
+    total_hits, listings = get_listings(querybody, number=number, offset=offset,
+                                        user=request.user)
     context = {}
     # this api may be pulling any page of the results; are there even more?
     if total_hits > (offset + number):
@@ -178,7 +198,7 @@ def cars(request, filter=None, base_url=None, search_id=None, template=LISTINGSB
 
     request.session['recents'] = recents
 
-    total_hits, listings = get_listings(querybody)
+    total_hits, listings = get_listings(querybody, user=request.user)
     context = {}
     # this func is always doing the first page; will there be more?
     if total_hits > len(listings):
@@ -258,3 +278,23 @@ def oldtest(request):
 # GEE TODO: kill this and incorporate admin into the primary template?
 def listingadmin(request, error_message=None):
     return index(request, template=LISTINGSADMIN)
+
+
+@ajax
+@login_required
+def save_car_api(request):
+    if request.method == 'POST':
+        listing_id = request.POST['listing_id']
+        result = save_car_to_db(request.user, listing_id)
+        return {'result': True}
+    return {'result': None}
+
+
+@ajax
+@login_required
+def unsave_car_api(request):
+    if request.method == 'POST':
+        listing_id = request.POST['listing_id']
+        result = unsave_car(request.session, listing_id)
+        return {'result': result}
+    return {'result': None}

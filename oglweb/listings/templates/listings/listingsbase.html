@@ -105,8 +105,8 @@
 	<div class="listings">
 	  {% if listings %}
 	  {% for item in listings %}
-	  <div class="row listing-row">
-		<a href='{{ item.listing_href }}'>
+	  <div class="row listing-row" id="{{ item.id }}">
+		<a href="{{ item.listing_href }}">
 		  <div class="col-md-4 listing">
 			{% if item.pic_href %}
 			<img class="img-crop img-rounded" foo="img-crop  img-responsive-heightlimit img-rounded" src='{{ item.pic_href }}'>
@@ -114,7 +114,7 @@
 			<p> No photo available. </p>
 			{% endif %}
 		  </div>
-		  <div class="col-md-4 listing">
+		  <div class="col-md-3 listing">
 			<p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
 			<p><strong>{{ item.price }}</strong></p>
 			{% if item.location_text %}
@@ -123,9 +123,21 @@
 			<p>({{ item.source }})</p>
 			{% endif %}
 		  </div>
-		  <div class="col-md-6 listing">{{ item.listing_text }}
+		  {% if user.is_authenticated %}
+		  <div class="col-md-4 listing">
+			{{ item.listing_text }}
 		  </div>
 		</a>
+		  <div class="col-md-1 listing">
+			<button class="btn-link addfav" listingid="{{ item.id }}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
+			<button class="btn-link flag" listingid="{{ item.id }}"><span class="glyphicon glyphicon-thumbs-down wideglyph"></span></button>
+		  </div>
+		  {% else %}
+		  <div class="col-md-4 listing">
+			{{ item.listing_text }}
+		  </div>
+		</a>
+		  {% endif %}
 	  </div>
 	  {% endfor %}
 	  {% else %}
