@@ -13,6 +13,7 @@ user_id   int,
 ref       varchar(24),
 descr     varchar(80),
 query     varchar(2048),
+mark_date datetime,
 primary key (id),
 unique index (user_id, ref),
 foreign key (user_id) references auth_user(id));

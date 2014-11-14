@@ -3,7 +3,12 @@ body {
   padding-bottom: 20px;
   margin-bottom: 60px;
 }
-
+.popicon {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	z-index: 1;
+}
 .fixed-150 {
 	width: 150px;
 }
@@ -345,4 +350,21 @@ h1 {
 	.navbar-collapse.in {
 		overflow-y: visible;
 	}
+}
+.imgcropper {
+	/* line-height:250px; // this fixes vertical-align of the img... if we know the elt height */
+	overflow: hidden;
+	border-radius: 6px; /* add corners even when image is cropped */
+	position:relative;
+}
+@media (min-width: 992px) {
+	.imgcropper {
+		max-height: 250px;
+	}
+}
+.imgcropper img {
+	vertical-align: middle;
+	max-width: 100%;
+	/* width: 100%; use this instead of max-width to stretch smaller imgs */
+	/* max-height: 250px; use this to limit height without cropping (ie tall image will become less wide) */
 }

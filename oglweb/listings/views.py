@@ -16,11 +16,15 @@ from django_ajax.decorators import ajax
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 from django.core.mail import send_mail
+
+# OGL modules used
 from listings.constants import *
 from listings.forms import UserForm
 from listings.models import Zipcode, Listing
 from listings.display_utils import prettify_listing
-from listings.search_utils import handle_search_args, build_query, save_query, unsave_query, get_listings, save_car, save_car_to_db, unsave_car, favdict_for_user
+from listings.search_utils import handle_search_args, build_new_query, get_listings
+from listings.query_utils import *
+from listings.favlist_utils import *
 
 # Create your views here.
 
@@ -65,23 +69,42 @@ def dashboard(request):
 
     # get the favorites as a dict
     fav_dict = favdict_for_user(request.user)
+
     # and build a list of the listing records
     fav_list = list(fav_dict.items())
     listings = []
-    #for fav in fav_list:
-    #    listings.append(prettify_listing(Bunch(fav.listing), favorites=fav_dict))
-    listings = [ prettify_listing(Bunch(fav.listing.__dict__), favorites=fav_dict) for fav in list(fav_dict.values())]
 
-    # code that gets the favorites from the session (not the db)
-    #for listing_id in savedcars:
-    #    listings.append(prettify_listing(Bunch(Listing.objects.get(pk=listing_id)),
-    #                                     all_favorites=True))    
+    listings = [ prettify_listing(Bunch(fav.listing.__dict__),
+                                  favorites=fav_dict) for fav in list(fav_dict.values())]
 
     context = {}
     context['listings'] = listings
     return render(request, 'listings/dashboard.html', context)
 
+# flag()
+#
+# flags a car as inappropriate; one flag from an admin kills a listing,
+# but we should be a bit more cautious about other users. But it should
+# block the ad for the particular user, as much as possible.
+#
+@login_required
+@ajax
+def flag(request):
+    if request.method == 'POST':
+        listing_id = request.POST['listing_id']
+        user = request.user
+        if user.is_admin():
+            result = flag_listing(user, listing_id)
+            return {'result': True}
+        else:
+            pass  # GEE TODO
+    return {'result': None}
 
+
+# adminflag()
+#
+# GEE TODO: kill this because the ajax one (above) is better
+#
 def adminflag(request, id=None):
     if id:
         es = Elasticsearch()
@@ -103,12 +126,12 @@ def adminflag(request, id=None):
 # NOTES:
 # for now this is used as an ajax endpoint for additional pages of listings
 #
-def cars_api(request, search_id=None, number=50, offset=0):
+def cars_api(request, query_ref=None, number=50, offset=0):
     number = int(number)
     offset = int(offset)
-    if not search_id:
-        recents = request.session.get('recents', [])
-        querybody = recents[0]['query']
+    if not query_ref:
+        recents = querylist_from_session(request.session, QUERYTYPE_RECENT)
+        querybody = recents[0].query
     # GEE TODO: handle cases other than addl pages of the most recent search!
     total_hits, listings = get_listings(querybody, number=number, offset=offset,
                                         user=request.user)
@@ -124,11 +147,9 @@ def cars_api(request, search_id=None, number=50, offset=0):
 #
 # this is the primary view for car search/results viewing
 #
-def cars(request, filter=None, base_url=None, search_id=None, template=LISTINGSBASE, error_message=None):
-    search_type = None
+def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSBASE, error_message=None):
     request.session['ogl_alpha_user'] = True  # been here, seen this = IN
-
-    args = handle_search_args(request, filter, base_url, search_id)
+    args = handle_search_args(request, filter, base_url, query_ref)
     if args.errors:
         # handle catastrophic errors
         if 'invalid_filter' in args.errors:
@@ -140,73 +161,40 @@ def cars(request, filter=None, base_url=None, search_id=None, template=LISTINGSB
             else:
                 error_message = 'ZIP code not understood; unable to sort by distance.'
 
-    # handle save-query modal
-    if args.save_id and args.save_desc:
-        args.search_id = save_query(args.save_id, args.save_desc, request)
-    elif args.unsave_id:
-        unsave_query(args.unsave_id, request)
+    print('DEBUG: ' + args.action + args.query_ref)
+    # handle actions that may have been requested (e.g. save-query modal)
+    if args.action == 'save_query':
+        args.query_ref = save_query(args.query_ref, args.query_descr, request.session, request.user)
+    elif args.action == 'unsave_query':
+        unsave_query(args.query_ref, request.session, request.user)
+    elif args.action == 'mark_read':
+        mark_as_read(request.session, args.query_ref, args.query_date)
 
-    recents = request.session.get('recents', [])
-    favorites = request.session.get('favorites', [])
-    # GEE TODO: put these in a db...
+    # GEE TODO: put these in a db... and the session!
     # ... and be intelligent about which ones to pull for display
-    suggested_lib = SUGGESTED_SEARCH_LIST  # all suggested searches
-    suggestions = SUGGESTED_SEARCH_LIST  # the ones selected to show now
-    stored_search = None
-    if args.search_id:
-        # look in recents
-        if recents and args.search_id.startswith('R'):
-            for search in recents:
-                if search['id'] == args.search_id:
-                    stored_search = search
-                    search_type = 'R'
-                    break
-        if favorites and args.search_id.startswith('F'):
-            for search in favorites:
-                if search['id'] == args.search_id:
-                    stored_search = search
-                    search_type = 'F'
-                    break
-        if suggested_lib and args.search_id.startswith('_'):
-            for search in suggested_lib:
-                if search == args.search_id:
-                    stored_search = suggested_lib[search]
-                    search_type = 'S'
-                    break
 
-    search_desc = querybody = None
-    if stored_search:  # then do it
-        search_id = stored_search['id']
-        search_desc = stored_search['desc']
-        querybody = stored_search['query']
-        print('<{}>'.format(querybody))
-    else:  # new search via the search form params
-        querybody, search_desc, search_type = build_query(args)
-
-    #print(querybody)
-    if search_type == 'D':
-        pass
-    elif recents and recents[0]['desc'] == search_desc: # GEE TODO: match any recent in the list
-        # same query as last one, or nearly; update any minor change
-        recents[0]['query'] = querybody
+    query = None
+    if args.query_ref:
+        query = get_query_by_ref(request.session, args.query_ref)
     else:
-        srchid = 'R' + str(datetime.date.today()) + '_' + str(int(round(time.time() * 1000)))
-        item = {'id': srchid, 'desc': search_desc, 'query': querybody}
-        recents.insert(0, item)
-    while len(recents) > 10:
-        recents.pop()
+        query = build_new_query(args)
 
-    request.session['recents'] = recents
+    print("QUERY IS: " + str(query))
+    # update recent searches list
+    update_recents(request.session, query)
 
-    total_hits, listings = get_listings(querybody, user=request.user)
+    total_hits, listings = get_listings(query.query, user=request.user, mark_since=query.mark_date)
     context = {}
-    # this func is always doing the first page; will there be more?
+    context['timestamp'] = time.time()  # may be used to set mark_date
+    # this func returns the first page; will there be more?
     if total_hits > len(listings):
         context['next_page_offset'] = len(listings)
+    # put saved queries into the context
     context['recents'] = []
     context['favorites'] = []
     context['suggestions'] = []
     i = 0
+    recents = querylist_from_session(request.session, QUERYTYPE_RECENT)
     if recents:
         for search in recents:
             i += 1
@@ -216,24 +204,20 @@ def cars(request, filter=None, base_url=None, search_id=None, template=LISTINGSB
                 if i == 3:
                     context['more_recents'] = []
                 context['more_recents'].append(search)
+    favorites = querylist_from_session(request.session, QUERYTYPE_FAVORITE)
     if favorites:
-        for search in favorites:
-            context['favorites'].append(search)
+        context['favorites'] = favorites
+    suggestions = SUGGESTED_SEARCH_LIST  # the ones selected to show now
     if suggestions:
-        for search in suggestions:
-            context['suggestions'].append(suggestions[search])
+        context['suggestions'] = list(suggestions.values())
 
+    # GEE TODO: rename querytype field to type for consistency
     context['listings'] = listings
-    context['search_desc'] = search_desc
-    # if showing a stored or suggested search use that id, not from recents
-    # (the search will also be entered in the recents array with an Rid)
-    if stored_search:
-        context['search_id'] = stored_search['id']
-    elif recents:
-        context['search_id'] = recents[0]['id']
+    context['query_descr'] = query.descr
+    context['query_ref'] = query.ref
+    context['query_type'] = query.type
 
-    context['search_type'] = search_type
-
+    # GEE TODO: these next two seem like garbage I should clean up
     if error_message:
         context['error_message'] = error_message
     if base_url:
@@ -247,8 +231,8 @@ def cars(request, filter=None, base_url=None, search_id=None, template=LISTINGSB
 # this wraps cars() and adds/modifies the interface to be
 # whatever is being worked on & isn't ready to share yet
 #
-def cars_test(request, base_url=None, search_id=None):
-    return cars(request, template=LISTINGSTEST, base_url=base_url, search_id=search_id)
+def cars_test(request, base_url=None, query_ref=None):
+    return cars(request, template=LISTINGSTEST, base_url=base_url, query_ref=query_ref)
 
 
 # blank()

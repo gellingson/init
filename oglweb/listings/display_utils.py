@@ -1,4 +1,6 @@
 
+import datetime
+import pytz
 from urllib.parse import urlparse
 
 from money import Money
@@ -17,6 +19,8 @@ from listings.models import Listing
 #
 # if a mark_since timestamp is provided then listings with listing_date or
 # last_updated newer than the given timestamp will be annotated as such
+#
+# mark_since (if present) MUST be a TZ-aware datetime object
 #
 def prettify_listing(listing, favorites={}, mark_since=None):
 

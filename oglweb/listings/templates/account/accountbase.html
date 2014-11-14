@@ -17,7 +17,6 @@
 	  <li {% if request.path == url_email %}class="active"{% endif %}><a href="{{ url_email }}" role="tab">Emails</a></li>
 	  <li {% if request.path == url_password or request.path == url_set_password %}class="active"{% endif %}><a href="{{ url_password }}" role="tab">Password</a></li>
 	  <li {% if request.path == url_connections %}class="active"{% endif %}><a href="{{ url_connections }}" role="tab">Social</a></li>
-	  <li {% if request.path == url_settings %}class="active"{% endif %}><a href="#notyetimplemented" role="tab">Settings</a></li>
 	</ul>
 	{% if messages %}
 	<ul class="messages">

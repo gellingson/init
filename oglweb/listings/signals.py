@@ -2,53 +2,51 @@
 from allauth.account.signals import user_signed_up, user_logged_in
 from django.contrib.sessions.models import Session
 from django.dispatch import receiver
-from listings.models import SavedQuery
 
+# OGL modules used
+from listings.models import SavedQuery
+from listings.query_utils import *
+
+
+# GEE TODO: this should fire even on first login after signup, right?
+# but I'm not sure where in the sequence the session gets nuked & reset,
+# so I'm catching both signals for safety right now.
+@receiver(user_signed_up)
 @receiver(user_logged_in)
 def get_and_set_queries(request, user, **kwargs):
-
     # if there are any saved queries in the anonymous session, save them
     # note that login happens right after signin so if this is the user's
     # first login we will have just done this... no problem, except to be
     # careful about potential duplication
-    
-    favorites = request.session.get('favorites', [])
-    if favorites:
-        db_qs = SavedQuery.objects.filter(user=request.user, querytype='F')
-        for search in favorites:
+
+    session_favs = querylist_from_session(request.session, QUERYTYPE_FAVORITE)
+    if session_favs:
+        # note: if the user is newly-signed-up this should be empty
+        db_favs = SavedQuery.objects.filter(user=request.user, querytype='F')
+        for search in session_favs:
             # ref is pretty unique; ignore the case where a user somehow
             # created a new (different) saved query with the same ref as
             # one of their existing saved queries while not logged in...
             exists = False
-            for query in db_qs:
-                if query.ref == search['id']:
+            for dbquery in db_favs:
+                if dbquery.ref == search.ref:
                     exists = True  # so we don't need to add it
             if not exists:
                 # newly created in the anonymous session, add it
-                sq = SavedQuery()
+                sq = search.to_saved_query(user)
+                sq.id = None
                 sq.user = request.user
-                sq.querytype = 'F'
-                sq.ref = search['id']
-                sq.descr = search['desc']
-                sq.query = search['query']
                 sq.save()
 
-    # now populate the session with all the user's saved queries
-    db_favorites = SavedQuery.objects.filter(user=user, querytype='F')
-    favorites = []
-    for fav in db_favorites:
-        favdict = {
-            'id': fav.ref,
-            'desc': fav.descr,
-            'query': fav.query
-        }
-        favorites.append(favdict)
-    request.session['favorites'] = favorites
+    # re-query the combined list fresh from the db & repop the session
+    db_favs = SavedQuery.objects.filter(user=request.user, querytype='F')
+    favs = [Query().from_saved_query(sq) for sq in db_favs]
+    querylist_to_session(request.session, QUERYTYPE_FAVORITE, favs)
     return
 
 
 @receiver(user_signed_up)
-def get_names_and_queries(request, user, sociallogin=None, **kwargs):
+def get_names(request, user, sociallogin=None, **kwargs):
     if sociallogin:
         # Extract first / last names from social nets and store on User record
         if sociallogin.account.provider == 'twitter':
@@ -68,17 +66,4 @@ def get_names_and_queries(request, user, sociallogin=None, **kwargs):
             picture_url = sociallogin.account.extra_data['picture']
  
     user.save()
-
-    # promote any saved queries from the anonymous session to user storage
-    favorites = request.session.get('favorites', [])
-    if favorites:
-        for search in favorites:
-            sq = SavedQuery()
-            sq.user = user
-            sq.querytype = 'F'
-            sq.ref = search['id']
-            sq.descr = search['desc']
-            sq.query = search['query']
-            sq.save()
-    
     return

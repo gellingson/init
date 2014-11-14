@@ -29,7 +29,7 @@
 			<span class="icon-bar"></span>
 		  </button>
 		  <div class="navbar-brand">
-		{% if ogl_alpha_user %}
+		{% if user.is_authenticated or request.session.ogl_alpha_user %}
 			<a href="/cars/">
 		{% else %}
 			<a href="/">

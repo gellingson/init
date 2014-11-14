@@ -4,6 +4,15 @@
 {% block page %}
 <div class="container">
   <h1>{% user_display user %}'s Dashboard</h1>
+  <h5>Favorite Searches</h5>
+  {% if request.session.FQL %}
+  {% for search in request.session.FQL %}
+  <a class="btn btn-default" href="/cars/?s={{ search.ref }}"><span class="glyphicon glyphicon-heart"></span>{{ search.descr }}</a>
+  {% endfor %}
+  {% else %}
+  <p>You do not have any favorite searches defined. You can save any search as a favorite, which makes it very easy to watch for cars you want. Favorite searches can show you only new (or updated) listings since the last time you checked, or can even push cars to you as soon as they are posted via your choice of email or a custom RSS feed.<span>[some features still being implemented]</span></p>
+  {% endif %}
+  <h5>Favorite Cars</h5>
   <p>Here are the cars you have saved:</p>
 	<div class="listings">
 	  {% if listings %}
@@ -11,11 +20,13 @@
 	  <div class="row listing-row">
 		<a href='{{ item.listing_href }}'>
 		  <div class="col-md-4 listing">
-			{% if item.pic_href %}
-			<img class="img-crop img-rounded" foo="img-crop  img-responsive-heightlimit img-rounded" src='{{ item.pic_href }}'>
-			{% else %}
-			<p> No photo available. </p>
-			{% endif %}
+			<div class="imgcropper">
+			  {% if item.pic_href %}
+			  <img class="img-rounded" src='{{ item.pic_href }}'>
+			  {% else %}
+			  <p> No photo available. </p>
+			  {% endif %}
+			</div>
 		  </div>
 		  <div class="col-md-4 listing">
 			<p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>

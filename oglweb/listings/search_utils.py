@@ -1,5 +1,6 @@
 
 import datetime
+import pytz
 import time
 
 # third party modules used
@@ -10,9 +11,11 @@ from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 
 # OGL modules used
-from listings.display_utils import prettify_listing
-from listings.models import Zipcode, SavedQuery, Listing, SavedListing
 from listings.constants import *
+from listings.display_utils import prettify_listing
+from listings.models import Zipcode, Listing, SavedQuery
+from listings.favlist_utils import favdict_for_user
+from listings.query_utils import *
 
 #
 # builds an es query based on request vars
@@ -20,16 +23,19 @@ from listings.constants import *
 # factored out into a utility method to facilitate multiple search views/urls
 #
 
-def handle_search_args(request, filter=None, base_url = None, search_id=None):
+def handle_search_args(request, filter=None, base_url = None, query_ref=None):
 
     args = Bunch()
     args.errors = {}
     args.sort = "relevance"
 
     # POST params
-    args.save_id = request.POST.get('save_id', '')
-    args.save_desc = request.POST.get('save_desc', '')
-    args.unsave_id = request.POST.get('unsave_id', '')
+    args.action = request.POST.get('action', '')
+    args.query_ref = request.POST.get('query_ref', '')
+    args.query_descr = request.POST.get('query_descr', '')
+    args.query_date = request.POST.get('query_date', '')
+    if args.query_date:
+        args.query_date = datetime.datetime.fromtimestamp(float(args.query_date), pytz.UTC)
 
     # GET params
     if base_url:
@@ -37,12 +43,14 @@ def handle_search_args(request, filter=None, base_url = None, search_id=None):
     else:
         args.base_url = request.GET.get('base_url', 'cars/')
 
-    if search_id:
-        args.search_id = search_id
-    else:
-        args.search_id = request.GET.get('s','')
+    # two other places (besides POST vars above) that might set query_ref
+    if not args.query_ref:
+        if query_ref:
+            args.query_ref = query_ref
+        else:
+            args.query_ref = request.GET.get('s','')
 
-    args.search_string = request.GET.get('search_string', '')
+    args.query_string = request.GET.get('query_string', '')
 
     try:
         junk = request.GET['limit']  # anything in there we'll consider a YES
@@ -74,17 +82,30 @@ def handle_search_args(request, filter=None, base_url = None, search_id=None):
     return args
 
 
-def build_query(args):
+# build_new_query()
+#
+# assembles a new query per the given args
+#
+# NOTES:
+# returns a Query object, but not all fields are set:
+# just type, descr, and query fields will be set.
+# ref, mark_date, id (pk), and user mapping are left to the caller.
+#
+def build_new_query(args):
+    q = Query()
+    q.type = 'U'  # presume we have some args from user (checked below)
+
+    # building the query string:
+
     # querybody components
     filter_term = args.get('filter_term', None)
     geolimit_term = ''
     search_term = ''
-    search_type = 'U'  # presume we have some args from user (checked below)
 
-    if args.search_string:
+    if args.query_string:
         search_term = {
             "query_string": {
-                "query": args.search_string,
+                "query": args.query_string,
                 "default_operator": "AND"
             }
         }
@@ -92,8 +113,8 @@ def build_query(args):
         if not args.limit:
             # no criteria at all; don't retrieve everything; give
             # cars from the last few days
-            args.search_string = "recently-listed cars"
-            search_type = 'D'  # default search
+            args.query_string = "recently-listed cars"
+            q.type = 'D'  # default search
             search_term = {
                 "constant_score": {
                     "filter": {
@@ -138,71 +159,41 @@ def build_query(args):
     ]
 
     # assemble the pieces
-    querybody = {"query": {"filtered": {}}}
+    q.query = {"query": {"filtered": {}}}
     if search_term:
-        querybody['query']['filtered']['query'] = search_term
+        q.query['query']['filtered']['query'] = search_term
     if geolimit_term or filter_term:
-        querybody['query']['filtered']['filter'] = {}
-        querybody['query']['filtered']['filter']['and'] = []
+        q.query['query']['filtered']['filter'] = {}
+        q.query['query']['filtered']['filter']['and'] = []
         if geolimit_term:
-            querybody['query']['filtered']['filter']['and'].append(geolimit_term)
+            q.query['query']['filtered']['filter']['and'].append(geolimit_term)
         if filter_term:
-            querybody['query']['filtered']['filter']['and'].append(filter_term)
+            q.query['query']['filtered']['filter']['and'].append(filter_term)
     if sort_term:
-        querybody['sort'] = sort_term
+        q.query['sort'] = sort_term
 
     # so... how shall we describe this query to the user?
+    q.descr = None
     if geolimit_term:
-        if args.search_string:
-            search_desc = args.search_string + ", near " + args.zip
+        if args.query_string:
+            q.descr = args.query_string + ", near " + args.zip
         else:
-            search_desc = "cars near " + args.zip
+            q.descr = "cars near " + args.zip
     else:
-        search_desc = args.search_string
+        q.descr = args.query_string
 
     # return the user-friendly description and the actual es query body
-    return querybody, search_desc, search_type
+    return q
 
 
-def save_query(id, desc, request):
-    recents = request.session.get('recents', [])
-    favorites = request.session.get('favorites', [])
-    from_search = None
-    # id will normally be in recents[0] but let's be flexible just in case
-    if recents and id.startswith('R'):
-        for search in recents:
-            if search['id'] == id:
-                from_search = search.copy()
-                break
-    if from_search:
-        from_search['id'] = 'F' + from_search['id'][1:]
-        from_search['desc'] = desc
-        # already has query field set; keep it
-        favorites.append(from_search)
 
-        if request.user.is_authenticated():
-            db_fav = SavedQuery()
-            db_fav.user = request.user
-            db_fav.ref = from_search['id']
-            db_fav.descr = from_search['desc']
-            db_fav.query = from_search['query']
-            db_fav.save()
-
-        request.session['favorites'] = favorites
-        return from_search['id']  # show it now...
-    # else fail silently
-    return None
-
-
-def favdict_for_user(user):
-    fav_dict = {}
-    if user:
-        favs = SavedListing.objects.filter(user=user)
-        for fav in favs:
-            fav_dict[fav.listing_id] = fav
-    return fav_dict
-
-
+# get_listings()
+#
+# gets listings from elasticsearch & prettifies them
+#
+# returns a tuple of the number of records & a list listings;
+# the listings are Bunches with extra info from the prettify method
+#
 def get_listings(querybody, number=50, offset=0, user=None, mark_since=None):
     es = Elasticsearch()
     search_resp = es.search(index='carbyr-index',
@@ -213,7 +204,9 @@ def get_listings(querybody, number=50, offset=0, user=None, mark_since=None):
     listings = []
 
     # if we know the user, see if they have any favorites
-    fav_dict = favdict_for_user(user)
+    fav_dict = {}
+    if user.is_authenticated():
+        fav_dict = favdict_for_user(user)
 
     for item in search_resp['hits']['hits']:
         es_listing = prettify_listing(Bunch(item['_source']),
@@ -223,76 +216,12 @@ def get_listings(querybody, number=50, offset=0, user=None, mark_since=None):
     return search_resp['hits']['total'], listings
 
 
-def unsave_query(id, request):
-    favorites = request.session.get('favorites', [])
-    if favorites:
-        i = 0
-        while i < len(favorites):
-            if favorites[i]['id'] == id:
-                f = favorites.pop(i)
-                if request.user.is_authenticated():
-                    SavedQuery.objects.filter(user=request.user, ref=f['id']).delete()
-                request.session['favorites'] = favorites
-                break
-            i += 1
-    return
-
-
-
-# unsave_car()
-#
-# removes a car from the user's list of saved listings
-# (both in the db and the cached data in the session)
-#
-# returns:
-# True if car was removed
-# False if there was an issue of any type
-#
-def unsave_car(session, listing_id):
-    # GEE TODO: this just works on the session; redo for db
-    sl_cache = [value for value in session.get('savedcars', []) if value != listing_id]
-    session['savedcars'] = sl_cache
-    return True
-
-
-# save_car()
-#
-# saves a car to the user's list of saved listings
-# (both in the db and the cached data in the session)
-#
-# True if saved
-# False if there was an issue
-# None if the car was already saved
-#
-def save_car(session, listing_id=0, listing=None):
-    # GEE TODO: this just works on the session; redo for db
-    if not listing:
-        if not listing_id:
-            return False  # heh, need a target
-        try:
-            listing = Listing.objects.get(pk=listing_id)
-        except (DoesNotExist, MultipleObjectsReturned) as e:
-            print("attempted to find listing id " +
-                  "{} failed with error {}".format(listing_id, e))
-            return False
-
-    # now we definitely have a listing, so get the cached list & insert
-    sl_cache = session.get('savedcars', [])
-    if listing.id in sl_cache:
-        print('one')
-        return None
-    sl_cache.append(listing.id)
-    session['savedcars'] = sl_cache
-    print('two')
-    return True
-
-
-def save_car_to_db(user, listing_id):
-    l = Listing()
-    l.id = listing_id
-    fav = SavedListing()
-    fav.listing = l
-    fav.user = user
-    fav.status = 'A'
-    fav.save()
+# GEE TODO error handling, logging the action, etc etc
+def flag_listing(user, listing_id):
+    es = Elasticsearch()
+    es.delete(index="carbyr-index",
+              doc_type="listing-type",
+              id=listing_id)
+    listing = Listing.objects.get(pk=listing_id)
+    listing.status = 'X'
     return True

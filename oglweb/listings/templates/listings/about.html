@@ -7,8 +7,8 @@
 {% block page %}
     <div class="jumbotron jumbo-sim">
       <div class="container">
-		{% if ogl_alpha_user %}
-        <h1>Carbyr</h1>
+		{% if user.is_authenticated or ogl_alpha_user %}
+        <h1>carbyr</h1>
         <p>(pre-release early access)</p>
 		<p>More cars. Better search.</p>
         <p>Find it, drive it, love it!</p>

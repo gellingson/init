@@ -124,7 +124,7 @@ class Dealership(IDMixIn, Base):
 class DealershipActivityLog(IDMixIn, Base):
 
     dealership_id = Column(Integer)
-    activity_timpestamp = Column(DateTime)
+    activity_timestamp = Column(DateTime)
     action_code = Column(String(32))
     message = Column(String(1024))
 
@@ -330,6 +330,7 @@ class SavedQuery(IDMixIn, Base):
     ref = Column(String(24))
     descr = Column(String(80))
     note = Column(String(2048))
+    mark_date = Column(DateTime)
 
 
 class SavedListing(IDMixIn, Base):
