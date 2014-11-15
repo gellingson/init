@@ -9,36 +9,45 @@ $('.listings').waypoint('infinite', {
 	  onAfterPageLoad: setup_listing_buttons
 	});
 
-function unfav(listing_id){
+function unfav(listing_id, title){
+	$("#unfavcartitle").text(title)
 	ajaxPost("/ajax/unsavecar", {'listing_id': listing_id}, function(content){
-		window.alert("This car has been removed from your favorite cars list. You can track your favorite cars in your dashboard.");
+		$("#unFavCarModal").modal();
 	});
-	return false;
 }
 
-function fav(listing_id){
+function fav(listing_id, title){
+	$("#favcartitle").text(title)
 	ajaxPost("/ajax/savecar", {'listing_id': listing_id}, function(content){
-		window.alert("This car has been added to your favorite cars list. You can track your favorite cars in your dashboard.");
+		$("#favCarModal").modal();
 	});
-	return false;
 }
 
-function flag(listing_id){
-	ajaxPost("/ajax/adminflag", {'listing_id': listing_id}, function(content){
-		window.alert("flagging " + listing_id);
+function flag(listing_id, title, elt){
+	$("#flagcartitle").text(title);
+	$("#flaglisting_id").val(listing_id);
+	$("#flagform").submit(function(event) {
+		var form = $(this);
+		ajaxPost(form.attr('action'), form.serialize(), function(content){
+			elt.closest(".listing_row").hide();
+			window.alert("flagged! " + elt.attr('title'));
+			elt.closest(".listing-row").remove();
+		});
+		event.preventDefault();
+		$('#flagCarModal').modal('hide');
 	});
-	return false;
+	$("#flagCarModal").modal();
 }
 
 function setup_listing_buttons(){
 	$("button.unfav").click(function() {
-		unfav($(this).attr("listingid"));
+		unfav($(this).attr("listing_id"), $(this).attr("title"));
 	});
 	$("button.addfav").click(function() {
-		fav($(this).attr("listingid"));
+		fav($(this).attr("listing_id"), $(this).attr("title"));
 	});
 	$("button.flag").click(function() {
-		flag($(this).attr("listingid"));
+		flag($(this).attr("listing_id"), $(this).attr("title"), $(this));
 	});
 }
 

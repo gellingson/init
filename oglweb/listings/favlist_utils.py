@@ -59,6 +59,19 @@ def save_car(session, listing_id=0, listing=None):
     return True
 
 
+def unsave_car_from_db(user, listing_id):
+    l = Listing()
+    l.id = listing_id
+    records = list(SavedListing.objects.filter(listing=l, user=user))
+    if len(records) == 1:
+        sl_to_delete = records[0]
+        sl_to_delete.delete()
+    else:
+        print('OOPS!retrieved {} records to delete'.format(len(records)))
+        return False
+    return True
+
+
 def save_car_to_db(user, listing_id):
     l = Listing()
     l.id = listing_id

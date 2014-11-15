@@ -83,6 +83,7 @@ int_color      varchar(20),
 vin            varchar(20),
 mileage        int,
 tags           varchar(2048),
+dynamic_quality int,
 listing_date   DATETIME,
 removal_date   DATETIME,
 last_update    DATETIME,
@@ -296,7 +297,6 @@ message varchar(1024),
 primary key (id)
 );
 
-
 # source_type has values [d=dealership, c=classified, ...?]
 drop table inventory_import_log_backup;
 rename table inventory_import_log to inventory_import_log_backup;
@@ -308,6 +308,22 @@ import_timestamp datetime,
 message varchar(1024),
 primary key (id)
 );
+
+drop table action_log_backup;
+rename table action_log to action_log_backup;
+create table action_log(
+id                int unsigned not null auto_increment,
+user_id           int,
+listing_id        int unsigned,
+action            char(1) not null,
+reason            varchar(255),
+adjustment        int,
+action_timestamp  datetime not null,
+primary key (id),
+index (user_id, listing_id),
+index (listing_id),
+foreign key (user_id) references auth_user(id),
+foreign key (listing_id) references listing(id));
 
 # non_canonical_make
 #

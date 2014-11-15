@@ -154,11 +154,11 @@
 		</a>
 		  <div class="col-md-1 listing">
 			{% if item.favorite %}
-			<button class="btn-link unfav" listingid="{{ item.id }}"><span class="glyphicon glyphicon-trash wideglyph"></span></button>
+			<button class="btn-link unfav" listing_id="{{ item.id }}"><span class="glyphicon glyphicon-trash wideglyph"></span></button>
 			{% else %}
-			<button class="btn-link addfav" listingid="{{ item.id }}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
+			<button class="btn-link addfav" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model}}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
 			{% endif %}
-			<button class="btn-link flag" listingid="{{ item.id }}"><span class="glyphicon glyphicon-thumbs-down wideglyph"></span></button>
+			<button class="btn-link flag" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model}}"><span class="glyphicon glyphicon-thumbs-down wideglyph"></span></button>
 		  </div>
 		  {% else %}
 		  <div class="col-md-4 listing">
@@ -201,7 +201,7 @@
 			{% csrf_token %}
 			<input type="hidden" name="action" value="save_query">
 			<input type="hidden" name="query_ref" value="{{ query_ref }}"/>
-			<div class="modal-center">
+			<div class="modal-input">
 			  <label class="modal-label" for="query_descr">Name the search:</label>
 			  <input type="text" value="{{ query_descr }}" name="query_descr" id="query_descr"/>
 			</div>
@@ -256,6 +256,99 @@
 			  <button type="submit" class="btn btn-primary">Confirm</button>
 			</div>
 		  </form>		
+		</div>
+	  </div>
+	</div>
+	<div class="modal fade" id="favCarModal" tabindex="-1" role="dialog" aria-labelledby="favCarModalLabel" aria-hidden="true">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+			<h4 class="modal-title" id="favCarModalLabel">Saved!</h4>
+		  </div>
+		  <div class="modal-body">
+			<p>You have added this <span id='favcartitle'>car</span> to your favorite cars list.</p>
+			<p>You can view your favorite cars at any time on your <a href="/dashboard">dashboard</a>.</p>
+		  </div>
+		  <div class="modal-footer">
+			<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+		  </div>
+		</div>
+	  </div>
+	</div>
+	<div class="modal fade" id="unFavCarModal" tabindex="-1" role="dialog" aria-labelledby="unFavCarModalLabel" aria-hidden="true">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+			<h4 class="modal-title" id="unFavCarModalLabel">Saved!</h4>
+		  </div>
+		  <div class="modal-body">
+			<p>You have removed this <span id='unfavcartitle'>car</span> from your favorite cars list.</p>
+			<p>You can view your favorite cars at any time on your <a href="/dashboard">dashboard</a>.</p>
+		  </div>
+		  <div class="modal-footer">
+			<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+		  </div>
+		</div>
+	  </div>
+	</div>
+	<div class="modal fade" id="flagCarModal" tabindex="-1" role="dialog" aria-labelledby="flagCarModalLabel" aria-hidden="true">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+			<h4 class="modal-title" id="flagCarModalLabel">Confirm</h4>
+		  </div>
+		  <div class="modal-body">
+			<p>You are flagging this <span id='flagcartitle'>car</span> listing.</p>
+			<p>It will no longer appear in any of your query results.</p>
+			<p>Carbyr also uses this information to filter postings and improve the quality of current and future results. Can you please let us know why you are flagging this listing?</p>
+			<form role="form" id="flagform" action="/ajax/flagcar" method="post">
+			  {% csrf_token %}
+			  <input type="hidden" name="listing_id" id="flaglisting_id" value=""/>
+			  <div class="radio modal-input">
+				<label>
+				  <input type="radio" name="reason" id="reason_uninteresting" value="U" checked>
+				  Just not interesting
+				</label>
+			  </div>
+			  <div class="radio modal-input">
+				<label>
+				  <input type="radio" name="reason" id="reason_noncar" value="N">
+				  Not a car listing
+				</label>
+			  </div>
+			  <div class="radio modal-input">
+				<label>
+				  <input type="radio" name="reason" id="reason_incorrect" value="I">
+				  Incorrect or misleading information
+				</label>
+			  </div>
+			  <div class="radio modal-input">
+				<label>
+				  <input type="radio" name="reason" id="reason_fraud" value="F">
+				  Suspected fraud
+				</label>
+			  </div>
+			  <div class="radio modal-input">
+				<label>
+				  <input type="radio" name="reason" id="reason_sold" value="S">
+				  Sold or no longer available
+				</label>
+			  </div>
+			  <div class="radio modal-input">
+				<label>
+				  <input type="radio" name="reason" id="reason_other" value="O">
+				  Other: <input type="text" name="other_reason" value=""/>
+				</label>
+			  </div>
+			  <div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+				<button type="submit" class="btn btn-primary">Confirm</button>
+			  </div>
+			</form>		
+		  </div>
 		</div>
 	  </div>
 	</div>

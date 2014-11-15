@@ -253,6 +253,10 @@ Added by Stephanie
 	padding-right: 5px;
 }
 
+.modal-input
+{
+	margin-left: 50px;
+}
 .modal-center
 {
 	text-align: center;
@@ -360,6 +364,9 @@ h1 {
 @media (min-width: 992px) {
 	.imgcropper {
 		max-height: 250px;
+	}
+	.modal-input {
+		margin-left: 100px;
 	}
 }
 .imgcropper img {

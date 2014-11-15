@@ -22,7 +22,7 @@ from listings.constants import *
 from listings.forms import UserForm
 from listings.models import Zipcode, Listing
 from listings.display_utils import prettify_listing
-from listings.search_utils import handle_search_args, build_new_query, get_listings
+from listings.search_utils import *
 from listings.query_utils import *
 from listings.favlist_utils import *
 
@@ -89,15 +89,14 @@ def dashboard(request):
 #
 @login_required
 @ajax
-def flag(request):
+def flag_car_api(request):
     if request.method == 'POST':
         listing_id = request.POST['listing_id']
-        user = request.user
-        if user.is_admin():
-            result = flag_listing(user, listing_id)
-            return {'result': True}
-        else:
-            pass  # GEE TODO
+        reason = request.POST.get('reason', None)
+        other_reason = request.POST.get('other_reason', None)
+
+        result = flag_listing(request.user, listing_id, reason, other_reason)
+        return {'result': result}
     return {'result': None}
 
 
@@ -270,7 +269,7 @@ def save_car_api(request):
     if request.method == 'POST':
         listing_id = request.POST['listing_id']
         result = save_car_to_db(request.user, listing_id)
-        return {'result': True}
+        return {'result': result}
     return {'result': None}
 
 
@@ -279,6 +278,6 @@ def save_car_api(request):
 def unsave_car_api(request):
     if request.method == 'POST':
         listing_id = request.POST['listing_id']
-        result = unsave_car(request.session, listing_id)
+        result = unsave_car_from_db(request.user, listing_id)
         return {'result': result}
     return {'result': None}

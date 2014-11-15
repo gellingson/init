@@ -13,7 +13,7 @@ from elasticsearch.exceptions import NotFoundError
 # OGL modules used
 from listings.constants import *
 from listings.display_utils import prettify_listing
-from listings.models import Zipcode, Listing, SavedQuery
+from listings.models import Zipcode, Listing, SavedQuery, ActionLog
 from listings.favlist_utils import favdict_for_user
 from listings.query_utils import *
 
@@ -217,11 +217,136 @@ def get_listings(querybody, number=50, offset=0, user=None, mark_since=None):
 
 
 # GEE TODO error handling, logging the action, etc etc
-def flag_listing(user, listing_id):
-    es = Elasticsearch()
-    es.delete(index="carbyr-index",
-              doc_type="listing-type",
-              id=listing_id)
+def flag_listing(user, listing_id, reason, other_reason=None):
+    remove = False
+    if user.is_authenticated() and user.is_superuser:
+        remove = True
+    adj = calc_quality_adj(user, listing_id, ACTION_FLAG, reason)
     listing = Listing.objects.get(pk=listing_id)
-    listing.status = 'X'
+    if not listing:
+        return False
+    if not listing.dynamic_quality:
+        listing.dynamic_quality = 0
+    if listing.dynamic_quality + adj < -800:  # arbitrary threshold :)
+        remove = True
+
+    apply_quality_adj(user, ACTION_FLAG, reason, adj, listing=listing)
+
+    if remove:
+        es = Elasticsearch()
+        es.delete(index="carbyr-index",
+                  doc_type="listing-type",
+                  id=listing_id)
+        # load listing again to make sure it isn't stale (missing adj?)
+        listing = Listing.objects.get(pk=listing_id)
+        listing.status = 'X'
+        listing.save()
+
+    long_reason = reason
+    if reason == FLAG_REASON_OTHER:
+        long_reason = long_reason + ':' + other_reason
+    log_action(user, ACTION_FLAG, long_reason, adj, listing=listing)
+
     return True
+
+
+# calc_quality_adj()
+#
+# calculates a quality adjustment to apply from a given user action
+#
+# e.g. admin flags as fraud might be -10000, whereas an anonymous user
+# clicking on the link might be +10 (if we track that at all....)
+#
+def calc_quality_adj(user, listing_id, action, reason=None):
+    # GEE TODO: would be great if users had an impact factor to apply...
+    adj = 0
+    if action == ACTION_FLAG:
+        if reason == FLAG_REASON_UNINTERESTING:
+            adj = -100
+        elif reason == FLAG_REASON_NONCAR:
+            adj = -1000
+        elif reason == FLAG_REASON_INCORRECT:
+            adj = -300
+        elif reason == FLAG_REASON_FRAUD:
+            adj = -1000
+        elif reason == FLAG_REASON_SOLD:
+            adj = -5000
+        else:
+            adj = -300
+        if user.is_authenticated:
+            if user.is_superuser:
+                adj = adj * 10
+        else:
+            adj = adj / 10
+    elif action == ACTION_FAV:
+        if user.is_authenticated:
+            adj = +300
+        else:
+            adj = +100
+    elif action == ACTION_UNFAV:
+        if user.is_authenticated:
+            adj = -100  # give back 1/3 of the favoriting bonus
+        else:
+            adj = -50  # give back 1/2 of the favoriting bonus
+    return adj
+
+
+# apply_quality_adj()
+#
+# applies a quality adjustment to a listing based on user & action (etc)
+#
+# Notes:
+# can be passed either listing_id or an actual listing object (for speed)
+# calls calc_quality_adj if adj is not passed in (again, efficiency...)
+# this action should getting logged separately (this does not log)
+#
+def apply_quality_adj(user, action,
+                      reason=None, adj=None,
+                      listing=None, listing_id = None):
+    if not listing and listing.id:  # seemingly a valid listing obj?
+        if not listing_id:
+            return False
+        listing = Listing().objects.get(pk=listing_id)
+        if not listing:
+            return False
+    if adj is None:
+        adj = calc_quality_adj(user, listing_id, action, reason)
+    if adj:
+        # save to the listing itself in the db (denormalizing for performance)
+        if not listing.dynamic_quality:
+            listing.dynamic_quality = 0
+        listing.dynamic_quality += adj
+        listing.save()
+        return True
+    return False
+
+
+# log_action()
+#
+# logs the given action by the given user
+#
+# Notes:
+# includes the applied adjustment, if any.
+# calcs the adjustment if such applies and None is passed in.
+#
+def log_action(user, action,
+               reason=None, adj=None,
+               listing_id=None, listing=None):
+    logentry = ActionLog()
+    if user.is_authenticated():
+        logentry.user = user;
+    # two ways we might get listing info... or we may get neither:
+    if listing_id and not listing:
+        listing = Listing();
+        listing.id = listing_id
+    if listing:  # whether passed as a listing or listing_id
+        logentry.listing = listing
+    logentry.action = action
+    if reason:
+        logentry.reason = reason
+    if listing_id and adj is None:
+        adj = calc_quality_adj(user, listing_id, action, reason)
+    logentry.adjustment = adj
+    logentry.save()
+    return True
+        

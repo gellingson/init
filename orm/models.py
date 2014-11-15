@@ -137,6 +137,18 @@ class InventoryImportLog(IDMixIn, Base):
     message = Column(String(1024))
 
 
+class ActionLog(IDMixIn, Base):
+    
+    user_id = Column(Integer,
+                     ForeignKey('auth_user.id'))
+    listing_id = Column(Integer,
+                        ForeignKey('listing.id'))
+    action = Column(String(1), nullable=False)
+    reason = Column(String(255))
+    adjustment = Column(Integer)
+    action_timestamp = Column(DateTime, default=func.now()))
+
+
 class Listing(IDMixIn, Base):
 
     markers = Column(String(24))
@@ -153,6 +165,8 @@ class Listing(IDMixIn, Base):
     source_textid = Column(String(255))
     local_id = Column(String(255))
     stock_no = Column(String(255))
+    lat = Column(Numeric(10, 7))
+    lon = Column(Numeric(10, 7))
     location_text = Column(String(50))
     zip = Column(String(10))
     source = Column(String(50))
@@ -160,14 +174,13 @@ class Listing(IDMixIn, Base):
     int_color = Column(String(20))
     vin = Column(String(20))
     mileage = Column(Integer)
+    tags = Column(String(2048))
+    dynamic_quality = Column(Integer)
     listing_date = Column(DateTime, default=func.now())
     removal_date = Column(DateTime)
     last_update = Column(DateTime,
                          server_default=text(
                              'CURRENT TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
-    lat = Column(Numeric(10, 7))
-    lon = Column(Numeric(10, 7))
-    tags = Column(String(2048))
 
     def __init__(self):
         self.tagset = set()
@@ -324,12 +337,9 @@ class SavedQuery(IDMixIn, Base):
     querytype = Column(String(1), nullable=False)
     user_id = Column(Integer,
                      ForeignKey('auth_user.id'))
-    listing_id = Column(Integer,
-                        ForeignKey('listing.id'))
-    status = Column(String(1), nullable=False)
     ref = Column(String(24))
     descr = Column(String(80))
-    note = Column(String(2048))
+    query = Column(String(2048))
     mark_date = Column(DateTime)
 
 

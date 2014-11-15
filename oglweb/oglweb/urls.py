@@ -16,6 +16,7 @@ urlpatterns = [
     url(r'^$', views.homepage, name='homepage'),
     url(r'^about/$', views.about, name='about'),
     url(r'^accounts/profile/$', views.profile, name='profile'),
+    url(r'^ajax/flagcar$', views.flag_car_api),
     url(r'^ajax/savecar$', views.save_car_api),
     url(r'^ajax/unsavecar$', views.unsave_car_api),
     url(r'^dashboard/$', views.dashboard, name='dashboard'),

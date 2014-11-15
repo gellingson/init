@@ -1,6 +1,20 @@
 
 # GLOBALS
 
+# Actions (that a user might take, and we might log...)
+ACTION_FLAG = 'X'
+ACTION_FAV = 'F'
+ACTION_UNFAV = 'U'
+
+# Reasons that a user might flag a listing
+FLAG_REASON_UNINTERESTING = 'U'
+FLAG_REASON_NONCAR = 'N'
+FLAG_REASON_INCORRECT = 'I'
+FLAG_REASON_FRAUD = 'F'
+FLAG_REASON_SOLD = 'S'
+FLAG_REASON_OTHER = 'O'
+FLAG_REASON_UNSPECIFIED = 'X'
+
 # TEMPLATE NAMES
 
 HOMEPAGE = 'listings/homepage.html'

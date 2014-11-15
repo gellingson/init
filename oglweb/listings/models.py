@@ -22,16 +22,6 @@ from jsonfield import JSONCharField
 
 # OGL modules used
 
-# this is to convert to jsonable: pull only attrs, not methods/complex internals
-# from a model object and export as Bunch
-def props(obj):
-    pr = Bunch()
-    for name in dir(obj):
-        value = getattr(obj, name)
-        if not name.startswith('__') and not name == 'user' and not inspect.ismethod(value):
-            pr[name] = value
-            return pr
-
 
 class SavedListing(models.Model):
     id = models.IntegerField(primary_key=True)  # AutoField?
@@ -47,29 +37,6 @@ class SavedListing(models.Model):
         managed = False
         db_table = 'saved_listing'
 
-    # generate a Bunch() dict with JSON-serializable values
-    # (ie no Datetime, Decimal, etc); also have just ids for
-    # relations rather than the full structs
-    def to_jsonable(self):
-        jsonable = Bunch()
-        jsonable.id = self.id
-        jsonable.status = self.status
-        jsonable.note = self.note
-        jsonable.user_id = self.user.id
-        jsonable.listing_id = self.listing.id
-        return jsonable
-
-    def from_jsonable(self, jsonable, load_relations=False):
-        # might not already be a Bunch(), just a plain dict
-        self.id = jsonable.get('id', None)
-        self.user.id = jsonable['user_id']
-        self.listing.id = jsonable['listing_id']
-        self.status = jsonable['status']
-        self.note = jsonable.get('note', None)
-        if load_relations:
-            self.user.load()
-            self.listing.load()
-        return self
 
 class SavedQuery(models.Model):
     querytype = models.CharField(max_length=1)
@@ -85,47 +52,6 @@ class SavedQuery(models.Model):
     class Meta:
         managed = False
         db_table = 'saved_query'
-
-    # generate a Bunch() dict with JSON-serializable values
-    # (ie no Datetime, Decimal, etc); also have just ids for
-    # relations rather than the full structs
-    def to_jsonable(self):
-        print("converting to jsonable: {}".format(self.ref))
-        jsonable = Bunch()
-        jsonable.id = self.id
-        jsonable.querytype = self.querytype
-        jsonable.ref = self.ref
-        jsonable.descr = self.descr
-        jsonable.query = self.query
-        # handle non-JSONable types & any other type-specific oddities
-        if self.__dict__.get('user', None) and self.user.is_authenticated():
-            jsonable.user_id = self.user.id
-        else:
-            jsonable.user_id = None
-        if self.mark_date:
-            jsonable.mark_date = self.mark_date.isoformat()
-        else:
-            jsonable.mark_date = None
-        return jsonable
-
-    def from_jsonable(self, jsonable, load_relations=False):
-        print("converting from jsonable: {}".format(jsonable['ref']))
-        # might not already be a Bunch(), just a plain dict
-        self.id = jsonable.get('id', None)
-        self.querytype = jsonable.get('querytype', 'R')
-        self.user = User()
-        self.user.id = jsonable.get('user_id', None)
-        self.ref = jsonable.get('ref', jsonable.get('id', None))  # old field name
-        self.descr = jsonable.get('descr', jsonable.get('desc', None))  # old field name
-        self.query = jsonable['query']
-        date_string = jsonable.get('mark_date', None)
-        if date_string:
-            self.mark_date = iso8601.parse(self.mark_date)
-        else:
-            self.mark_date = None
-        if load_relations and self.user.id:
-            self.user.load()
-        return self
 
 
 class Classified(models.Model):
@@ -207,6 +133,20 @@ class InventoryImportLog(models.Model):
         db_table = 'inventory_import_log'
 
 
+class ActionLog(models.Model):
+    id = models.IntegerField(primary_key=True)  # AutoField?
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
+    listing = models.ForeignKey('Listing', blank=True)
+    action = models.CharField(max_length=1)
+    reason = models.CharField(max_length=255, blank=True)
+    adjustment = models.IntegerField(blank=True, null=True)
+    action_timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        managed = False
+        db_table = 'action_log'
+
+
 class Listing(models.Model):
     id = models.IntegerField(primary_key=True)  # AutoField?
     status = models.CharField(max_length=1, blank=True)
@@ -233,6 +173,7 @@ class Listing(models.Model):
     vin = models.CharField(max_length=20, blank=True)
     mileage = models.IntegerField(blank=True, null=True)
     tags = models.CharField(max_length=2048, blank=True)
+    dynamic_quality = models.IntegerField(blank=True, null=True)
     listing_date = models.DateTimeField(blank=True, null=True)
     removal_date = models.DateTimeField(blank=True, null=True)
     last_update = models.DateTimeField(blank=True, null=True)
