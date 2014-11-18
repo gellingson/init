@@ -146,7 +146,7 @@ class ActionLog(IDMixIn, Base):
     action = Column(String(1), nullable=False)
     reason = Column(String(255))
     adjustment = Column(Integer)
-    action_timestamp = Column(DateTime, default=func.now()))
+    action_timestamp = Column(DateTime, default=func.now())
 
 
 class Listing(IDMixIn, Base):
