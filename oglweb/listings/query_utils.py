@@ -158,9 +158,7 @@ def querylist_from_session(session, query_type):
     dictlist = session.get(query_type + 'QL', [])
     if dictlist:
         for querydict in dictlist:
-            print("recent:" + str(querydict))
             q = Query().from_dict(querydict)
-            print("recent:" + str(q))
             querylist.append(q)
     if not querylist:
         # check the old storage (different name, different format)
@@ -190,7 +188,6 @@ def querylist_to_session(session, query_type, querylist):
     #jsonable_querylist = [ query.to_jsonable() for query in querylist ]
     dictlist = []
     for query in querylist:
-        print("INSERTING QUERY: " + str(query))
         dictlist.append(query.to_dict())
     session[query_type + 'QL'] = dictlist
 
@@ -295,15 +292,12 @@ def update_recents(session, current_query):
         # keep ref & replace to update any minor change
         current_query.ref = recents[0].ref
         recents[0] = current_query
-        print("FUCK")
     else:
         # generate new query ref and insert into recents
         current_query.ref = QUERYTYPE_RECENT + str(datetime.date.today()) + '_' + str(int(round(time.time() * 1000)))
         current_query.querytype = QUERYTYPE_RECENT
         recents.insert(0, current_query)
-        print("YOU")
 
-    print("CURRENT QUERY IS: " + str(current_query))
     # limit recents query list size
     while len(recents) > 10:
         recents.pop()

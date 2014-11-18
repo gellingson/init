@@ -43,7 +43,6 @@ def profile(request):
     if request.method == 'POST':
         form = UserForm(request.POST)
         if form.is_valid():
-            print("valid form")
             user = request.user
             user.first_name = form.cleaned_data['first_name']
             user.last_name = form.cleaned_data['last_name']
@@ -52,7 +51,6 @@ def profile(request):
             # now continue as per get: display the profile incl hidden form
         else:
             context['show_form'] = True  # redisplay (with errors)
-            print("invalid form?!" + form.errors.as_json())
     else:  # GET, ie not form submission; populate blank form
         form = UserForm(initial={
             'id':request.user.id,
@@ -160,7 +158,6 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
             else:
                 error_message = 'ZIP code not understood; unable to sort by distance.'
 
-    print('DEBUG: ' + args.action + args.query_ref)
     # handle actions that may have been requested (e.g. save-query modal)
     if args.action == 'save_query':
         args.query_ref = save_query(args.query_ref, args.query_descr, request.session, request.user)
@@ -178,7 +175,6 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
     else:
         query = build_new_query(args)
 
-    print("QUERY IS: " + str(query))
     # update recent searches list
     update_recents(request.session, query)
 

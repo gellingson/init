@@ -77,8 +77,6 @@ def handle_search_args(request, filter=None, base_url = None, query_ref=None):
             args.filter_term = VALID_FILTERS[filter]
         else:
             args.errors['invalid_filter'] = True
-
-    #print('params:', str(args))
     return args
 
 
@@ -205,17 +203,41 @@ def get_listings(querybody, number=50, offset=0, user=None, mark_since=None):
 
     # if we know the user, see if they have any favorites
     fav_dict = {}
+    flag_set = set()
     if user.is_authenticated():
         fav_dict = favdict_for_user(user)
+        # a superuser flagging always nukes the post; other users may
+        # have flagged posts and we should not show those posts again
+        if not user.is_superuser:
+            flag_set = flagset_for_user(user)
 
     for item in search_resp['hits']['hits']:
-        es_listing = prettify_listing(Bunch(item['_source']),
-                                      favorites=fav_dict,
-                                      mark_since=mark_since)
-        listings.append(es_listing)
+        if int(item['_source']['id']) in flag_set:
+            pass  # throw it out
+        else:
+            es_listing = prettify_listing(Bunch(item['_source']),
+                                          favorites=fav_dict,
+                                          mark_since=mark_since)
+            listings.append(es_listing)
     return search_resp['hits']['total'], listings
 
 
+# flagset_for_user()
+#
+# returns the set of listing_ids a user has flagged
+#
+# NOTE: this will get S-L-O-W if we don't keep these pruned.
+# GEE TODO: implement pruning of this table so we can afford to keep running
+# this query all the time :-)
+#
+def flagset_for_user(user):
+    flagset = ActionLog.objects.filter(user=user,
+                                       action=ACTION_FLAG).values('listing_id')
+    return  set(al['listing_id'] for al in flagset)
+
+
+# flag_listing()
+#
 # GEE TODO error handling, logging the action, etc etc
 def flag_listing(user, listing_id, reason, other_reason=None):
     remove = False

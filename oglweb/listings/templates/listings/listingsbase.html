@@ -153,11 +153,8 @@
 		  </div>
 		</a>
 		  <div class="col-md-1 listing">
-			{% if item.favorite %}
-			<button class="btn-link unfav" listing_id="{{ item.id }}"><span class="glyphicon glyphicon-trash wideglyph"></span></button>
-			{% else %}
-			<button class="btn-link addfav" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model}}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
-			{% endif %}
+			<button class="btn-link addfav{% if item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model}}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
+			<button class="btn-link unfav{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model}}"><span class="glyphicon glyphicon-trash wideglyph"></span></button>
 			<button class="btn-link flag" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model}}"><span class="glyphicon glyphicon-thumbs-down wideglyph"></span></button>
 		  </div>
 		  {% else %}
@@ -281,15 +278,20 @@
 		<div class="modal-content">
 		  <div class="modal-header">
 			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-			<h4 class="modal-title" id="unFavCarModalLabel">Saved!</h4>
+			<h4 class="modal-title" id="unFavCarModalLabel">Confirm</h4>
 		  </div>
 		  <div class="modal-body">
-			<p>You have removed this <span id='unfavcartitle'>car</span> from your favorite cars list.</p>
+			<p>Really remove this <span id='unfavcartitle'>car</span> from your favorite cars list?</p>
 			<p>You can view your favorite cars at any time on your <a href="/dashboard">dashboard</a>.</p>
 		  </div>
-		  <div class="modal-footer">
-			<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
-		  </div>
+		  <form role="form" id="unfavform" action="/ajax/unsavecar" method="post">
+			{% csrf_token %}
+			<input type="hidden" name="listing_id" id="unfavlisting_id" value=""/>
+			<div class="modal-footer">
+			  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+			  <button type="submit" class="btn btn-primary">Confirm</button>
+			</div>
+		  </form>
 		</div>
 	  </div>
 	</div>

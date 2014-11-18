@@ -9,16 +9,26 @@ $('.listings').waypoint('infinite', {
 	  onAfterPageLoad: setup_listing_buttons
 	});
 
-function unfav(listing_id, title){
+function unfav(listing_id, title, elt){
 	$("#unfavcartitle").text(title)
-	ajaxPost("/ajax/unsavecar", {'listing_id': listing_id}, function(content){
-		$("#unFavCarModal").modal();
+	$("#unfavlisting_id").val(listing_id);
+	$("#unfavform").submit(function(event) {
+		var form = $(this);
+		ajaxPost(form.attr('action'), form.serialize(), function(content){
+			elt.parent().children('.addfav').removeClass('hidden');
+			elt.addClass('hidden');
+		});
+		event.preventDefault();
+		$('#unFavCarModal').modal('hide');
 	});
+	$("#unFavCarModal").modal();
 }
 
-function fav(listing_id, title){
+function fav(listing_id, title, elt){
 	$("#favcartitle").text(title)
 	ajaxPost("/ajax/savecar", {'listing_id': listing_id}, function(content){
+		elt.parent().children('.unfav').removeClass('hidden');
+		elt.addClass('hidden');
 		$("#favCarModal").modal();
 	});
 }
@@ -29,8 +39,7 @@ function flag(listing_id, title, elt){
 	$("#flagform").submit(function(event) {
 		var form = $(this);
 		ajaxPost(form.attr('action'), form.serialize(), function(content){
-			elt.closest(".listing_row").hide();
-			window.alert("flagged! " + elt.attr('title'));
+			//elt.closest(".listing_row").hide();
 			elt.closest(".listing-row").remove();
 		});
 		event.preventDefault();
@@ -41,10 +50,10 @@ function flag(listing_id, title, elt){
 
 function setup_listing_buttons(){
 	$("button.unfav").click(function() {
-		unfav($(this).attr("listing_id"), $(this).attr("title"));
+		unfav($(this).attr("listing_id"), $(this).attr("title"), $(this));
 	});
 	$("button.addfav").click(function() {
-		fav($(this).attr("listing_id"), $(this).attr("title"));
+		fav($(this).attr("listing_id"), $(this).attr("title"), $(this));
 	});
 	$("button.flag").click(function() {
 		flag($(this).attr("listing_id"), $(this).attr("title"), $(this));

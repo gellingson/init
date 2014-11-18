@@ -6,12 +6,13 @@
 
 # third party modules used
 from bunch import Bunch
+from django.db import IntegrityError
 
 # OGL modules used
 from listings.models import SavedListing, Listing
 
 
-# unsave_car()
+# unsave_car() ** UNUSED
 #
 # removes a car from the user's list of saved listings
 # (both in the db and the cached data in the session)
@@ -27,7 +28,7 @@ def unsave_car(session, listing_id):
     return True
 
 
-# save_car()
+# save_car() ** UNUSED
 #
 # saves a car to the user's list of saved listings
 # (both in the db and the cached data in the session)
@@ -51,14 +52,20 @@ def save_car(session, listing_id=0, listing=None):
     # now we definitely have a listing, so get the cached list & insert
     sl_cache = session.get('savedcars', [])
     if listing.id in sl_cache:
-        print('one')
         return None
     sl_cache.append(listing.id)
     session['savedcars'] = sl_cache
-    print('two')
     return True
 
 
+# unsave_car_from_db()
+#
+# removes a car from the user's list of saved listings
+#
+# returns:
+# True if car was removed
+# False if there was an issue of any type
+#
 def unsave_car_from_db(user, listing_id):
     l = Listing()
     l.id = listing_id
@@ -72,6 +79,14 @@ def unsave_car_from_db(user, listing_id):
     return True
 
 
+# save_car_to_db()
+#
+# saves a car to the user's list of saved listings
+#
+# True if saved
+# False if there was an issue
+# None if the car was already saved
+#
 def save_car_to_db(user, listing_id):
     l = Listing()
     l.id = listing_id
@@ -79,7 +94,10 @@ def save_car_to_db(user, listing_id):
     fav.listing = l
     fav.user = user
     fav.status = 'A'
-    fav.save()
+    try:
+        fav.save()
+    except IntegrityError:  # already a favorite....
+        return None
     return True
 
 
