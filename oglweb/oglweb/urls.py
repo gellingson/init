@@ -19,6 +19,7 @@ urlpatterns = [
     url(r'^ajax/flagcar$', views.flag_car_api),
     url(r'^ajax/savecar$', views.save_car_api),
     url(r'^ajax/unsavecar$', views.unsave_car_api),
+    url(r'^ajax/addnote$', views.add_note_api),
     url(r'^dashboard/$', views.dashboard, name='dashboard'),
     url(r'^blank/$', views.blank, name='blank'),
     url(r'^statictest/$', views.statictest, name='statictest'),

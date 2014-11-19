@@ -12,6 +12,7 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.template import RequestContext
+from django.utils.html import escape
 from django_ajax.decorators import ajax
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
@@ -79,11 +80,9 @@ def dashboard(request):
     context['listings'] = listings
     return render(request, 'listings/dashboard.html', context)
 
-# flag()
+# flag_car_api()
 #
-# flags a car as inappropriate; one flag from an admin kills a listing,
-# but we should be a bit more cautious about other users. But it should
-# block the ad for the particular user, as much as possible.
+# ajax api: flags a car as inappropriate
 #
 @login_required
 @ajax
@@ -98,7 +97,24 @@ def flag_car_api(request):
     return {'result': None}
 
 
-# adminflag()
+# add_note_api()
+#
+# ajax api: adds a note to a favorite car
+@login_required
+@ajax
+def add_note_api(request):
+    if request.method == 'POST':
+        listing_id = request.POST['listing_id']
+        note_contents = escape(request.POST['listing_note'])
+        add_note(note_contents, request.user.id, listing_id)
+        return {
+            'result': True,
+            'newcontents': note_contents
+        }
+    return {'result': None}
+
+
+# adminflag() UNUSED
 #
 # GEE TODO: kill this because the ajax one (above) is better
 #

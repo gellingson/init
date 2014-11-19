@@ -89,7 +89,7 @@
 		{% if query_ref %}
 		{% if query_type == 'F' %}
 		<button class="btn-link" data-toggle="modal" data-target="#unSaveModal">
-		  <span class="glyphicon glyphicon-minus"></span>Remove <span class="long">this from your list of favorites</span>
+		  <span class="glyphicon glyphicon-minus"></span>Remove <span class="long">this search from your favorites</span>
 		</button>
 		{% elif query_type != 'D' %}
 		<button class="btn-link" data-toggle="modal" data-target="#saveModal">
@@ -139,30 +139,44 @@
 			</div>
 		  </div>
 		  <div class="col-md-3 listing">
-			<p><strong>{{ item.model_year }} {{ item.make }} {{ item.model}}</strong></p>
+			<p><strong>{{ item.model_year }} {{ item.make }} {{ item.model }}</strong></p>
 			<p><strong>{{ item.price }}</strong></p>
 			{% if item.location_text %}
 			<p>{{item.location_text}} ({{ item.source }})</p>
 			{% else %}
 			<p>({{ item.source }})</p>
 			{% endif %}
+			{% if item.status != 'F' %}
+			<p><strong>This listing {{ item.pretty_status }}</strong></p>
+			{% endif %}
+			<p></p>
 		  </div>
-		  {% if user.is_authenticated %}
-		  <div class="col-md-4 listing">
+		  <div class="{% if user.is_authenticated %}col-md-4{% else %}col-md-5{% endif %} listing">
 			{{ item.listing_text }}
 		  </div>
 		</a>
-		  <div class="col-md-1 listing">
-			<button class="btn-link addfav{% if item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model}}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
-			<button class="btn-link unfav{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model}}"><span class="glyphicon glyphicon-trash wideglyph"></span></button>
-			<button class="btn-link flag" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model}}"><span class="glyphicon glyphicon-thumbs-down wideglyph"></span></button>
+		{% if user.is_authenticated %}
+		<div class="col-md-1 listing">
+		  <button class="btn-link addfav{% if item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
+		  <button class="btn-link editnote{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-pencil wideglyph"></span></button>
+		  <button class="btn-link unfav{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-trash wideglyph"></span></button>
+		  <button class="btn-link flag" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-thumbs-down wideglyph"></span></button>
+		</div>
+		{% endif %}
+		{% if item.favorite %}
+		<div class="noteframe{% if not item.note %} hidden{% endif %}">
+		  <div class="col-md-12">
 		  </div>
-		  {% else %}
-		  <div class="col-md-4 listing">
-			{{ item.listing_text }}
-		  </div>
-		</a>
-		  {% endif %}
+		  <a class="editnote" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}">
+			<div class="col-md-1">
+			  <p><strong>Notes:</strong></p>
+			</div>
+			<div class="col-md-10">
+			  <pre class="note">{{ item.note }}</pre>
+			</div>
+		  </a>
+		</div>
+		{% endif %}
 	  </div>
 	  {% endfor %}
 	  {% else %}
@@ -190,17 +204,17 @@
 			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
 			<h4 class="modal-title" id="saveModalLabel">Save this as a favorite search</h4>
 		  </div>
-		  <div class="modal-body">
-			<p>Favorite searches make it easy to manage your car search. As suitable cars enter (and leave) the market this list will automatically update; check back any time. </p>
-			<p>You can also choose to receive updates on saved searches through RSS or email [coming soon!].</p>
-		  </div>
 		  <form role="form" action="{{ abs_url }}" method="post">
-			{% csrf_token %}
-			<input type="hidden" name="action" value="save_query">
-			<input type="hidden" name="query_ref" value="{{ query_ref }}"/>
-			<div class="modal-input">
-			  <label class="modal-label" for="query_descr">Name the search:</label>
-			  <input type="text" value="{{ query_descr }}" name="query_descr" id="query_descr"/>
+			<div class="modal-body">
+			  <p>Favorite searches make it easy to manage your car search. As suitable cars enter (and leave) the market this list will automatically update; check back any time. </p>
+			  <p>You can also choose to receive updates on saved searches through RSS or email [coming soon!].</p>
+			  {% csrf_token %}
+			  <input type="hidden" name="action" value="save_query"/>
+			  <input type="hidden" name="query_ref" value="{{ query_ref }}"/>
+			  <div class="modal-input">
+				<label class="modal-label" for="query_descr">Name the search:</label>
+				<input type="text" value="{{ query_descr }}" name="query_descr" id="query_descr"/>
+			  </div>
 			</div>
 			<div class="modal-footer">
 			  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
@@ -217,13 +231,13 @@
 			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
 			<h4 class="modal-title" id="unSaveModalLabel">Confirm</h4>
 		  </div>
-		  <div class="modal-body">
-			<p>Confirm removing favorite search: {{ query_descr }}? </p>
-		  </div>
 		  <form role="form" action="{{ abs_url }}" method="post">
-			{% csrf_token %}
-			<input type="hidden" name="action" value="unsave_query">
-			<input type="hidden" name="query_ref" value="{{ query_ref }}"/>
+			<div class="modal-body">
+			  <p>Confirm removing favorite search: {{ query_descr }}? </p>
+			  {% csrf_token %}
+			  <input type="hidden" name="action" value="unsave_query"/>
+			  <input type="hidden" name="query_ref" value="{{ query_ref }}"/>
+			</div>
 			<div class="modal-footer">
 			  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 			  <button type="submit" class="btn btn-primary">Confirm</button>
@@ -239,15 +253,15 @@
 			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
 			<h4 class="modal-title" id="markReadModalLabel">Confirm</h4>
 		  </div>
-		  <div class="modal-body">
-			<p>Mark these cars as having been seen in the {{ query_descr }} search?</p>
-			<p>If you do, these cars will not be shown by default when you run this query again in the future. However, you can always display all matching cars, including ones marked as seen, by clicking on the 'All listings' button.)</p>
-		  </div>
 		  <form role="form" action="{{ abs_url }}" method="post">
-			{% csrf_token %}
-			<input type="hidden" name="action" value="mark_read">
-			<input type="hidden" name="query_ref" value="{{ query_ref }}"/>
-			<input type="hidden" name="query_date" value="{{ timestamp }}"/>
+			<div class="modal-body">
+			  <p>Mark these cars as having been seen in the {{ query_descr }} search?</p>
+			  <p>If you do, these cars will not be shown by default when you run this query again in the future. However, you can always display all matching cars, including ones marked as seen, by clicking on the 'All listings' button.)</p>
+			  {% csrf_token %}
+			  <input type="hidden" name="action" value="mark_read"/>
+			  <input type="hidden" name="query_ref" value="{{ query_ref }}"/>
+			  <input type="hidden" name="query_date" value="{{ timestamp }}"/>
+			</div>
 			<div class="modal-footer">
 			  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 			  <button type="submit" class="btn btn-primary">Confirm</button>
@@ -280,18 +294,42 @@
 			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
 			<h4 class="modal-title" id="unFavCarModalLabel">Confirm</h4>
 		  </div>
-		  <div class="modal-body">
-			<p>Really remove this <span id='unfavcartitle'>car</span> from your favorite cars list?</p>
-			<p>You can view your favorite cars at any time on your <a href="/dashboard">dashboard</a>.</p>
-		  </div>
 		  <form role="form" id="unfavform" action="/ajax/unsavecar" method="post">
-			{% csrf_token %}
-			<input type="hidden" name="listing_id" id="unfavlisting_id" value=""/>
+			<div class="modal-body">
+			  <p>Really remove this <span id='unfavcartitle'>car</span> from your favorite cars list?</p>
+			  <p>You can view your favorite cars at any time on your <a href="/dashboard">dashboard</a>.</p>
+			  {% csrf_token %}
+			  <input type="hidden" name="listing_id" id="unfavlisting_id" value=""/>
+			</div>
 			<div class="modal-footer">
 			  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
 			  <button type="submit" class="btn btn-primary">Confirm</button>
 			</div>
 		  </form>
+		</div>
+	  </div>
+	</div>
+	<div class="modal fade" id="editNoteModal" tabindex="-1" role="dialog" aria-labelledby="editNoteModalLabel" aria-hidden="true">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+			<h4 class="modal-title" id="editNoteModalLabel">Notes</h4>
+		  </div>
+		  <form role="form" id="noteform" action="/ajax/addnote" method="post">
+			<div class="modal-body">
+			  <p>Add your notes about this <span id='notecartitle'>car</span>. These notes are private, visible only to you:</p>
+			  {% csrf_token %}
+			  <input type="hidden" name="listing_id" id="notelisting_id" value=""/>
+			  <div class="modal-input">
+				<textarea rows="5" cols="50" name="listing_note" id="note_text" value=""></textarea>
+			  </div>
+			</div>
+			<div class="modal-footer">
+			  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+			  <button type="submit" class="btn btn-primary">Confirm</button>
+			</div>
+		  </form>		
 		</div>
 	  </div>
 	</div>
@@ -302,11 +340,11 @@
 			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
 			<h4 class="modal-title" id="flagCarModalLabel">Confirm</h4>
 		  </div>
-		  <div class="modal-body">
-			<p>You are flagging this <span id='flagcartitle'>car</span> listing.</p>
-			<p>It will no longer appear in any of your query results.</p>
-			<p>Carbyr also uses this information to filter postings and improve the quality of current and future results. Can you please let us know why you are flagging this listing?</p>
-			<form role="form" id="flagform" action="/ajax/flagcar" method="post">
+		  <form role="form" id="flagform" action="/ajax/flagcar" method="post">
+			<div class="modal-body">
+			  <p>You are flagging this <span id='flagcartitle'>car</span> listing.</p>
+			  <p>It will no longer appear in any of your query results.</p>
+			  <p>Carbyr also uses this information to filter postings and improve the quality of current and future results. Can you please let us know why you are flagging this listing?</p>
 			  {% csrf_token %}
 			  <input type="hidden" name="listing_id" id="flaglisting_id" value=""/>
 			  <div class="radio modal-input">
@@ -345,12 +383,12 @@
 				  Other: <input type="text" name="other_reason" value=""/>
 				</label>
 			  </div>
-			  <div class="modal-footer">
-				<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-				<button type="submit" class="btn btn-primary">Confirm</button>
-			  </div>
-			</form>		
-		  </div>
+			</div>
+			<div class="modal-footer">
+			  <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+			  <button type="submit" class="btn btn-primary">Confirm</button>
+			</div>
+		  </form>		
 		</div>
 	  </div>
 	</div>

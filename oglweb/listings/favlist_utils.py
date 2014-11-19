@@ -101,6 +101,20 @@ def save_car_to_db(user, listing_id):
     return True
 
 
+# add_note()
+#
+# adds a note to a SavedListing record
+#
+# note: cleaning/escaping input is the caller's responsibility
+#
+def add_note(note, user_id, listing_id):
+    sl = SavedListing.objects.get(user=user_id,
+                                  listing_id=listing_id)
+    sl.note = note
+    sl.save()
+    return True
+
+
 # favdict_for_user()
 #
 # returns a dict of the user's favorite listings

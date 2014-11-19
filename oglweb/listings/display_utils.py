@@ -6,6 +6,15 @@ from urllib.parse import urlparse
 from money import Money
 from listings.models import Listing
 
+PRETTY_STATUS = {
+    'F': 'is available',
+    'P': 'is sale pending',
+    'S': 'has been sold',
+    'R': 'is no longer available',
+    'T': 'is a test listing',
+    'X': 'has been removed from the site'
+}
+
 # prettify_listing()
 #
 # marks up a listing for display
@@ -30,6 +39,9 @@ def prettify_listing(listing, favorites={}, mark_since=None):
     else:
         m = Money(listing.price, 'USD')
         listing.price = m.format('en_US')
+
+    # add pretty status
+    listing.pretty_status = PRETTY_STATUS[listing.status]
 
     # clean any bad pic_hrefs
     p = urlparse(listing.pic_href)
