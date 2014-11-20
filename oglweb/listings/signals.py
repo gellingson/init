@@ -22,7 +22,7 @@ def get_and_set_queries(request, user, **kwargs):
     session_favs = querylist_from_session(request.session, QUERYTYPE_FAVORITE)
     if session_favs:
         # note: if the user is newly-signed-up this should be empty
-        db_favs = SavedQuery.objects.filter(user=request.user, querytype='F')
+        db_favs = SavedQuery.objects.filter(user=user, querytype='F')
         for search in session_favs:
             # ref is pretty unique; ignore the case where a user somehow
             # created a new (different) saved query with the same ref as
@@ -35,11 +35,11 @@ def get_and_set_queries(request, user, **kwargs):
                 # newly created in the anonymous session, add it
                 sq = search.to_saved_query(user)
                 sq.id = None
-                sq.user = request.user
+                sq.user = user
                 sq.save()
 
     # re-query the combined list fresh from the db & repop the session
-    db_favs = SavedQuery.objects.filter(user=request.user, querytype='F')
+    db_favs = SavedQuery.objects.filter(user=user, querytype='F')
     favs = [Query().from_saved_query(sq) for sq in db_favs]
     querylist_to_session(request.session, QUERYTYPE_FAVORITE, favs)
     return
