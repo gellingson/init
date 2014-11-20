@@ -1,10 +1,21 @@
+# display_utils.py
+#
+# utilities for displaying stuff (e.g. listings)
+#
+# there should be NO real logic here, just methods to make things pretty
+#
 
+# builtin modules used
 import datetime
 import pytz
 from urllib.parse import urlparse
 
+# third party modules used
 from money import Money
+
+# OGL modules used
 from listings.models import Listing
+from listings.utils import *
 
 PRETTY_STATUS = {
     'F': 'is available',
@@ -29,7 +40,8 @@ PRETTY_STATUS = {
 # if a mark_since timestamp is provided then listings with listing_date or
 # last_updated newer than the given timestamp will be annotated as such
 #
-# mark_since (if present) MUST be a TZ-aware datetime object
+# mark_since (if present) MUST be a TZ-aware datetime object or valid
+# string that converts to same
 #
 def prettify_listing(listing, favorites={}, mark_since=None):
 
@@ -63,21 +75,10 @@ def prettify_listing(listing, favorites={}, mark_since=None):
     # ugly implied UTC bullshit). But for now:
     
     if mark_since:
-        # listing pulled from the db will have datetime objects;
-        # listings pulled from elasticsearch will have strings
-        #   (in the format below, with UTC implied -- yuck)
-        # mark_since must be a TZ-aware datetime
+        mark_since = force_date(mark_since, None)
+        listing_date = force_date(listing.listing_date)
+        last_update = force_date(listing.last_update)
 
-        if type(listing.listing_date) == datetime.datetime:
-            listing_date = listing.listing_date
-        else:
-            listing_date = datetime.datetime.strptime(listing.listing_date,
-                                                      '%Y-%m-%dT%H:%M:%S').replace(tzinfo=pytz.UTC)
-        if type(listing.last_update) == datetime.datetime:
-            last_update = listing.last_update
-        else:
-            last_update = datetime.datetime.strptime(listing.last_update,
-                                                      '%Y-%m-%dT%H:%M:%S').replace(tzinfo=pytz.UTC)
         if listing_date > mark_since:
             listing.since = 'New'
         elif last_update > mark_since:

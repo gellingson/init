@@ -74,7 +74,7 @@ class Query(object):
         self.descr = qd.descr
         self.query = qd.query
         self.type = qd.get('type', QUERYTYPE_NONE)
-        self.mark_date = qd.get('mark_date', None)    
+        self.mark_date = qd.get('mark_date', None)
         return self
 
     # this method is for use during the switchover period only;
@@ -111,7 +111,7 @@ class Query(object):
         sq.query = self.query
         sq.querytype = self.type
         if self.mark_date:
-            sq.mark_date = iso8601.parse(self.mark_date)
+            sq.mark_date = iso8601.parse_date(self.mark_date)
         else:
             sq.mark_date = None
         sq.user = user

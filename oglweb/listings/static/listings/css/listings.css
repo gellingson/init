@@ -5,8 +5,8 @@ body {
 }
 .popicon {
 	position: absolute;
-	left: 0px;
-	top: 0px;
+	left: -11px;
+	top: -16px;
 	z-index: 1;
 }
 .fixed-150 {

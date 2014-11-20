@@ -125,12 +125,10 @@
 	  <div class="row listing-row" id="{{ item.id }}">
 		<a href="{{ item.listing_href }}">
 		  <div class="col-md-4 listing">
-			<div class="imgcropper">
 			  {% if item.since == 'New' %}
-			  <img src="{% static 'listings/images/logosmall.png' %}" class="popicon">
-			  {% elif item.since == 'Updated' %}
-			  <p class="popicon">UPDATED</p>
+			  <img src="{% static 'listings/images/new-50-red.png' %}" class="popicon" width="50" height="50">
 			  {% endif %}
+			<div class="imgcropper">
 			  {% if item.pic_href %}
 			  <img class="img-rounded" src='{{ item.pic_href }}'>
 			  {% else %}
