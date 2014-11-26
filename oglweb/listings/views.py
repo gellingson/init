@@ -205,7 +205,7 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
         set_show_cars_option(request.session, 'new_only', args.query_ref)
     elif args.action == 'new_only' or args.action == 'all_cars':
         set_show_cars_option(request.session, args.action, args.query_ref)
-    print("FUBAR ARG:" + args.action)
+
     # GEE TODO: put suggested queries in a db... and the session!
     # ... and be intelligent about which ones to pull for display
 
@@ -269,7 +269,8 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
         d2 = datetime.datetime(d.year, d.month, d.day, d.hour, d.minute)
         context['query_mark_date'] = humanize.naturaltime(d2)
     context['show'] = show
-    context['timestamp'] = time.time()  # may be used to set mark_date
+    # record timestamp at which query was issued; used e.g. to set mark_date
+    context['query_timestamp'] = datetime.datetime.now().isoformat()
 
     # GEE TODO: these next two seem like garbage I should clean up
     if error_message:

@@ -17,7 +17,8 @@ import time
 # Throws an exception if we are stuck and no default param is supplied.
 #
 # if passed a string, tries iso8601 format first then the %Y-%m-%dT%H:%M:%S
-# format used by elasticsearch. 
+# format used by elasticsearch. Note that this does NOT understand timestamp,
+# ie we do NOT try: datetime.datetime.fromtimestamp()
 #
 # pass default=None to return None if the date doesn't parse/convert.
 # passing default=False will just throw an exception.

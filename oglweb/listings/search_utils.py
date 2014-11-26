@@ -36,7 +36,7 @@ def handle_search_args(request, filter=None, base_url = None, query_ref=None):
     args.query_descr = request.POST.get('query_descr', '')
     args.query_date = request.POST.get('query_date', '')
     if args.query_date:
-        args.query_date = datetime.datetime.fromtimestamp(float(args.query_date), pytz.UTC)
+        args.query_date = force_date(args.query_date)
 
     # GET params
     if not args.action:
