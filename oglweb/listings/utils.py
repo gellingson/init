@@ -24,7 +24,16 @@ import time
 #
 def force_date(maybedate, default=False):
     if isinstance(maybedate, datetime.datetime):
-        if maybedate.tzinfo and maybedate.tzinfo.utcoffset(maybedate):
+        if maybedate.tzinfo and maybedate.tzinfo.utcoffset(maybedate) != None:
+            # Fuck python's datetime class; it truly sucks. Note that the
+            # != None above is REQUIRED, because the utcoffset() method may
+            # in fact return something that evaluates to False (probably 0)
+            # for non-naive datetimes, so this IF statement ** fails **:
+            # if maybedate.tzinfo and maybedate.tzinfo.utcoffset(maybedate):
+            # this shit has been documented as confusing since at least 2010
+            # but... come on. How hard would it be to have an is_naive() or
+            # is_localized() method, and some decent handling around that
+            # property? Fuck...
             return maybedate
         else:
             return pytz.utc.localize(maybedate)

@@ -71,6 +71,42 @@ function editnote(listing_id, title, elt){
 	$('#editNoteModal').modal();
 }
 
+function fubar(elt){
+	// the label is getting the click event, not the radio input
+	button = $(elt).find('input');
+	console.log($(button).attr('act'));
+	$('#showaction').val($(button).attr('act'));
+	$(elt).closest('form').submit();
+	
+//  leaving this junk in for one cycle of committing to git for reference
+//	console.log(elt);
+//	$(elt).removeClass('active')
+//	classes = $(elt).attr('class');
+//	console.log(classes);
+//	console.log(classes.indexOf('btn') > -1);
+//	console.log(classes.indexOf('fuck') > -1);
+//	console.log(classes.indexOf('new') > -1);
+//	if (classes.indexOf('new') > -1) {
+//		console.log('new!');
+//	} else {
+//		console.log('all!');
+//	}		
+	//console.log($(button).val()); value is always on or off for radio
+	//console.log($(elt).attr('name'));
+	//console.log(elt.name);
+	//console.log($(elt).attr('id'));
+	//console.log($(elt).attr('act'));
+	//$('.showcontrol').not($(this)).removeClass('active');
+	//$(this).addClass('active');
+
+}
+
+function setup_header_buttons(){
+	$('.showcontrol').click(function(event) {
+		fubar(this);
+	});
+}
+
 function setup_listing_buttons(){
 	$('button.unfav').click(function() {
 		unfav($(this).attr('listing_id'), $(this).attr('title'), $(this));
@@ -94,5 +130,6 @@ $(document).ready(function(){
 	$('.search-sync').keyup(function(){
 		$('.search-sync').val($(this).val());
 	});
+	setup_header_buttons();
 	setup_listing_buttons();
 });

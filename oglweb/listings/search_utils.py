@@ -1,4 +1,5 @@
 
+import copy
 import datetime
 import pytz
 import time
@@ -38,6 +39,9 @@ def handle_search_args(request, filter=None, base_url = None, query_ref=None):
         args.query_date = datetime.datetime.fromtimestamp(float(args.query_date), pytz.UTC)
 
     # GET params
+    if not args.action:
+        # used on some GET forms too (e.g. switching new-cars-only on/off)
+        args.action = request.GET.get('action', '')
     if base_url:
         args.base_url = base_url
     else:
@@ -48,7 +52,8 @@ def handle_search_args(request, filter=None, base_url = None, query_ref=None):
         if query_ref:
             args.query_ref = query_ref
         else:
-            args.query_ref = request.GET.get('s','')
+            # URLs use s=; forms (even GET forms) use query_ref inputs
+            args.query_ref = request.GET.get('query_ref', request.GET.get('s', ''))
 
     args.query_string = request.GET.get('query_string', '')
 
@@ -184,6 +189,28 @@ def build_new_query(args):
     return q
 
 
+# add_date_limit()
+#
+# adds a clause to an es query limiting to cars newer than the given datetime
+#
+# NOTE: deep copies & then modified returns the cloned querybody!
+#
+def add_date_limit(querybody, date):
+    date_term = {
+        "range": {
+            "listing_date": {
+                "from": force_date(date)
+            }
+        }
+    }
+    copybody = copy.deepcopy(querybody)
+    if not 'filter' in copybody['query']['filtered']:
+        # then this is the first filter; add the filtering cruft
+        copybody['query']['filtered']['filter'] = {}
+        copybody['query']['filtered']['filter']['and'] = []
+    copybody['query']['filtered']['filter']['and'].append(date_term)
+    return copybody
+
 
 # get_listings()
 #
@@ -192,7 +219,13 @@ def build_new_query(args):
 # returns a tuple of the number of records & a list listings;
 # the listings are Bunches with extra info from the prettify method
 #
-def get_listings(querybody, number=50, offset=0, user=None, mark_since=None):
+def get_listings(query, number=50, offset=0, user=None, show='new_only'):
+
+    querybody = query.query
+    # limit results requested *and* query has date to limit to
+    if query.mark_date and show == 'new_only':
+        querybody = add_date_limit(querybody, query.mark_date)
+
     es = Elasticsearch()
     search_resp = es.search(index='carbyr-index',
                             doc_type='listing-type',
@@ -215,10 +248,10 @@ def get_listings(querybody, number=50, offset=0, user=None, mark_since=None):
         if int(item['_source']['id']) in flag_set:
             pass  # throw it out
         else:
-            es_listing = prettify_listing(Bunch(item['_source']),
-                                          favorites=fav_dict,
-                                          mark_since=mark_since)
-            listings.append(es_listing)
+            listing = prettify_listing(Bunch(item['_source']),
+                                       favorites=fav_dict,
+                                       mark_since=query.mark_date)
+            listings.append(listing)
     return search_resp['hits']['total'], listings
 
 

@@ -101,21 +101,30 @@
 	</div>
 	<div class="row">
 	</div>
+	{% if query_type == 'F' %}
 	<div class="row">
-	  <div class="col-md-8">
-		<div class="btn-group" data-toggle="buttons">
-		  <label class="btn btn-primary {%if not newonly %}active{% endif %}">
-			<input type="radio" name="options" id="option1" href="/cars" autocomplete="off" checked/>All listings
-		  </label>
-		  <label class="btn btn-primary {%if newonlt %}active{% endif %}">
-			<input type="radio" name="options" id="option2" autocomplete="off"/> New listings only
-		  </label>
-		</div>
-		<button class="btn btn-default" data-toggle="modal" data-target="#markReadModal">
-		  <span class="glyphicon glyphicon-ok"></span>Mark as seen
-		</button>
+	  <div class="col-md-12">
+		<form action="{{ abs_url }}" method="get">
+		  {% csrf_token %}
+		  <input type="hidden" name="query_ref" value="{{ query_ref }}"/>
+		  <input type="hidden" name="action" value="" id="showaction"/>
+		  <button class="btn btn-default" data-toggle="modal" data-target="#markReadModal">
+			<span class="glyphicon glyphicon-ok"></span>Mark as seen
+		  </button>
+		  {% if query_mark_date %}
+		  <div class="btn-group" data-toggle="buttons">
+			<label class="btn btn-primary showcontrol{% if not show == 'new_only' %} active{% endif %}">
+			  <input type="radio" class="show-control all" name="actionradio" act="all_cars" id="radio_new_only" href="/cars" autocomplete="off" checked/>All listings
+			</label>
+			<label class="btn btn-primary showcontrol{% if show == 'new_only' %} active{% endif %}">
+			  <input type="radio" class="show-control new" name="actionradio" act="new_only" id="radio_all_cars" autocomplete="off"/> New listings since {{ query_mark_date }}
+			</label>
+		  </div>
+		  {% endif %}
+		</form>
 	  </div>
 	</div>
+	{% endif %}
 	<hr size="1" style="clear: both;" />
 {% endblock header %}
 {% block listings %}
@@ -182,7 +191,7 @@
 	  {% endif %}
 	  {% if next_page_offset %}
 	  <div class="hidden">
-		<a class="more-listings-link" href="/carsapi/{{ next_page_offset }}/50"></a>
+		<a class="more-listings-link" href="/carsapi/{{ next_page_offset }}/50{% if new_only %}?show=new_only{% endif %}"></a>
 	  </div>
 	  {% endif %}
 	</div>
@@ -253,8 +262,8 @@
 		  </div>
 		  <form role="form" action="{{ abs_url }}" method="post">
 			<div class="modal-body">
-			  <p>Mark these cars as having been seen in the {{ query_descr }} search?</p>
-			  <p>If you do, these cars will not be shown by default when you run this query again in the future. However, you can always display all matching cars, including ones marked as seen, by clicking on the 'All listings' button.)</p>
+			  <p>Mark these {{ query_descr }} results as seen?</p>
+			  <p>If you do, these cars will not appear when you run this query again. However you can always display all matching cars, including ones marked as seen, by clicking on the 'All listings' button.)</p>
 			  {% csrf_token %}
 			  <input type="hidden" name="action" value="mark_read"/>
 			  <input type="hidden" name="query_ref" value="{{ query_ref }}"/>

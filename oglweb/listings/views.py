@@ -8,6 +8,7 @@ import time
 #import simplejson as json
 from bunch import Bunch
 from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
@@ -16,16 +17,17 @@ from django.utils.html import escape
 from django_ajax.decorators import ajax
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
-from django.core.mail import send_mail
+import humanize
 
 # OGL modules used
 from listings.constants import *
+from listings.display_utils import prettify_listing
+from listings.favlist_utils import *
 from listings.forms import UserForm
 from listings.models import Zipcode, Listing
-from listings.display_utils import prettify_listing
-from listings.search_utils import *
 from listings.query_utils import *
-from listings.favlist_utils import *
+from listings.search_utils import *
+from listings.utils import *
 
 # Create your views here.
 
@@ -140,20 +142,34 @@ def adminflag(request, id=None):
 # for now this is used as an ajax endpoint for additional pages of listings
 #
 def cars_api(request, query_ref=None, number=50, offset=0):
-    number = int(number)
-    offset = int(offset)
-    if not query_ref:
-        recents = querylist_from_session(request.session, QUERYTYPE_RECENT)
-        querybody = recents[0].query
-    # GEE TODO: handle cases other than addl pages of the most recent search!
-    total_hits, listings = get_listings(querybody, number=number, offset=offset,
-                                        user=request.user)
-    context = {}
-    # this api may be pulling any page of the results; are there even more?
-    if total_hits > (offset + number):
-        context['next_page_offset'] = offset + number
-    context['listings'] = listings
-    return render(request, LISTINGSAPI, context)
+
+    if request.method == 'GET':
+        number = int(number)
+        offset = int(offset)
+
+        q = None
+        total_hits = 0
+        listings = []
+
+        # GEE TODO: handle cases other than addl pages of the most recent search!
+        if not query_ref:
+            recents = querylist_from_session(request.session,
+                                             QUERYTYPE_RECENT)
+            q = recents[0]
+
+        if q:
+            show = get_show_cars_option(request.session, q)
+            total_hits, listings = get_listings(q,
+                                                number=number,
+                                                offset=offset,
+                                                user=request.user,
+                                                show=show)
+        context = {}
+        # this api may be pulling any page of the results; are there even more?
+        if total_hits > (offset + number):
+            context['next_page_offset'] = offset + number
+        context['listings'] = listings
+        return render(request, LISTINGSAPI, context)
 
 
 # cars()
@@ -175,28 +191,48 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
                 error_message = 'ZIP code not understood; unable to sort by distance.'
 
     # handle actions that may have been requested (e.g. save-query modal)
+    # these are all actions which post to the main cars URL so that they can
+    # redisplay a (modified) listings page upon completion; these could have
+    # been done as ajax calls too, but it was easier to implement these as
+    # full posts that redraw the page rather than doing a bunch of post-ajax
+    # javascript to "fix" the page to reflect the changes
     if args.action == 'save_query':
         args.query_ref = save_query(args.query_ref, args.query_descr, request.session, request.user)
     elif args.action == 'unsave_query':
         unsave_query(args.query_ref, request.session, request.user)
     elif args.action == 'mark_read':
-        mark_as_read(request.session, args.query_ref, args.query_date)
-
-    # GEE TODO: put these in a db... and the session!
+        mark_as_read(args.query_ref, request.session, request.user, args.query_date)
+        set_show_cars_option(request.session, 'new_only', args.query_ref)
+    elif args.action == 'new_only' or args.action == 'all_cars':
+        set_show_cars_option(request.session, args.action, args.query_ref)
+    print("FUBAR ARG:" + args.action)
+    # GEE TODO: put suggested queries in a db... and the session!
     # ... and be intelligent about which ones to pull for display
 
     query = None
     if args.query_ref:
+        print('getting query: ' + args.query_ref)
         query = get_query_by_ref(request.session, args.query_ref)
-    else:
+        if not query:
+            print('oops! failed to find referenced query: ' + args.query_ref)
+    if not query:  # was an else, but better to fall through/try to build query
         query = build_new_query(args)
+        print('new query')
+
+    if not query:
+        print('we are fucked -- no query!')
+        # GEE TODO: some real handling that informs the user, is sane, etc
+        return HttpResponseRedirect(reverse('about'))
+
+    show = get_show_cars_option(request.session, query)
 
     # update recent searches list
     update_recents(request.session, query)
 
-    total_hits, listings = get_listings(query.query, user=request.user, mark_since=query.mark_date)
+    total_hits, listings = get_listings(query,
+                                        user=request.user,
+                                        show=show)
     context = {}
-    context['timestamp'] = time.time()  # may be used to set mark_date
     # this func returns the first page; will there be more?
     if total_hits > len(listings):
         context['next_page_offset'] = len(listings)
@@ -227,6 +263,13 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
     context['query_descr'] = query.descr
     context['query_ref'] = query.ref
     context['query_type'] = query.type
+    if query.mark_date:
+        d = force_date(query.mark_date)
+        # this is apparently the shitty python way to remove tz awareness?!
+        d2 = datetime.datetime(d.year, d.month, d.day, d.hour, d.minute)
+        context['query_mark_date'] = humanize.naturaltime(d2)
+    context['show'] = show
+    context['timestamp'] = time.time()  # may be used to set mark_date
 
     # GEE TODO: these next two seem like garbage I should clean up
     if error_message:
