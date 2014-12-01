@@ -1,0 +1,55 @@
+{% load staticfiles %}
+<div class="row listing-row" id="{{ item.id }}">
+		<a href="{{ item.listing_href }}">
+		  <div class="col-md-4 listing">
+			  {% if item.since == 'New' %}
+			  <img src="{% static 'listings/images/new-50-red.png' %}" class="popicon" width="50" height="50">
+			  {% endif %}
+			<div class="imgcropper">
+			  {% if item.pic_href %}
+			  <img class="img-rounded" src='{{ item.pic_href }}'>
+			  {% else %}
+			  <p> No photo available. </p>
+			  {% endif %}
+			</div>
+		  </div>
+		  <div class="col-md-3 listing">
+			<p><strong>{{ item.model_year }} {{ item.make }} {{ item.model }}</strong></p>
+			<p><strong>{{ item.price }}</strong></p>
+			{% if item.location_text %}
+			<p>{{item.location_text}} ({{ item.source }})</p>
+			{% else %}
+			<p>({{ item.source }})</p>
+			{% endif %}
+			{% if item.status != 'F' %}
+			<p><strong>This listing {{ item.pretty_status }}</strong></p>
+			{% endif %}
+			<p></p>
+		  </div>
+		  <div class="{% if user.is_authenticated %}col-md-4{% else %}col-md-5{% endif %} listing">
+			{{ item.listing_text }}
+		  </div>
+		</a>
+		{% if user.is_authenticated %}
+		<div class="col-md-1 listing">
+		  <button class="btn-link addfav{% if item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
+		  <button class="btn-link editnote{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-pencil wideglyph"></span></button>
+		  <button class="btn-link unfav{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-trash wideglyph"></span></button>
+		  <button class="btn-link flag" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-thumbs-down wideglyph"></span></button>
+		</div>
+		{% endif %}
+		{% if item.favorite %}
+		<div class="noteframe{% if not item.note %} hidden{% endif %}">
+		  <div class="col-md-12">
+		  </div>
+		  <a class="editnote" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}">
+			<div class="col-md-1">
+			  <p><strong>Notes:</strong></p>
+			</div>
+			<div class="col-md-10">
+			  <pre class="note">{{ item.note }}</pre>
+			</div>
+		  </a>
+		</div>
+		{% endif %}
+	  </div>
