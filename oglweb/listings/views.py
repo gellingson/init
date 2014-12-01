@@ -107,7 +107,7 @@ def flag_car_api(request):
 def add_note_api(request):
     if request.method == 'POST':
         listing_id = request.POST['listing_id']
-        note_contents = escape(request.POST['listing_note'])
+        note_contents = request.POST['listing_note']
         add_note(note_contents, request.user.id, listing_id)
         return {
             'result': True,
