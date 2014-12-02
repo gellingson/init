@@ -165,6 +165,7 @@ TEMPLATE_CONTEXT_PROCESSORS=(
     "django.core.context_processors.request",
     "listings.context_processors.basic_context",
     "listings.context_processors.crispy_context",
+    "listings.context_processors.login_context",
     # allauth specific context processors
     "allauth.account.context_processors.account",
     "allauth.socialaccount.context_processors.socialaccount",
@@ -177,9 +178,23 @@ AUTHENTICATION_BACKENDS = (
     "allauth.account.auth_backends.AuthenticationBackend",
 )
 
+# listings app settings
+
 # allauth settings
 SITE_ID = 2  # carbyr is id 2 in the Sites app
 SOCIALACCOUNT_AUTO_SIGNUP=False
+SOCIALACCOUNT_PROVIDERS = {
+    'facebook': {
+        'SCOPE': ['email', 'publish_stream'],
+#        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'METHOD': 'js_sdk',
+        'VERIFIED_EMAIL': False
+    },
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': { 'access_type': 'online' }
+    }
+}
 
 # settings for normal SMTP delivery via mandrill
 #EMAIL_HOST='smtp.mandrillapp.com'
@@ -194,15 +209,3 @@ SERVER_EMAIL = 'info@carbyr.com'  # this didn't work despite docs
 DEFAULT_FROM_EMAIL = 'info@carbyr.com'   # this one worked
 MANDRILL_API_KEY = '0vGvsQOzdCdauh7ld9cpXA'
 EMAIL_BACKEND = 'djrill.mail.backends.djrill.DjrillBackend'
-SOCIALACCOUNT_PROVIDERS = {
-    'facebook': {
-        'SCOPE': ['email', 'publish_stream'],
-#        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
-        'METHOD': 'js_sdk',
-        'VERIFIED_EMAIL': False
-    },
-    'google': {
-        'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': { 'access_type': 'online' }
-    }
-}

@@ -1,3 +1,57 @@
 {% extends "listings/listingsbase.html" %}
 {% load staticfiles %}
+{% load account %}
 {% block title %}Carbyr: beta interface{% endblock %}
+    {% block navbar %}
+	<div class="navbar navbar-fixed-top navbar-default" role="navigation">
+	  <div class="container">
+		<div class="navbar-header">
+		  <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+			<span class="sr-only">Toggle navigation</span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+		  </button>
+		  <div class="navbar-brand">
+		{% if user.is_authenticated or request.session.ogl_alpha_user %}
+			<a href="/cars/">
+		{% else %}
+			<a href="/">
+		{% endif %}
+			  <picture>
+				<source srcset="{% static 'listings/images/carbyr-logo-70px.png' %} 1x, {% static 'listings/images/carbyr-logo-70px-2x.png' %} 2x">
+				<img src="{% static 'listings/images/carbyr-logo-70px.png' %}" alt="Carbyr">
+			  </picture>
+			</a>
+		  </div>
+		  <div class="navbar-slogan">
+			Cars for enthusiasts
+		  </div>
+		</div>
+		<div class="navbar-collapse collapse">
+		  <ul class="nav navbar-nav navbar-right">
+			{% if user.is_authenticated or request.session.ogl_alpha_user %}
+			<li><a href="/cars">Search</a></li>
+			{% endif %}
+			{% if user.is_authenticated %}
+			<li><a href="/dashboard">Dashboard</a></li>
+			<li class="dropdown">
+			  <a href="#" class="dropdown-toggle" data-toggle="dropdown">{% user_display user %}<span class="caret"></span></a>
+			  <ul class="dropdown-menu" role="menu">
+				<li><a href="/accounts/profile">Profile</a></li>
+				<li><a href="/cars">Search</a></li>
+				<li><a href="/dashboard">Dashboard</a></li>
+				<li class="divider"></li>
+				<li><a href="/accounts/logout">Sign Out</a></li>
+			  </ul>
+			</li>
+			{% else %}
+			<li><a href="/accounts/login">Log In</a></li>
+			<li><a href="/accounts/signup">Sign Up</a></li>
+			{% endif %}
+			<li><a href="/about">About Carbyr</a></li>
+		  </ul>
+		</div>
+	  </div>
+	</div>
+	{% endblock navbar %}

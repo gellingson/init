@@ -37,8 +37,6 @@
 		  <button class="btn-link unfav{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-trash wideglyph"></span></button>
 		  <button class="btn-link flag" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-thumbs-down wideglyph"></span></button>
 		</div>
-		{% endif %}
-		{% if item.favorite %}
 		<div class="noteframe{% if not item.note %} hidden{% endif %}">
 		  <div class="col-md-12">
 		  </div>

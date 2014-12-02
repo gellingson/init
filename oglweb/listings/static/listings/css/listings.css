@@ -59,6 +59,9 @@ h4 {
 	padding-bottom: 25px;
 }
 
+.topspace {
+	margin-top: 10px;
+}
 /* see http://dabblet.com/gist/4711695 */
 .img-crop,
 .img-crop img{
@@ -259,7 +262,8 @@ Added by Stephanie
 
 .modal-input
 {
-	margin-left: 50px;
+	margin-left: 25px;
+	margin-right: 25px;
 }
 .modal-center
 {
@@ -371,6 +375,7 @@ h1 {
 	}
 	.modal-input {
 		margin-left: 100px;
+		margin-right: 100px;
 	}
 }
 .imgcropper img {

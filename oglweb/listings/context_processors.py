@@ -5,6 +5,7 @@
 # some of these may be incorporated in TEMPLATE_CONTEXT_PROCESSORS,
 # which will include them when processing every template
 
+import os
 from crispy_forms.helper import FormHelper
 from django.template import RequestContext
 
@@ -34,3 +35,14 @@ def crispy_context(request):
     helper.label_class = 'col-md-2'
     helper.field_class = 'col-md-8'
     return { 'horiz-form-helper': helper }
+
+# login context handler
+#
+# a quick hacky way to suppress login (and signup) in case things are
+# not kosher temporarily; note that is is better to manage issues with
+# specific login providers via the allauth settings, which are mostly
+# stored in the db through admin pages
+#
+def login_context(request):
+    suppress_login = bool(os.environ.get('OGL_SUPPRESS_LOGIN', '') == 'TRUE')
+    return { 'suppress_login': suppress_login }

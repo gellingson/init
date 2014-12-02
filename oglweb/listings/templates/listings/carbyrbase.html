@@ -62,7 +62,10 @@
 			  </ul>
 			</li>
 			{% else %}
-			<li><a href="/accounts/login">Log In</a></li>			
+			{% if not suppress_login %}
+			<li><a href="/accounts/login">Log In</a></li>
+			<li><a href="/accounts/signup">Sign Up</a></li>
+			{% endif %}
 			{% endif %}
 			<li><a href="/about">About Carbyr</a></li>
 		  </ul>

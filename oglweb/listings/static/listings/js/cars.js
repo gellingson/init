@@ -53,4 +53,10 @@ function setup_listing_buttons(){
 
 $(document).ready(function(){
 	setup_listing_buttons();
+	$('#saveModal').on('shown.bs.modal', function () {
+	    $('#query_descr').focus();
+	})
+	$('#editNoteModal').on('shown.bs.modal', function () {
+	    $('#note_text').focus();
+	})
 });
