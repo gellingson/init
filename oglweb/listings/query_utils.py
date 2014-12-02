@@ -77,7 +77,7 @@ class Query(object):
         self.orig_ref = qd.get('orig_ref', None)
         self.descr = qd.descr
         self.query = qd.query
-        self.type = qd.get('type', QUERYTYPE_NONE)
+        self.type = qd.get('type', qd.ref[0])
         self.mark_date = qd.get('mark_date', None)
         return self
 
@@ -91,7 +91,7 @@ class Query(object):
         self.orig_ref = None
         self.descr = qd.desc
         self.query = qd.query
-        self.type = qd.get('querytype', QUERYTYPE_NONE)
+        self.type = qd.get('querytype', qd.id[0])
         self.mark_date = None
         return self
 
@@ -176,7 +176,7 @@ def querylist_from_session(session, query_type):
             old_ql = []
         for query in old_ql:
             try:
-                querylist.append(Query().from_old_storage_dict(query), type=query_type)
+                querylist.append(Query().from_old_storage_dict(query, type=query_type))
             except AttributeError:
                 pass  # must have been some oddity in the old query list -- ignore
     return querylist
