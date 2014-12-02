@@ -17,21 +17,24 @@ body {
 .navbar-default {
 	background-color: #ffffff;
 	border-width: 0px;
+	padding-top: 0px;
 }
 .navbar-brand {
   padding: 0px 0px;
+  border-width: 0px 0px;
 }
 .navbar-slogan {
 	float:left;
 	color: #000;
-	padding-top: 24px;
+	padding-top: 13px;
 	padding-left: 8px;
 	font-size: 18px;
 	font-weight: bold;
 	display: none;
 }
 .navbar-header {
-  height: 70px;
+	padding-top: 0px;
+	height:48px;
 }
 
 h4 {
@@ -338,6 +341,19 @@ h1 {
 .input-group-moves {
 	display: inline-block
 }
+
+@media (max-width: 767px) {
+	.jumbotron h1 {
+		font-size: 150%;
+	}
+	.jumbotron p {
+		font-size: 110%;
+		font-weight: bold;
+	}
+}
+
+@media (min-width: 400px) {
+}
 @media (min-width: 768px) {
 	.long {
 		display: inline;
@@ -345,9 +361,6 @@ h1 {
 	.input-group-moves {
 		float:right;
 		margin-left: 20px;
-	}
-	.navbar-slogan {
-		display: block !important
 	}
 	.dynthing {
 		width: auto;
@@ -363,6 +376,7 @@ h1 {
 		overflow-y: visible;
 	}
 }
+
 .imgcropper {
 	/* line-height:250px; // this fixes vertical-align of the img... if we know the elt height */
 	overflow: hidden;
@@ -370,6 +384,9 @@ h1 {
 	position:relative;
 }
 @media (min-width: 992px) {
+	.navbar-slogan {
+		display: block !important
+	}
 	.imgcropper {
 		max-height: 250px;
 	}

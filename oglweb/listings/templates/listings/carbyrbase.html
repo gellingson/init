@@ -29,14 +29,10 @@
 			<span class="icon-bar"></span>
 		  </button>
 		  <div class="navbar-brand">
-		{% if user.is_authenticated or request.session.ogl_alpha_user %}
 			<a href="/cars/">
-		{% else %}
-			<a href="/">
-		{% endif %}
 			  <picture>
-				<source srcset="{% static 'listings/images/carbyr-logo-70px.png' %} 1x, {% static 'listings/images/carbyr-logo-70px-2x.png' %} 2x">
-				<img src="{% static 'listings/images/carbyr-logo-70px.png' %}" alt="Carbyr">
+				<source srcset="{% static 'listings/images/carbyr-logo-50px.png' %} 1x, {% static 'listings/images/carbyr-logo-50px-2x.png' %} 2x">
+				<img src="{% static 'listings/images/carbyr-logo-50px.png' %}" alt="Carbyr">
 			  </picture>
 			</a>
 		  </div>
@@ -46,9 +42,7 @@
 		</div>
 		<div class="navbar-collapse collapse">
 		  <ul class="nav navbar-nav navbar-right">
-			{% if user.is_authenticated or request.session.ogl_alpha_user %}
 			<li><a href="/cars">Search</a></li>
-			{% endif %}
 			{% if user.is_authenticated %}
 			<li><a href="/dashboard">Dashboard</a></li>
 			<li class="dropdown">

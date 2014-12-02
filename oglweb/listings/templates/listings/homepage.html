@@ -4,25 +4,20 @@
 {% block page %}
     <div class="jumbotron">
       <div class="container">
-        <h1>Carbyr is coming soon!</h1>
-        <p>Watch this space.</p>
-        <p><a class="btn btn-primary btn-lg" role="button" href="/about">Learn more &raquo;</a></p>
+        <h1>carbyr is in open beta!</h1>
+        <p>Connecting enthusiasts to cars.</p>
+        <p>
+		  <a class="btn btn-primary btn-lg" role="button" href="/about">Learn more &raquo;</a></p>
       </div>
     </div>
-	{% if user.is_authenticated or ogl_alpha_user %}
 	<div class="container">
 	  <div class="row">
         <div class="col-md-12">
-          <h2>Thanks for joining us!</h2>
-          <p>Welcome to the Carbyr pre-release. We hope you enjoy Carbyr and through that you find great cars.</p>
-		  <p>Click <a href="/cars/">here</a> to access the pre-release car search.
+          <h2>Welcome!</h2>
+          <p>We are delighted to have you with us during our beta (pre-release testing) period. Everything is open, if a bit rough in places. Enjoy, and let us know what you think via email to <a href="mailto:feedback@carbyr.com">feedback@carbyr.com</a> or on twitter via @onegeelabs.</p>
+		  <p><a href="/about">Learn more</a> or <a href="/cars/">find your next car now!</a></p>
 		</div>
 	  </div>
 	</div>
-	{% else %}
-	<div>
-	  <p></p>
-	</div>
-	{% endif %}
 	<hr>
 {% endblock page %}
