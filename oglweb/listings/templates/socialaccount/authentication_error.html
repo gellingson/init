@@ -1,11 +1,14 @@
-{% extends "socialaccount/base.html" %}
+{% extends "listings/carbyrbase.html" %}
 
 {% load i18n %}
 
-{% block head_title %}{% trans "Social Network Login Failure" %}{% endblock %}
+{% block title %}{% trans "Social Network Login Failure" %}{% endblock title %}
 
-{% block content %}
-<h1>{% trans "Social Network Login Failure" %}</h1>
+{% block page %}
+<div class="container">
+  <h1>{% trans "Social Network Login Failure" %}</h1>
 
-<p>{% trans "An error occurred while attempting to login via your social network account." %}</p>
-{% endblock %}
+  <p>{% trans "An error occurred while attempting to login via your social network account." %}</p>
+  <p>Please try again: <a href="/accounts/login">log in</a> or <a href="/accounts/signup">sign up</a>; if the problem persists use a different social network account or set up a login directly with Carbyr.</p>
+</div>
+{% endblock page %}
