@@ -182,6 +182,7 @@ AUTHENTICATION_BACKENDS = (
 
 # allauth settings
 SITE_ID = 2  # carbyr is id 2 in the Sites app
+ACCOUNT_SIGNUP_FORM_CLASS='listings.forms.SignupForm'
 SOCIALACCOUNT_AUTO_SIGNUP=False
 SOCIALACCOUNT_PROVIDERS = {
     'facebook': {

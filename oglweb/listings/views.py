@@ -50,7 +50,18 @@ def profile(request):
             user.first_name = form.cleaned_data['first_name']
             user.last_name = form.cleaned_data['last_name']
             user.username = form.cleaned_data['username']
+            if form.cleaned_data['newsletter'] != (user.profile.newsletter == 'Y'):
+                # GEE TODO: manage subscription change in mailchimp
+                if form.cleaned_data['newsletter']:
+                    print("user {} has subscribed to the newsletter".format(user.username))
+                else:
+                    print("user {} has unsubscribed from the newsletter".format(user.username))
+            if form.cleaned_data['newsletter']:
+                user.profile.newsletter = 'Y'
+            else:
+                user.profile.newsletter = 'N'
             user.save()
+            user.profile.save()
             # now continue as per get: display the profile incl hidden form
         else:
             context['show_form'] = True  # redisplay (with errors)
@@ -60,6 +71,7 @@ def profile(request):
             'first_name':request.user.first_name,
             'last_name':request.user.last_name,
             'username':request.user.username,
+            'newsletter':(request.user.profile.newsletter == 'Y')
         })
     context['form'] = form
     return render(request, 'account/profile.html', context)

@@ -16,12 +16,18 @@
         
 from django import forms
 from django.contrib.auth.models import User
+from listings.models import Profile
 
 class UserForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput())  # need this to write validation for username
     first_name = forms.CharField(max_length=30, required=False)
     last_name = forms.CharField(max_length=30, required=False)
     username = forms.CharField(min_length=1, max_length=30)
+    newsletter = forms.BooleanField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(UserForm, self).__init__(*args, **kwargs)
+        self.fields['newsletter'].label = 'Subscribe to the Carbyr newsletter... we promise not to sell your email, spam you, or otherwise be evil'
 
     def clean(self):
         cleaned_data = super(UserForm, self).clean()
@@ -30,7 +36,6 @@ class UserForm(forms.Form):
         matches = User.objects.filter(username=uname)
         if matches:
             if id:
-                print(str(matches[0].id) + '/' + str(id))
                 # might be this guy....
                 if matches[0].id != id:
                     err = forms.ValidationError(
@@ -38,3 +43,22 @@ class UserForm(forms.Form):
                         code="duplicate")
                     self.add_error('username', err)
         return cleaned_data
+
+
+class SignupForm(forms.Form):
+    newsletter = forms.BooleanField(required=False, initial=True)
+
+    def __init__(self, *args, **kwargs):
+        super(SignupForm, self).__init__(*args, **kwargs)
+        self.fields['newsletter'].label = 'Subscribe to the Carbyr newsletter... we promise not to sell your email, spam you, or otherwise be evil'
+
+    def signup(self, request, user):
+        user.profile = Profile()
+        user.profile.id = user.id
+        if self.cleaned_data['newsletter']:
+            user.profile.newsletter = 'Y'
+        else:
+            user.profile.newsletter = 'N'
+        # the user is saved by something in allauth package,
+        # but we must save the profile here. Somehow the IDs work out...
+        user.profile.save()

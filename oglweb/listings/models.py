@@ -23,6 +23,14 @@ from jsonfield import JSONCharField
 # OGL modules used
 
 
+class Profile(models.Model):
+    user = models.OneToOneField(User)
+    newsletter = models.CharField(max_length=1)
+
+    class Meta:
+        managed = False
+        db_table = 'profile'
+
 class SavedListing(models.Model):
     id = models.IntegerField(primary_key=True)  # AutoField?
     user = models.ForeignKey(settings.AUTH_USER_MODEL)

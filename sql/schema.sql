@@ -412,6 +412,8 @@ foreign key (implies_tag_id) references concept_tag(id));
 # mirrors the structure from the zipcode file we have on hand
 # hopelessly US for now; should be generalized later
 
+drop table zipcode_backup;
+rename table zipcode to zipcode_backup;
 create table zipcode(
 zip varchar(5),
 city_upper varchar(100),
@@ -427,6 +429,8 @@ primary key(zip),
 index statecityidx(state_code, city_upper));
 create index latlonidx on zipcode(lat, lon);
 
+drop table saved_query_backup;
+rename table saved_query to saved_query_backup;
 create table saved_query(
 id        int unsigned not null auto_increment,
 querytype char(1) not null,
@@ -439,6 +443,8 @@ primary key (id),
 unique index (user_id, ref),
 foreign key (user_id) references auth_user(id));
 
+drop table saved_listing_backup;
+rename table saved_listing to saved_listing_backup;
 create table saved_listing(
 id        int unsigned not null auto_increment,
 user_id   int,
@@ -451,3 +457,12 @@ foreign key (user_id) references auth_user(id),
 foreign key (listing_id) references listing(id)
 );
 
+drop table profile_backup;
+rename table profile to profile_backup;
+create table profile(
+id        int unsigned not null auto_increment,
+user_id   int,
+newsletter char(1),
+primary key (id),
+foreign key (user_id) references auth_user(id)
+);
