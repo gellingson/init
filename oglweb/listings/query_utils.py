@@ -127,7 +127,7 @@ class Query(object):
         return "{}/{}/{}/{}".format(self.id, self.ref, self.descr, self.query)
 
 
-SUGGESTED_SEARCH_LIST = {
+FIRST_SUGGESTED_SEARCH_LIST = {
     '_sotw_vette':
     {
         'ref': '_sotw_vette',
@@ -148,6 +148,29 @@ SUGGESTED_SEARCH_LIST = {
         'descr': '99-05 MX-5 Miatas',
         'type': 'S',
         'query': {'query': {'filtered': {'query': {'query_string': {'query': 'nb', 'default_operator': 'AND'}}}}, 'sort': [{'_geo_distance': {'unit': 'mi', 'order': 'asc', 'location': {'lon': -121.8818207, 'lat': 37.3415451}}}]}
+    }
+}
+SUGGESTED_SEARCH_LIST = {
+    '_sotw_c5z06':
+    {
+        'ref': '_sotw_c5z06',
+        'descr': 'C5 Z06s',
+        'type': 'S',
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'C5 Z06 make:chevrolet model:corvette'}}}}}
+    },
+    '_sotw_morgan':
+    {
+        'ref': '_sotw_morgan',
+        'descr': 'Morgans',
+        'type': 'S',
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'make:morgan'}}}}}
+    },
+    '_sotw_308':
+    {
+        'ref': '_sotw_308',
+        'descr': 'Ferrari 308s',
+        'type': 'S',
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': '308 make:ferrari'}}}}}
     }
 }
 
