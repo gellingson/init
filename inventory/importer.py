@@ -43,6 +43,14 @@ from orm.models import NonCanonicalMake, NonCanonicalModel, Zipcode
 # CONSTANTS AND GLOBALS
 # ============================================================================
 
+# extra logging settings (beyond even the DEBUG log setting); to be used
+# only in one-off situations because these are very resource-intensive
+XL = Bunch({
+    'dblog': False,
+    'dump': False
+})
+    
+
 # GEE TODO refine this: what headers do we want to send?
 # some sites don't want to offer up inventory without any headers.
 # Not sure why, but let's impersonate some real browser and such to get through
@@ -1203,6 +1211,8 @@ def process_ebay_listing(session, item, classified, counts, dblog=False):
         lsinfo.entry = json.dumps(item)
         lsinfo.detail_enc = 'X'
         lsinfo.detail = None
+    if XL.dump:
+        logging.debug(json.dumps(item))
 
     # local_id & stock_no
     listing.local_id = item.itemId
@@ -1552,6 +1562,8 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
         lsinfo.entry = json.dumps(item)
         lsinfo.detail_enc = 'B'
         lsinfo.detail = html
+    if XL.dump:
+        logging.debug(json.dumps(item))
 
     # local_id & stock_no
     # the source identifier to minimizes dupes (3taps ID changes each update)
@@ -1650,7 +1662,11 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
         else:
             listing.model_year = he_model_year
     if not listing.make or not listing.model:
-        if an_make:
+        # GEE TODO: recheck in a few months (spring '15) and hopefully remove:
+        # recent (dec-14) bug in hmngs is getting annotation 'make' wrong, as
+        # 'Willys-Overland' when it is not. So at least temporarily a patch:
+        if an_make and (classified.textid != 'hmngs' or
+                        an_make != 'Willys' or he_make == an_make):
             listing.make = an_make
             if an_model:  # take any model found with the winning make
                 listing.model = an_model
@@ -1803,6 +1819,9 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
 #
 def pull_3taps_inventory(classified, session,
                          inventory_marker=None, dblog=False):
+
+    # GEE TODO: clean this up!
+    dblog = XL.dblog
 
     # implicit param from environment:
     inv_settings = os.environ.get('OGL_INV_SETTINGS', '')
@@ -2376,6 +2395,9 @@ def process_command_line():
                         choices=('DEBUG', 'INFO', 'WARNING',
                                  'ERROR', 'CRITICAL'),
                         help='set the logging level')
+    parser.add_argument('--extra_logging', default='NONE',
+                        choices=('NONE', 'DBLOG', 'STDOUT'),
+                        help='do extra logging (expensive, be careful)')
     parser.add_argument('action',
                         choices=('list', 'import'),
                         help=('action: list sources which can be imported and'
@@ -2391,6 +2413,11 @@ def main():
 
     # start logging
     logging.basicConfig(level=args.log_level.upper(),format='%(asctime)s %(message)s')
+
+    if args.extra_logging == 'DBLOG':
+        XL.dblog = True
+    if args.extra_logging == 'STDOUT':
+        XL.dump = True
 
     # establish connections to required services (db & es)
     session = None # the SQLAlchemy session
