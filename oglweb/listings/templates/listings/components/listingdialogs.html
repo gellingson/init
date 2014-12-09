@@ -8,6 +8,9 @@
 		  <form role="form" action="{{ abs_url }}" method="post">
 			<div class="modal-body">
 			  <p>Favorite searches make it easy to manage your car search. As suitable cars enter (and leave) the market this list will automatically update; check back any time. </p>
+			  {% if not user.is_authenticated %}
+			  <p>This saved search will only accessible on this computer, and will be lost if you clear your cookies. Sign up for a Carbyr account to make this search permanantly and access it across all your devices, mark results as read, and much more!</p>
+			  {% endif %}
 			  <p>You can also choose to receive updates on saved searches through RSS or email [coming soon!].</p>
 			  {% csrf_token %}
 			  <input type="hidden" name="action" value="save_query"/>
