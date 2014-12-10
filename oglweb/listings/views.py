@@ -18,6 +18,7 @@ from django_ajax.decorators import ajax
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 import humanize
+import logging
 
 # OGL modules used
 from listings.constants import *
@@ -28,6 +29,8 @@ from listings.models import Zipcode, Listing
 from listings.query_utils import *
 from listings.search_utils import *
 from listings.utils import *
+
+LOG = logging.getLogger(__name__)
 
 # Create your views here.
 
@@ -189,6 +192,7 @@ def cars_api(request, query_ref=None, number=50, offset=0):
 # this is the primary view for car search/results viewing
 #
 def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSBASE, error_message=None):
+    LOG.info('informational log message')
     request.session['ogl_alpha_user'] = True  # been here, seen this = IN
     args = handle_search_args(request, filter, base_url, query_ref)
     if args.errors:
@@ -223,16 +227,14 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
 
     query = None
     if args.query_ref:
-        print('getting query: ' + args.query_ref)
         query = get_query_by_ref(request.session, args.query_ref)
         if not query:
             print('oops! failed to find referenced query: ' + args.query_ref)
     if not query:  # was an else, but better to fall through/try to build query
         query = build_new_query(args)
-        print('new query')
 
     if not query:
-        print('we are fucked -- no query!')
+        print('oops! no query!')
         # GEE TODO: some real handling that informs the user, is sane, etc
         return HttpResponseRedirect(reverse('about'))
 
@@ -275,6 +277,13 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
     context['query_descr'] = query.descr
     context['query_ref'] = query.ref
     context['query_type'] = query.type
+    recents = querylist_from_session(request.session, QUERYTYPE_RECENT)
+    for recent in recents:
+        print('RECENT QUERY:' + str(recent))
+    if query.mark_date:
+        print('mark date is: ' + str(query.mark_date))
+    else:
+        print('no mark date')
     if query.mark_date:
         d = force_date(query.mark_date)
         # this is apparently the shitty python way to remove tz awareness?!

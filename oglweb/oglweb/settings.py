@@ -25,7 +25,7 @@ DEBUG = bool(os.environ.get('OGL_SERVER_DEBUG', '') == 'TRUE')
 TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
 TEMPLATE_DEBUG = True
 # crispy forms setup: note that using the cached template loaders
-# in dev defeats the auto-refresh logic of teh django test server :(
+# in dev defeats the auto-refresh logic of the django test server :(
 #TEMPLATE_LOADERS = (
 #    ('django.template.loaders.cached.Loader', (
 #        'django.template.loaders.filesystem.Loader',
@@ -93,6 +93,7 @@ if os.environ.get('OGL_SERVER_RUN_DEV_APPS','') == 'TRUE':
     INSTALLED_APPS = INSTALLED_APPS +  ('todo',)
 
 MIDDLEWARE_CLASSES = (
+    'django.middleware.common.BrokenLinkEmailsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -198,6 +199,7 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 # settings for normal SMTP delivery via mandrill
+# superceded by the djrill settubgs below
 #EMAIL_HOST='smtp.mandrillapp.com'
 #EMAIL_PORT=587
 #EMAIL_HOST_USER='info@carbyr.com'
@@ -210,3 +212,80 @@ SERVER_EMAIL = 'info@carbyr.com'  # this didn't work despite docs
 DEFAULT_FROM_EMAIL = 'info@carbyr.com'   # this one worked
 MANDRILL_API_KEY = '0vGvsQOzdCdauh7ld9cpXA'
 EMAIL_BACKEND = 'djrill.mail.backends.djrill.DjrillBackend'
+
+# ask django to automatically email admins on any exception
+# note that django expects a tuple of tuples; get from env in the form:
+# OGL_ADMINS=name/address[,name/address]*
+#
+# SECURITY WARNING: DO NOT USE THIS until we can sort out how to
+# exclude environment vars from tracebacks!
+#
+ADMINS = ()
+if os.environ.get('OGL_ADMINS', None):
+    adminlist = []
+    for adminstr in os.environ.get('OGL_ADMINS', '').split(','):
+        name, email = adminstr.split('/')
+        adminlist.append((name, email))
+    ADMINS = tuple(adminlist)
+
+# set up loggers to reasonable places/defaults
+# see:
+# http://stackoverflow.com/questions/238081/how-do-you-log-server-errors-on-django-sites
+# http://ianalexandr.com/blog/getting-started-with-django-logging-in-5-minutes.html
+# https://docs.djangoproject.com/en/dev/topics/logging/
+# https://docs.python.org/3/howto/logging-cookbook.html
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse'
+        }
+    },
+    'formatters': {
+        'verbose': {
+            'format' : "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            'datefmt' : "%d/%b/%Y %H:%M:%S"
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        # Include the default Django email handler for errors
+        # This is what you'd get without configuring logging at all.
+        'mail_admins': {
+            'class': 'django.utils.log.AdminEmailHandler',
+            'level': 'ERROR',
+            'filters': [], # GEE ['require_debug_false'],
+            # But the emails are plain text by default - HTML is nicer
+            'include_html': True,
+        },
+        # Log to a text file that can be rotated by logrotate
+        'logfile': {
+            'class': 'logging.handlers.WatchedFileHandler',
+            'filename': os.path.join(os.environ.get('OGL_LOGDIR', '/tmp'), 'djangolog'),
+            'formatter': 'verbose'
+        },
+    },
+    'loggers': {
+        # Again, default Django configuration to email unhandled exceptions
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+        # Might as well log any errors anywhere else in Django
+        'django': {
+            'handlers': ['logfile'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        # logging from our listings app
+        'listings': {
+            'handlers': ['logfile'],
+            'level': 'INFO',
+            'propagate': False
+        },
+    },
+}

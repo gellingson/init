@@ -25,6 +25,7 @@
 import copy
 import datetime
 import inspect
+import logging
 import pytz
 import time
 
@@ -36,6 +37,8 @@ from bunch import Bunch
 from listings.constants import *
 from listings.models import SavedQuery
 from listings.utils import *
+
+LOG = logging.getLogger(__name__)
 
 QUERYTYPE_NONE = None
 QUERYTYPE_DEFAULT = 'D'
@@ -124,6 +127,7 @@ class Query(object):
         return sq
 
     def __str__(self):
+        return str(self.to_dict())
         return "{}/{}/{}/{}".format(self.id, self.ref, self.descr, self.query)
 
 
@@ -230,6 +234,7 @@ def querylist_to_session(session, query_type, querylist):
 # save any query that is somewhere in the recents array
 #
 def save_query(ref, descr, session, user):
+    LOG.info('saving the query {}:{}'.format(ref, descr))
     recents = querylist_from_session(session, QUERYTYPE_RECENT)
     from_search = None
     # ref'd query is normally recents[0] but let's be flexible in case
@@ -430,7 +435,6 @@ def put_query_by_ref(session, user, query):
 # changes it
 #
 def set_show_cars_option(session, action, query_ref):
-    print("FUBAR:" + action)
     if query_ref:
         session['show'] = action
         session['show_for_query_ref'] = query_ref
