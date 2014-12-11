@@ -2,6 +2,7 @@
 
 # builtin modules used
 import datetime
+import logging
 import time
 
 # third party modules used
@@ -18,7 +19,6 @@ from django_ajax.decorators import ajax
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 import humanize
-import logging
 
 # OGL modules used
 from listings.constants import *
@@ -56,9 +56,9 @@ def profile(request):
             if form.cleaned_data['newsletter'] != (user.profile.newsletter == 'Y'):
                 # GEE TODO: manage subscription change in mailchimp
                 if form.cleaned_data['newsletter']:
-                    print("user {} has subscribed to the newsletter".format(user.username))
+                    LOG.info("user {} has subscribed to the newsletter".format(user.username))
                 else:
-                    print("user {} has unsubscribed from the newsletter".format(user.username))
+                    LOG.info("user {} has unsubscribed from the newsletter".format(user.username))
             if form.cleaned_data['newsletter']:
                 user.profile.newsletter = 'Y'
             else:
@@ -192,7 +192,6 @@ def cars_api(request, query_ref=None, number=50, offset=0):
 # this is the primary view for car search/results viewing
 #
 def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSBASE, error_message=None):
-    LOG.info('informational log message')
     request.session['ogl_alpha_user'] = True  # been here, seen this = IN
     args = handle_search_args(request, filter, base_url, query_ref)
     if args.errors:
@@ -229,12 +228,12 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
     if args.query_ref:
         query = get_query_by_ref(request.session, args.query_ref)
         if not query:
-            print('oops! failed to find referenced query: ' + args.query_ref)
+            LOG.error('oops! failed to find referenced query: ' + args.query_ref)
     if not query:  # was an else, but better to fall through/try to build query
         query = build_new_query(args)
 
     if not query:
-        print('oops! no query!')
+        LOG.error('oops! no query!')
         # GEE TODO: some real handling that informs the user, is sane, etc
         return HttpResponseRedirect(reverse('about'))
 

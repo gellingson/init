@@ -229,11 +229,24 @@ if os.environ.get('OGL_ADMINS', None):
     ADMINS = tuple(adminlist)
 
 # set up loggers to reasonable places/defaults
-# see:
+#
+# IMPORTANT NOTE: setting logging.raiseExceptions suppresses SOME but NOT ALL
+# exceptions. Notably, pointing to a file or dir with any permissions issues
+# or other filesystem error detectable during config (startup) will CAUSE A
+# FULL SITE OUTAGE with all pages returning an HTTP 500 internal server error.
+#
+# This sucks, but I see no reasonable workaround. The logging package has no
+# wrapping around these raise statements, and the django packag doesn't have
+# any configurable facility either. I would have to fork one of these packages
+# and modify them = YUCK.
+#
+# see these links for config stuff:
 # http://stackoverflow.com/questions/238081/how-do-you-log-server-errors-on-django-sites
 # http://ianalexandr.com/blog/getting-started-with-django-logging-in-5-minutes.html
 # https://docs.djangoproject.com/en/dev/topics/logging/
 # https://docs.python.org/3/howto/logging-cookbook.html
+import logging
+logging.raiseExceptions = False
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -254,13 +267,14 @@ LOGGING = {
     'handlers': {
         # Include the default Django email handler for errors
         # This is what you'd get without configuring logging at all.
-        'mail_admins': {
-            'class': 'django.utils.log.AdminEmailHandler',
-            'level': 'ERROR',
-            'filters': [], # GEE ['require_debug_false'],
-            # But the emails are plain text by default - HTML is nicer
-            'include_html': True,
-        },
+# GEE: nope, can't do this until the damn security leak is addressed
+#        'mail_admins': {
+#            'class': 'django.utils.log.AdminEmailHandler',
+#            'level': 'ERROR',
+#            'filters': [], # GEE ['require_debug_false'],
+#            # But the emails are plain text by default - HTML is nicer
+#            'include_html': True,
+#        },
         # Log to a text file that can be rotated by logrotate
         'logfile': {
             'class': 'logging.handlers.WatchedFileHandler',
@@ -270,11 +284,12 @@ LOGGING = {
     },
     'loggers': {
         # Again, default Django configuration to email unhandled exceptions
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
-            'propagate': True,
-        },
+# GEE: see security note above
+#            'django.request': {
+#            'handlers': ['mail_admins'],
+#            'level': 'ERROR',
+#            'propagate': True,
+#        },
         # Might as well log any errors anywhere else in Django
         'django': {
             'handlers': ['logfile'],
