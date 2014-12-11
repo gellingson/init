@@ -136,21 +136,21 @@ FIRST_SUGGESTED_SEARCH_LIST = {
     {
         'ref': '_sotw_vette',
         'descr': 'C2 Corvettes',
-        'type': 'S',
+        'type': QUERYTYPE_SUGGESTED,
         'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'model_year:[1963 TO 1967] make: chevrolet model:corvette'}}}}}
     },
     '_sotw_tesla':
     {
         'ref': '_sotw_tesla',
         'descr': 'Tesla Roadsters',
-        'type': 'S',
+        'type': QUERYTYPE_SUGGESTED,
         'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'tesla roadster'}}}}}
     },
     '_sotw_nb':
     {
         'ref': '_sotw_nb',
         'descr': '99-05 MX-5 Miatas',
-        'type': 'S',
+        'type': QUERYTYPE_SUGGESTED,
         'query': {'query': {'filtered': {'query': {'query_string': {'query': 'nb', 'default_operator': 'AND'}}}}, 'sort': [{'_geo_distance': {'unit': 'mi', 'order': 'asc', 'location': {'lon': -121.8818207, 'lat': 37.3415451}}}]}
     }
 }
@@ -159,21 +159,21 @@ SUGGESTED_SEARCH_LIST = {
     {
         'ref': '_sotw_c5z06',
         'descr': 'C5 Z06s',
-        'type': 'S',
+        'type': QUERYTYPE_SUGGESTED,
         'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'C5 Z06 make:chevrolet model:corvette'}}}}}
     },
     '_sotw_morgan':
     {
         'ref': '_sotw_morgan',
         'descr': 'Morgans',
-        'type': 'S',
+        'type': QUERYTYPE_SUGGESTED,
         'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'make:morgan'}}}}}
     },
     '_sotw_308':
     {
         'ref': '_sotw_308',
         'descr': 'Ferrari 308s',
-        'type': 'S',
+        'type': QUERYTYPE_SUGGESTED,
         'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': '308 make:ferrari'}}}}}
     }
 }
@@ -233,6 +233,8 @@ def querylist_to_session(session, query_type, querylist):
 # normal usage is to save the current (most recent) query but can
 # save any query that is somewhere in the recents array
 #
+# also updates the recents list, marking the now-favorite query as a fav
+#
 def save_query(ref, descr, session, user):
     LOG.info('saving the query {}:{}'.format(ref, descr))
     recents = querylist_from_session(session, QUERYTYPE_RECENT)
@@ -244,22 +246,33 @@ def save_query(ref, descr, session, user):
                 from_search = search
                 break
     if from_search:
-        from_search.id = None  # force new/distinct object
-        from_search.type = QUERYTYPE_FAVORITE
-        from_search.ref = QUERYTYPE_FAVORITE + from_search.ref[1:]
-        from_search.descr = descr
+        fav_search = copy.copy(from_search)
+        fav_search.id = None  # force new/distinct object
+        fav_search.type = QUERYTYPE_FAVORITE
+        fav_search.ref = QUERYTYPE_FAVORITE + fav_search.ref[1:]
+        fav_search.descr = descr
         # keep other fields (e.g. query)
 
         if user and user.is_authenticated():
             # store in db
-            sq = from_search.to_saved_query(user=user)
+            sq = fav_search.to_saved_query(user=user)
             sq.save()
-            from_search.id = sq.id # put id back into session obj
+            fav_search.id = sq.id # put id back into session obj
         # now also store it in the session list
         favorites = querylist_from_session(session, QUERYTYPE_FAVORITE)
-        favorites.append(from_search)
+        favorites.append(fav_search)
         querylist_to_session(session, QUERYTYPE_FAVORITE, favorites)
-        return from_search.ref  # so we can show it now...
+
+        # and now update all matching entries in the recents list
+        for search in recents:
+            if search.ref == ref:
+                search.orig_ref = search.ref
+                search.ref = fav_search.ref
+                search.type = QUERYTYPE_FAVORITE
+                search.descr = fav_search.descr
+        querylist_to_session(session, QUERYTYPE_RECENT, recents)
+
+        return fav_search.ref  # so we can show it now...
 
     # else fail silently
     return None
@@ -270,8 +283,10 @@ def save_query(ref, descr, session, user):
 # removes the referenced query from the user's favorites list
 #
 # updates both cached query list and db
+# also downgrades any matching queries in the recents list
 #
 def unsave_query(ref, session, user):
+    f = None
     favorites = querylist_from_session(session, QUERYTYPE_FAVORITE)
     if favorites:
         i = 0
@@ -284,6 +299,17 @@ def unsave_query(ref, session, user):
                 querylist_to_session(session, QUERYTYPE_FAVORITE, favorites)
                 break
             i += 1
+    if f:  # downgrade any refs to the no-longer-fav in the recents list
+        recents = querylist_from_session(session, QUERYTYPE_RECENT)
+        for search in recents:
+            if search.ref == ref:
+                if search.orig_ref:
+                    search.ref = search.orig_ref
+                else:
+                    search.ref = QUERYTYPE_RECENT + str(datetime.date.today()) + '_' + str(int(round(time.time() * 1000)))
+                search.type = QUERYTYPE_RECENT
+                search.orig_ref = None
+        querylist_to_session(session, QUERYTYPE_RECENT, recents)
     return None
 
 
@@ -311,18 +337,29 @@ def update_recents(session, current_query):
         return
     new_query = copy.copy(current_query)
     recents = querylist_from_session(session, QUERYTYPE_RECENT)
-    if recents and recents[0].descr == new_query.descr: # GEE TODO: match any recent in the list
-        # same query as last one, or nearly so...
-        # keep ref & replace to update any minor change
+    if recents and recents[0].ref == new_query.ref:
+        # same query; do nothing
+        pass
+    elif (recents and recents[0].descr == new_query.descr and
+          recents[0].type == QUERYTYPE_RECENT and new_query.type == QUERYTYPE_RECENT):
+        # ad-hoc query that looks the same query as last one, or nearly enough;
+        # keep ref & replace to update any minor change (e.g. a query clause)
         new_query.ref = recents[0].ref
         new_query.orig_ref = recents[0].orig_ref
         recents[0] = new_query
-    else:
-        # generate new query ref (saving the original ref, e.g. a favorite
-        # query ref, if there is one) and insert into recents
-        new_query.orig_ref = new_query.ref
-        new_query.ref = QUERYTYPE_RECENT + str(datetime.date.today()) + '_' + str(int(round(time.time() * 1000)))
-        new_query.type = QUERYTYPE_RECENT
+    else:  # new enough to be counted as a new recents entry
+        # generate new query ref if needed, and a new orig_query_ref if the
+        # new query isn't just a recent query (e.g. a favorite); then
+        # insert into recents
+        if new_query.type == QUERYTYPE_FAVORITE or new_query.type == QUERYTYPE_SUGGESTED:
+            # orig_ref will be used if this query ceases to be a favorite (or whatever)
+            # later on and becomes a "plain" recent query
+            new_query.orig_ref = QUERYTYPE_RECENT + str(datetime.date.today()) + '_' + str(int(round(time.time() * 1000)))
+            if not new_query.ref:  # shouldn't happen, but just in case
+                new_query.ref = new_query.orig_ref
+        else:  # recent (or missing type info)
+            new_query.ref = QUERYTYPE_RECENT + str(datetime.date.today()) + '_' + str(int(round(time.time() * 1000)))
+            new_query.type = QUERYTYPE_RECENT
         recents.insert(0, new_query)
 
     # if the current query was just being formed & didn't have ref/type,
@@ -345,7 +382,7 @@ def update_recents(session, current_query):
 # retrieve the referenced query from the suggestion list or session
 #
 def get_query_by_ref(session, query_ref):
-    if query_ref.startswith('_'):
+    if query_ref.startswith(QUERYTYPE_SUGGESTED):
         return Query().from_dict(SUGGESTED_SEARCH_LIST[query_ref])
     # otherwise, look in the session
     querylist = []
@@ -368,55 +405,43 @@ def get_query_by_ref(session, query_ref):
 # returns True iff we were able to update
 #
 def put_query_by_ref(session, user, query):
-    rquery = None
-    fquery = None
-    if query.orig_ref and query.type == QUERYTYPE_FAVORITE:
-        # this is a recent that was a favorite; update both
-        rquery = query
-        fquery = copy.copy(query)
-        fquery.ref = query.orig_ref
-    elif query.type == QUERYTYPE_FAVORITE:
-        # this is a favorite only; update that list alone
-        rquery = None
-        fquery = query
-    elif query.type == QUERYTYPE_RECENT:
-        # this is just a recent query
-        rquery = query
-        fquery = None
-    # else neither; won't update or insert anything
+    if query.type == QUERYTYPE_DEFAULT or query.type == QUERYTYPE_NONE:
+        return False
 
-    if fquery:
+    if query.type == QUERYTYPE_FAVORITE:
+        # search for at most 1 match in the favorite list
         flist = querylist_from_session(session, QUERYTYPE_FAVORITE)
         i = 0
         match = -1
         while i < len(flist):
-            if flist[i].ref == fquery.ref:
+            if flist[i].ref == query.ref:
                 match = i
                 break
             i += 1
         if match > -1:
-            flist[match] = fquery
+            flist[match] = copy.copy(query)
         else:
-            flist.append(fquery)
+            flist.append(copy.copy(query))
         if user and user.is_authenticated():
-            sq = fquery.to_saved_query(user=user)
+            sq = query.to_saved_query(user=user)
             sq.save()
         querylist_to_session(session, QUERYTYPE_FAVORITE, flist)
-    if rquery:
-        rlist = querylist_from_session(session, QUERYTYPE_RECENT)
-        i = 0
-        match = -1
-        while i < len(rlist):
-            if rlist[i].ref == rquery.ref:
-                match = i
-                break
-            i += 1
-        if match > -1:
-            rlist[i] = rquery
-        else:
-            recents.insert(0, rquery)
-        querylist_to_session(session, QUERYTYPE_RECENT, rlist)
-    return fquery or rquery
+
+    # now update copies in recents, regardless of query type
+    rlist = querylist_from_session(session, QUERYTYPE_RECENT)
+    i = 0
+    match = -1
+    while i < len(rlist):
+        if rlist[i].ref == query.ref:
+            match = i
+            break
+        i += 1
+    if match > -1:
+        rlist[i] = copy.copy(query)
+    else:
+        recents.insert(0, copy.copy(query))
+    querylist_to_session(session, QUERYTYPE_RECENT, rlist)
+    return True
 
 
 # set_show_cars_option()

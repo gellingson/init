@@ -277,12 +277,6 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
     context['query_ref'] = query.ref
     context['query_type'] = query.type
     recents = querylist_from_session(request.session, QUERYTYPE_RECENT)
-    for recent in recents:
-        print('RECENT QUERY:' + str(recent))
-    if query.mark_date:
-        print('mark date is: ' + str(query.mark_date))
-    else:
-        print('no mark date')
     if query.mark_date:
         d = force_date(query.mark_date)
         # this is apparently the shitty python way to remove tz awareness?!

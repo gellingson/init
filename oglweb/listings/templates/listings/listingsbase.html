@@ -56,7 +56,12 @@
 			{% if recents %}
 			<h5>Recent Searches</h5>
 			{% for search in recents %}
-			<a class="btn btn-default" href="{{ abs_url }}?s={{ search.ref }}"><span class="glyphicon glyphicon-time"></span>{{ search.descr }}</a>
+			<a class="btn btn-default" href="{{ abs_url }}?s={{ search.ref }}">
+			  {% if search.type == 'F' %}<span class="glyphicon glyphicon-heart"></span>
+			  {% elif search.type == '_' %}<span class="glyphicon glyphicon-ok-circle"></span>
+			  {% else %}<span class="glyphicon glyphicon-time"></span>
+			  {% endif %}
+			  {{ search.descr }}</a>
 			{% endfor %}
 			{% endif %}
 			{% if more_recents %}
