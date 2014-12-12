@@ -77,6 +77,8 @@ def profile(request):
             'newsletter':(request.user.profile.newsletter == 'Y')
         })
     context['form'] = form
+    if force_date(request.user.date_joined) > (now_utc() - datetime.timedelta(days=1)):
+        context['new_user'] = True
     return render(request, 'account/profile.html', context)
 
 

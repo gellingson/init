@@ -36,14 +36,31 @@
 				</span>
 			  </div>
 			</div>
-			<div class="col-sm-4">
-			  <input type="checkbox" class="checkbox-inline" name="limit" id="limit"/>
-			  <label for="limit" class="label-between">Limit to cars near</label>
-			  <label for="zip" class="sr-only">zipcode</label>
- 			  <input type="text" class="zip" placeholder="zip code" class="form-control" name="zip" id="zip" size="20"/>
-			</div>
-			<div class="col-sm-4">
-			  <p><i>Many more options coming soon...</i></p>
+			<div class="row">
+			  <div class="col-sm-4">
+				<input type="checkbox" class="checkbox-inline" name="limit" id="limit"/>
+				<label for="limit" class="label-between">Limit to cars near</label>
+				<label for="zip" class="sr-only">zipcode</label>
+ 				<input type="text" class="zip" placeholder="zip code" class="form-control" name="zip" id="zip" size="20"/>
+			  </div>
+			  <div class="col-sm-4">
+				<label class="sr-only" for="price_min">Minimum price:</label>
+				<input type="text" name="price_min" size="6"/>
+				<label for="price_max" class="label-between"> <= Price <= </label>
+				<label class="sr-only" for="price_max">Maximum price:</label>
+				<input type="text" name="price_max" size="6"/>				
+			  </div>
+			  <div class="col-sm-4">
+				<label class="sr-only" for="year_max">Earliest model year:</label>
+				<input type="text" name="year_min" size="6"/>
+				<label for="year_max" class="label-between"> <= Year <= </label>
+				<label class="sr-only" for="year_max">Latest model year:</label>
+				<input type="text" name="year_max" size="6"/>
+			  </div>
+			  <div class="col-sm-4">
+				<p></p>
+				<p><i>Many more options coming soon...</i></p>
+			  </div>
 			</div>
 		  </div>
 		  <div class="tab-pane" id="saved">

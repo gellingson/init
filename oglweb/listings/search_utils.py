@@ -75,7 +75,19 @@ def handle_search_args(request, filter=None, base_url = None, query_ref=None):
     except Zipcode.DoesNotExist:
         args.errors['invalid_zip'] = True
 
+    args.min_price = extract_int(request.GET.get('price_min', None))
+    args.max_price = extract_int(request.GET.get('price_max', None))
+
+    args.min_year = extract_int(request.GET.get('year_min', None))
+    args.max_year = extract_int(request.GET.get('year_max', None))
+
+    args.has_criteria = (args.query_string or
+                         args.limit or
+                         args.min_price or args.max_price or
+                         args.min_year or args.max_year)
+
     # is there also a filter?
+    # GEE TODO: this is probably dead/unused code by now (dec '14): remove?
     if filter:
         if filter in VALID_FILTERS:
             #error_message = 'Limiting as per filter {}: {}'.format(filter, VALID_FILTERS[filter])
@@ -104,6 +116,28 @@ def build_new_query(args):
     filter_term = args.get('filter_term', None)
     geolimit_term = ''
     search_term = ''
+    price_term = ''
+    year_term = ''
+
+    if not args.has_criteria:
+        # no criteria at all; don't retrieve everything; give
+        # cars from the last few days
+        args.query_string = "recently-listed cars"
+        q.type = 'D'  # default search
+        search_term = {
+            "constant_score": {
+                "filter": {
+                    "range": {
+                        "listing_date": {
+                            "from": datetime.date.fromtimestamp(
+                                time.time()-86400).__str__(),
+                            "to": datetime.date.fromtimestamp(
+                                time.time()+86400).__str__()
+                        }
+                    }
+                }
+            }
+        }
 
     if args.query_string:
         search_term = {
@@ -112,26 +146,6 @@ def build_new_query(args):
                 "default_operator": "AND"
             }
         }
-    else:
-        if not args.limit:
-            # no criteria at all; don't retrieve everything; give
-            # cars from the last few days
-            args.query_string = "recently-listed cars"
-            q.type = 'D'  # default search
-            search_term = {
-                "constant_score": {
-                    "filter": {
-                        "range": {
-                            "listing_date": {
-                                "from": datetime.date.fromtimestamp(
-                                    time.time()-86400).__str__(),
-                                "to": datetime.date.fromtimestamp(
-                                    time.time()+86400).__str__()
-                            }
-                        }
-                    }
-                }
-            }
 
     if args.limit:
         if not args.zip or 'zip_error' in args.errors:
@@ -146,6 +160,31 @@ def build_new_query(args):
                     }
                 }
             }
+
+    if args.min_price or args.max_price:
+        price_term = {
+            "range": {
+                "price": {
+                }
+            }
+        }
+        if args.min_price:
+            price_term['range']['price']['gte'] = args.min_price
+        if args.max_price:
+            price_term['range']['price']['lte'] = args.max_price
+    if args.min_year or args.max_year:
+        year_term = {
+            "range": {
+                "model_year": {
+                }
+            }
+        }
+        if args.min_year:
+            year_term['range']['model_year']['gte'] = args.min_year
+        if args.max_year:
+            year_term['range']['model_year']['lte'] = args.max_year
+
+    # sorting not currently exposed in the search UI
     sort_term = None
     if args.sort == 'nearest':
         sort_term = [
@@ -159,19 +198,20 @@ def build_new_query(args):
                     "unit": "mi"
                 }
             }
-    ]
+        ]
 
     # assemble the pieces
     q.query = {"query": {"filtered": {}}}
     if search_term:
         q.query['query']['filtered']['query'] = search_term
-    if geolimit_term or filter_term:
-        q.query['query']['filtered']['filter'] = {}
-        q.query['query']['filtered']['filter']['and'] = []
-        if geolimit_term:
-            q.query['query']['filtered']['filter']['and'].append(geolimit_term)
-        if filter_term:
-            q.query['query']['filtered']['filter']['and'].append(filter_term)
+    if geolimit_term:
+        add_filter(q.query, geolimit_term)
+    if filter_term:
+        add_filter(q.query, filter_term)
+    if price_term:
+        add_filter(q.query, price_term)
+    if year_term:
+        add_filter(q.query, year_term)
     if sort_term:
         q.query['sort'] = sort_term
 
@@ -185,15 +225,33 @@ def build_new_query(args):
     else:
         q.descr = args.query_string
 
+    LOG.info('NEW ES QUERY: ' + str(q.query))
     # return the user-friendly description and the actual es query body
     return q
+
+
+# add_filter()
+#
+# adds a filtering clause to an es query
+# NOTE: optionally deep copies & then returns a new querybody!
+#
+def add_filter(querybody, new_filter, copy=False):
+    if copy:
+        copybody = copy.deepcopy(querybody)
+    else:
+        copybody = querybody
+    if not 'filter' in copybody['query']['filtered']:
+        # then this is the first filter; add the filtering cruft
+        copybody['query']['filtered']['filter'] = {}
+        copybody['query']['filtered']['filter']['and'] = []
+    copybody['query']['filtered']['filter']['and'].append(new_filter)
+    return copybody
 
 
 # add_date_limit()
 #
 # adds a clause to an es query limiting to cars newer than the given datetime
-#
-# NOTE: deep copies & then modified returns the cloned querybody!
+# NOTE: uses add_filter() which deep copied & then returns a new querybody!
 #
 def add_date_limit(querybody, date):
     date_term = {
@@ -203,13 +261,7 @@ def add_date_limit(querybody, date):
             }
         }
     }
-    copybody = copy.deepcopy(querybody)
-    if not 'filter' in copybody['query']['filtered']:
-        # then this is the first filter; add the filtering cruft
-        copybody['query']['filtered']['filter'] = {}
-        copybody['query']['filtered']['filter']['and'] = []
-    copybody['query']['filtered']['filter']['and'].append(date_term)
-    return copybody
+    return add_filter(querybody, date_term, copy=True)
 
 
 # get_listings()

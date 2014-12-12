@@ -6,6 +6,7 @@
 
 import datetime
 import iso8601
+import locale
 import pytz
 import time
 
@@ -52,3 +53,33 @@ def force_date(maybedate, default=False):
     if default != False:
         return default
     raise ValueError
+
+
+# now_utc()
+#
+# just a tiny convenience method to return a TZ-aware datetime
+#
+def now_utc():
+    return datetime.datetime.now(pytz.UTC)
+
+
+# extract_int()
+#
+# extract an int from an input string if at all possible
+#
+# handles locale issues (e.g. optional 1000s separaters) and
+# coerces a float to an int if necessary; returns None if it fails
+#
+def extract_int(s, locale_to_use='en_US.UTF-8'):
+    if not s:
+        return None
+    locale.setlocale(locale.LC_ALL, locale_to_use)
+    try:
+        return locale.atoi(s)
+    except ValueError:
+        try:
+            return int(locale.atof(s))
+        except ValueError:
+            return None
+    return None  # should be unreached
+        

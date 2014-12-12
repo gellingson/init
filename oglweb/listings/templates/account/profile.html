@@ -5,21 +5,36 @@
 
 {% block tabcontents %}
 <div class="tab-content">
-  <h1>{% trans "Profile Information" %}</h1>
-{% if user.profile.avatar_url %}
-    <h3>Picture</h3>
-	<p class="picture-frame">
-	  <img alt="" src="{{user.profile.avatar_url}}" style="width: 256px; height: 256px">
-	</p>
-{% endif %}
+  <h1>{% trans "Account Profile" %}</h1>
+  <div class="row">
 	<div id="readonly">
-	  <ul class="list-unstyled">
-		<li>First name: <strong>{{user.first_name}}</strong></li>
-		<li>Last name: <strong>{{user.last_name}}</strong></li>
-		<li>Username: <strong>{{user.username}}</strong></li>
-		<li>Newsletter: <strong>{{user.profile.newsletter}}</strong></li>
-	  </ul>
-	  <button class="btn btn-primary" id="editprofile">Edit</button>
+	  <div class="col-md-4">
+		{% if user.profile.avatar_url %}
+		<h3>Picture</h3>
+		<p class="picture-frame">
+		  <img alt="" src="{{user.profile.avatar_url}}" style="width: 256px; height: 256px">
+		</p>
+		{% endif %}
+		<ul class="list-unstyled">
+		  <li>First name: <strong>{{user.first_name}}</strong></li>
+		  <li>Last name: <strong>{{user.last_name}}</strong></li>
+		  <li>Username: <strong>{{user.username}}</strong></li>
+		  <li>Date joined: <strong>{{user.date_joined|date}}</strong></li>
+		  <li>Newsletter: <strong>{{user.profile.newsletter}}</strong></li>
+		</ul>
+		<button class="btn btn-primary" id="editprofile">Edit</button>
+	  </div>
+	  <div class="col-md-8">
+		{% if new_user %}
+		<p><strong>Welcome to Carbyr!</strong></p>
+		<p><a href="/cars">Search</a> and <a href="/dashboard">your dashboard</a> are always available in the top navigation bar.</p>
+		<p>This profile and other pages can be accessed in the top navigation bar menu under your username.</p>
+		<p>There are some fun search ideas in the <strong>More Ideas</strong> section of the <a href="/cars">search</a> page's <strong>Saved</strong> tab!</p>
+		{% else %}
+		<p><strong>Carbyr is continually adding new features!</strong></p>
+		<p>Have you saved a favorite search and used the 'mark read' button to hide the cars you have already seen? Try it!</p>
+		{% endif %}
+	  </div>
 	</div>
 	<div id="editform">
 	  <form class="form-horizontal" action="/accounts/profile/" method="post">
@@ -33,6 +48,7 @@
 		</div>
 	  </form>
 	</div>
+  </div>
 </div>
 {% endblock tabcontents %}
 {% block extrascripts %}
