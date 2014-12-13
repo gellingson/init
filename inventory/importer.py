@@ -2280,10 +2280,11 @@ def record_listings(listings, accepted_lsinfos, rejected_lsinfos,
         for listing in listings:
             db_listings.append(add_or_update_found_listing(session, listing))
 
-            # commit the block of listings (which generates ids on new records)
-            session.commit()
-            logging.debug('committed a block of listings for %s',
-                          source_textid)
+        # commit the block of listings (which generates ids on new records)
+        # also commits everything else, e.g. updated classified.anchors, etc
+        session.commit()
+        logging.debug('committed a block of listings for %s',
+                      source_textid)
 
     # now using those db_listings with ids we can continue...
 
