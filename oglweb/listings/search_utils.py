@@ -110,7 +110,7 @@ def populate_search_context(context, args, query):
         # paint the page with the saved tab open
         context['tab'] = 'saved'
         # and populate the context from the query
-        if query.type == 'D':  # default query, no parms
+        if query.type == QUERYTYPE_DEFAULT::  # default query, no parms
             return
         try:
             context['query_string'] = query.query['query']['filtered']['query']['query_string']['query']
@@ -165,7 +165,7 @@ def populate_search_context(context, args, query):
 #
 def build_new_query(args):
     q = Query()
-    q.type = 'U'  # presume we have some args from user (checked below)
+    q.type = QUERYTYPE_RECENT  # presume we have some args (checked below)
     descr_list = [] # used to assemble the descr of the query
 
     # building the query string:
@@ -180,8 +180,7 @@ def build_new_query(args):
     if not args.has_criteria:
         # no criteria at all; don't retrieve everything; give
         # cars from the last few days
-        args.query_string = "recently-listed cars"
-        q.type = 'D'  # default search
+        q.type = QUERYTYPE_DEFAULT
         search_term = {
             "constant_score": {
                 "filter": {
@@ -196,8 +195,8 @@ def build_new_query(args):
                 }
             }
         }
-
-    if args.query_string:
+        descr_list.append("recently-listed cars")
+    elif args.query_string:
         search_term = {
             "query_string": {
                 "query": args.query_string,
