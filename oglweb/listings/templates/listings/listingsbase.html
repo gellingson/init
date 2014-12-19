@@ -8,12 +8,12 @@
 	  {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 	  <form class="searchform" role="form" action="{{ abs_url }}" method="get">
 		<ul class="nav nav-tabs" role="tablist">
-		  <li class="active"><a href="#simple" role="tab" data-toggle="tab">Simple</a></li>
-		  <li><a href="#advanced" role="tab" data-toggle="tab">Advanced</a></li>
-		  <li><a href="#saved" role="tab" data-toggle="tab">Saved</a></li>
+		  <li{% if tab != 'advanced' and tab != 'saved' %} class="active"{% endif %}><a href="#simple" role="tab" data-toggle="tab">Simple</a></li>
+		  <li{% if tab == 'advanced' %} class="active"{% endif %}><a href="#advanced" role="tab" data-toggle="tab">Advanced</a></li>
+		  <li{% if tab == 'saved' %} class="active"{% endif %}><a href="#saved" role="tab" data-toggle="tab">Saved</a></li>
 		</ul>
 		<div class="tab-content">
-		  <div class="tab-pane active" id="simple">
+		  <div class="tab-pane{% if tab != 'advanced' and tab != 'saved' %} active{% endif %}" id="simple">
 			{% csrf_token %}
 			<div class="form-group">
 			  <div class="input-group">
@@ -25,7 +25,7 @@
 			  </div>
 			</div>
 		  </div>
-		  <div class="tab-pane" id="advanced">
+		  <div class="tab-pane{% if tab == 'advanced' %} active{% endif %}" id="advanced">
 			{% csrf_token %}
 			<div class="form-group">
 			  <div class="input-group">
@@ -63,7 +63,7 @@
 			  </div>
 			</div>
 		  </div>
-		  <div class="tab-pane" id="saved">
+		  <div class="tab-pane{% if tab == 'saved' %} active{% endif %}" id="saved">
 			{% if favorites %}
 			<h5>Favorite Searches</h5>
 			{% for search in favorites %}

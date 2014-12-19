@@ -107,7 +107,9 @@ def handle_search_args(request, filter=None, base_url = None, query_ref=None):
 # concerns here, but it works for now....
 def populate_search_context(context, args, query):
     if args.query_ref and query and args.query_ref == query.ref:
-        # then populate the context from the query
+        # paint the page with the saved tab open
+        context['tab'] = 'saved'
+        # and populate the context from the query
         if query.type == 'D':  # default query, no parms
             return
         try:
@@ -129,7 +131,7 @@ def populate_search_context(context, args, query):
                     if word == 'near':
                         near_found = True
                     elif near_found:
-                        context['zip'] = word[:-1]
+                        context['zip'] = word.translate({ord(','):None})
                         break
             if 'range' in filter:
                 if 'price' in filter['range']:
@@ -139,6 +141,10 @@ def populate_search_context(context, args, query):
                     context['min_year'] = filter['range']['model_year'].get('gte', None)
                     context['max_year'] = filter['range']['model_year'].get('lte', None)
     else: # repop the user's most recent inputs
+        if args.limit or args.limit_zip or args.min_price or args.max_price or args.min_year or args.max_year:
+            context['tab'] = 'advanced'
+        else:
+            context['tab'] = 'simple'
         context['query_string'] = args.query_string
         context['limit'] = args.limit
         context['zip'] = args.limit_zip
