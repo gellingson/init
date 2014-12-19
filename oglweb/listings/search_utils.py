@@ -110,7 +110,7 @@ def populate_search_context(context, args, query):
         # paint the page with the saved tab open
         context['tab'] = 'saved'
         # and populate the context from the query
-        if query.type == QUERYTYPE_DEFAULT::  # default query, no parms
+        if query.type == QUERYTYPE_DEFAULT:  # default query, no parms
             return
         try:
             context['query_string'] = query.query['query']['filtered']['query']['query_string']['query']
