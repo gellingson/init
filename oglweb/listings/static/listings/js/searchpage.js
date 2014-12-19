@@ -55,7 +55,12 @@ function setup_header_buttons(){
 
 $(document).ready(function(){
 	// keep search box on simple & advanced tabs in sync
-	$('.search-sync').keyup(function(){
+	// doing this as a keyup fucks up using the keyboard to select & delete
+	// the field contents; thus changing this to blur
+	// $('.search-sync').keyup(function(){
+	//	$('.search-sync').val($(this).val());
+	//});
+	$('.search-sync').blur(function(){
 		$('.search-sync').val($(this).val());
 	});
 	setup_header_buttons();
