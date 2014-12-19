@@ -314,8 +314,8 @@ def build_new_query(args):
 # adds a filtering clause to an es query
 # NOTE: optionally deep copies & then returns a new querybody!
 #
-def add_filter(querybody, new_filter, copy=False):
-    if copy:
+def add_filter(querybody, new_filter, do_copy=False):
+    if do_copy:
         copybody = copy.deepcopy(querybody)
     else:
         copybody = querybody
@@ -340,7 +340,7 @@ def add_date_limit(querybody, date):
             }
         }
     }
-    return add_filter(querybody, date_term, copy=True)
+    return add_filter(querybody, date_term, do_copy=True)
 
 
 # get_listings()
