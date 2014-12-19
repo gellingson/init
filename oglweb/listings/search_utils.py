@@ -6,10 +6,10 @@ import time
 
 # third party modules used
 from bunch import Bunch
-
 from django.utils.datastructures import MultiValueDictKeyError
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
+from money import Money
 
 # OGL modules used
 from listings.constants import *
@@ -63,7 +63,9 @@ def handle_search_args(request, filter=None, base_url = None, query_ref=None):
     except MultiValueDictKeyError:
         args.limit = None;
 
-    args.zip = request.GET.get('zip','')
+    args.limit_zip = request.GET.get('zip','') # set only if user specifies
+    # if the user does not specify a zip limit, we still want one for relevance etc
+    args.zip = args.limit_zip
     if not 'zip' in args or not args.zip:
         args.zip = '95112';  # GEE TODO: get default zip from client IP
 
@@ -97,6 +99,55 @@ def handle_search_args(request, filter=None, base_url = None, query_ref=None):
     return args
 
 
+# populate_search_context()
+#
+# populates the given context with values for UI fields
+#
+# NOTES: I'm not entirely comfortable with the mixing of display and other
+# concerns here, but it works for now....
+def populate_search_context(context, args, query):
+    if args.query_ref and query and args.query_ref == query.ref:
+        # then populate the context from the query
+        if query.type == 'D':  # default query, no parms
+            return
+        try:
+            context['query_string'] = query.query['query']['filtered']['query']['query_string']['query']
+        except KeyError:
+            pass
+        filters = None
+        try:
+            filters = query.query['query']['filtered']['filter']['and']
+        except KeyError:
+            return  # no filters present
+        for filter in filters:
+            if 'geo_distance' in filter:
+                context['limit'] = True
+                # GEE TODO: really store input zip -- this is a BIG cheat! :)
+                list = query.descr.split(" ")
+                near_found = False
+                for word in list:
+                    if word == 'near':
+                        near_found = True
+                    elif near_found:
+                        context['zip'] = word[:-1]
+                        break
+            if 'range' in filter:
+                if 'price' in filter['range']:
+                    context['min_price'] = filter['range']['price'].get('gte', None)
+                    context['max_price'] = filter['range']['price'].get('lte', None)
+                if 'model_year' in filter['range']:
+                    context['min_year'] = filter['range']['model_year'].get('gte', None)
+                    context['max_year'] = filter['range']['model_year'].get('lte', None)
+    else: # repop the user's most recent inputs
+        context['query_string'] = args.query_string
+        context['limit'] = args.limit
+        context['zip'] = args.limit_zip
+        context['min_price'] = args.min_price
+        context['max_price'] = args.max_price
+        context['min_year'] = args.min_year
+        context['max_year'] = args.max_year
+
+
 # build_new_query()
 #
 # assembles a new query per the given args
@@ -109,6 +160,7 @@ def handle_search_args(request, filter=None, base_url = None, query_ref=None):
 def build_new_query(args):
     q = Query()
     q.type = 'U'  # presume we have some args from user (checked below)
+    descr_list = [] # used to assemble the descr of the query
 
     # building the query string:
 
@@ -146,8 +198,12 @@ def build_new_query(args):
                 "default_operator": "AND"
             }
         }
+        descr_list.append(args.query_string)
+    else:
+        descr_list.append('cars') # default first term of the query description
 
     if args.limit:
+        # go ahead and use implicit zip if the user requests a limit func...
         if not args.zip or 'zip_error' in args.errors:
             error_message = 'Unknown zip code "{}"; geographic limit not applied.'.format(zip)
         else:
@@ -160,6 +216,7 @@ def build_new_query(args):
                     }
                 }
             }
+            descr_list.append('near ' + args.zip)
 
     if args.min_price or args.max_price:
         price_term = {
@@ -168,10 +225,24 @@ def build_new_query(args):
                 }
             }
         }
+        price_descr = ''
+        min_pretty = None
+        max_pretty = None
         if args.min_price:
             price_term['range']['price']['gte'] = args.min_price
+            min_pretty = Money(args.min_price, 'USD').format('en_US', '$#,###')
+        price_descr = price_descr + 'price'
         if args.max_price:
             price_term['range']['price']['lte'] = args.max_price
+            max_pretty = Money(args.max_price, 'USD').format('en_US', '$#,###')
+        if min_pretty and max_pretty:
+            price_descr = min_pretty + ' to ' + max_pretty
+        elif min_pretty:
+            price_descr = 'over ' + min_pretty
+        else:
+            price_descr = 'under ' + max_pretty
+        descr_list.append(price_descr)
+
     if args.min_year or args.max_year:
         year_term = {
             "range": {
@@ -179,10 +250,18 @@ def build_new_query(args):
                 }
             }
         }
+        year_descr = ''
         if args.min_year:
             year_term['range']['model_year']['gte'] = args.min_year
         if args.max_year:
             year_term['range']['model_year']['lte'] = args.max_year
+        if args.min_year and args.max_year:
+            year_descr = 'model year between ' + str(args.min_year) + ' and ' + str(args.max_year)
+        elif args.min_year:
+            year_descr = 'model year ' + str(args.min_year) + ' and newer'
+        else:
+            year_descr = 'model year ' + str(args.max_year) + ' and older'
+        descr_list.append(year_descr)
 
     # sorting not currently exposed in the search UI
     sort_term = None
@@ -206,6 +285,8 @@ def build_new_query(args):
         q.query['query']['filtered']['query'] = search_term
     if geolimit_term:
         add_filter(q.query, geolimit_term)
+
+    # filter term is dead code now (dec '14)
     if filter_term:
         add_filter(q.query, filter_term)
     if price_term:
@@ -215,15 +296,8 @@ def build_new_query(args):
     if sort_term:
         q.query['sort'] = sort_term
 
-    # so... how shall we describe this query to the user?
-    q.descr = None
-    if geolimit_term:
-        if args.query_string:
-            q.descr = args.query_string + ", near " + args.zip
-        else:
-            q.descr = "cars near " + args.zip
-    else:
-        q.descr = args.query_string
+    # build query description out of all the descr_list terms
+    q.descr = ', '.join(descr_list)
 
     LOG.info('NEW ES QUERY: ' + str(q.query))
     # return the user-friendly description and the actual es query body
@@ -325,6 +399,10 @@ def flagset_for_user(user):
 #
 # GEE TODO error handling, logging the action, etc etc
 def flag_listing(user, listing_id, reason, other_reason=None):
+    LOG.info('user {} flagging the listing {} as {}{}'.format(user,
+                                                              listing_id,
+                                                              reason,
+                                                              other_reason))
     remove = False
     if user.is_authenticated() and user.is_superuser:
         remove = True

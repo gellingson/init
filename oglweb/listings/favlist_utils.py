@@ -3,6 +3,7 @@
 # utility methods for handling a user's favorite-car list
 
 # builtin modules used
+import logging
 
 # third party modules used
 from bunch import Bunch
@@ -11,52 +12,7 @@ from django.db import IntegrityError
 # OGL modules used
 from listings.models import SavedListing, Listing
 
-
-# unsave_car() ** UNUSED
-#
-# removes a car from the user's list of saved listings
-# (both in the db and the cached data in the session)
-#
-# returns:
-# True if car was removed
-# False if there was an issue of any type
-#
-def unsave_car(session, listing_id):
-    # GEE TODO: this just works on the session; redo for db
-    sl_cache = [value for value in session.get('savedcars', []) if value != listing_id]
-    session['savedcars'] = sl_cache
-    return True
-
-
-# save_car() ** UNUSED
-#
-# saves a car to the user's list of saved listings
-# (both in the db and the cached data in the session)
-#
-# True if saved
-# False if there was an issue
-# None if the car was already saved
-#
-def save_car(session, listing_id=0, listing=None):
-    # GEE TODO: this just works on the session; redo for db
-    if not listing:
-        if not listing_id:
-            return False  # heh, need a target
-        try:
-            listing = Listing.objects.get(pk=listing_id)
-        except (DoesNotExist, MultipleObjectsReturned) as e:
-            print("attempted to find listing id " +
-                  "{} failed with error {}".format(listing_id, e))
-            return False
-
-    # now we definitely have a listing, so get the cached list & insert
-    sl_cache = session.get('savedcars', [])
-    if listing.id in sl_cache:
-        return None
-    sl_cache.append(listing.id)
-    session['savedcars'] = sl_cache
-    return True
-
+LOG = logging.getLogger(__name__)
 
 # unsave_car_from_db()
 #
@@ -67,6 +23,7 @@ def save_car(session, listing_id=0, listing=None):
 # False if there was an issue of any type
 #
 def unsave_car_from_db(user, listing_id):
+    LOG.info('User {} unsaving car {}'.format(user, listing_id))
     l = Listing()
     l.id = listing_id
     records = list(SavedListing.objects.filter(listing=l, user=user))
@@ -74,7 +31,7 @@ def unsave_car_from_db(user, listing_id):
         sl_to_delete = records[0]
         sl_to_delete.delete()
     else:
-        print('OOPS!retrieved {} records to delete'.format(len(records)))
+        LOG.error('OOPS!retrieved {} records to delete'.format(len(records)))
         return False
     return True
 
@@ -88,6 +45,7 @@ def unsave_car_from_db(user, listing_id):
 # None if the car was already saved
 #
 def save_car_to_db(user, listing_id):
+    LOG.info('User {} saving car {}'.format(user, listing_id))
     l = Listing()
     l.id = listing_id
     fav = SavedListing()

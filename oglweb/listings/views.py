@@ -241,7 +241,7 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
 
     show = get_show_cars_option(request.session, query)
 
-    # update recent searches list
+    # update recent searches list (also updates the query param)
     update_recents(request.session, query)
 
     total_hits, listings = get_listings(query,
@@ -288,6 +288,9 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
     # record timestamp at which query was issued; used e.g. to set mark_date
     context['query_timestamp'] = datetime.datetime.now().isoformat()
 
+    # repop search form with the values of the current ad-hoc or saved query
+    populate_search_context(context, args, query)
+    
     # GEE TODO: these next two seem like garbage I should clean up
     if error_message:
         context['error_message'] = error_message

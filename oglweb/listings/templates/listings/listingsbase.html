@@ -18,7 +18,7 @@
 			<div class="form-group">
 			  <div class="input-group">
 				<label class="sr-only" for="query_string">Search criteria:</label>
-				<input type="text" placeholder="find me..." class="form-control search-sync" name="query_string" id="query_string"/>
+				<input type="text" placeholder="find me..." class="form-control search-sync" name="query_string" id="query_string"{% if query_string %} value="{{query_string}}"{% endif %}/>
 				<span class="input-group-btn">
 				  <button type="submit" class="btn btn-success">Search</button>
 				</span>
@@ -30,7 +30,7 @@
 			<div class="form-group">
 			  <div class="input-group">
 				<label class="sr-only" for="query_string_dup">Search criteria:</label>
-				<input type="text" placeholder="find me..." class="form-control search-sync" name="query_string_dup" id="query_string_dup"/>
+				<input type="text" placeholder="find me..." class="form-control search-sync" name="query_string_dup" id="query_string_dup"{% if query_string %} value="{{query_string}}"{% endif %}/>
 				<span class="input-group-btn">
 				  <button type="submit" class="btn btn-success">Search</button>
 				</span>
@@ -38,24 +38,24 @@
 			</div>
 			<div class="row">
 			  <div class="col-sm-4">
-				<input type="checkbox" class="checkbox-inline" name="limit" id="limit"/>
+				<input type="checkbox" class="checkbox-inline" name="limit" id="limit" {% if limit %}checked{% endif %}/>
 				<label for="limit" class="label-between">Limit to cars near</label>
 				<label for="zip" class="sr-only">zipcode</label>
- 				<input type="text" class="zip" placeholder="zip code" class="form-control" name="zip" id="zip" size="20"/>
+ 				<input type="text" class="zip" placeholder="zip code" name="zip" id="zip" size="20" value="{{zip}}"/>
 			  </div>
 			  <div class="col-sm-4">
 				<label class="sr-only" for="price_min">Minimum price:</label>
-				<input type="text" name="price_min" size="6"/>
+				<input type="text" name="price_min" size="6" placeholder="minimum"{% if min_price %} value="{{min_price}}"{% endif %}/>
 				<label for="price_max" class="label-between"> <= Price <= </label>
 				<label class="sr-only" for="price_max">Maximum price:</label>
-				<input type="text" name="price_max" size="6"/>				
+				<input type="text" name="price_max" size="6" placeholder="maximum"{% if max_price %} value="{{max_price}}"{% endif %}/>
 			  </div>
 			  <div class="col-sm-4">
 				<label class="sr-only" for="year_max">Earliest model year:</label>
-				<input type="text" name="year_min" size="6"/>
+				<input type="text" name="year_min" size="6" placeholder="earliest"{% if min_year %} value="{{min_year}}"{% endif %}/>
 				<label for="year_max" class="label-between"> <= Year <= </label>
 				<label class="sr-only" for="year_max">Latest model year:</label>
-				<input type="text" name="year_max" size="6"/>
+				<input type="text" name="year_max" size="6" placeholder="latest"{% if max_year %} value="{{max_year}}"{% endif %}/>
 			  </div>
 			  <div class="col-sm-4">
 				<p></p>

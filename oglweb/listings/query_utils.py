@@ -236,7 +236,7 @@ def querylist_to_session(session, query_type, querylist):
 # also updates the recents list, marking the now-favorite query as a fav
 #
 def save_query(ref, descr, session, user):
-    LOG.info('saving the query {}:{}'.format(ref, descr))
+    LOG.info('user {} saving the query {}:{}'.format(user, ref, descr))
     recents = querylist_from_session(session, QUERYTYPE_RECENT)
     from_search = None
     # ref'd query is normally recents[0] but let's be flexible in case
@@ -286,6 +286,7 @@ def save_query(ref, descr, session, user):
 # also downgrades any matching queries in the recents list
 #
 def unsave_query(ref, session, user):
+    LOG.info('user {} unsaving the query {}'.format(user, ref))
     f = None
     favorites = querylist_from_session(session, QUERYTYPE_FAVORITE)
     if favorites:
@@ -318,6 +319,7 @@ def unsave_query(ref, session, user):
 # sets the mark_date on a saved (favorite) query
 #
 def mark_as_read(ref, session, user, mark_date):
+    LOG.info('user {} marking query {} as read'.format(user, ref))
     mark_date = force_date(mark_date)
     mark_date_str = mark_date.isoformat()
     q = get_query_by_ref(session, ref)
