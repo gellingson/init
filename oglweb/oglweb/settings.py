@@ -90,7 +90,7 @@ INSTALLED_APPS = (
 # This doesn't really belong here but I'm reusing the django on the home
 # dev server for another app, so...
 if os.environ.get('OGL_SERVER_RUN_DEV_APPS','') == 'TRUE':
-    INSTALLED_APPS = INSTALLED_APPS +  ('todo',)
+    INSTALLED_APPS = INSTALLED_APPS +  ('todo', 'debug_toolbar',)
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.BrokenLinkEmailsMiddleware',
