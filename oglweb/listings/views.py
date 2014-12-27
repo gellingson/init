@@ -182,11 +182,11 @@ def cars_api(request, query_ref=None, number=50, offset=0):
         if q:
             if not q.mark_date:
                 show = None
-            total_hits, listings = get_listings(q,
-                                                number=number,
-                                                offset=offset,
-                                                user=request.user,
-                                                show=show)
+            total_hits, listings, tossed = get_listings(q,
+                                                        number=number,
+                                                        offset=offset,
+                                                        user=request.user,
+                                                        show=show)
             context['listings'] = listings
             # this api may be pulling any page of the results; are there even more?
             if total_hits > (offset + number):
@@ -260,13 +260,13 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
     # update recent searches list (also updates the query param)
     update_recents(request.session, query)
 
-    total_hits, listings = get_listings(query,
-                                        user=request.user,
-                                        show=show)
+    total_hits, listings, tossed = get_listings(query,
+                                                user=request.user,
+                                                show=show)
     context = {}
     # this func returns the first page; will there be more?
-    if total_hits > len(listings):
-        context['next_page_offset'] = len(listings)
+    if total_hits > len(listings) + tossed:
+        context['next_page_offset'] = len(listings) + tossed
     # put saved queries into the context
     context['recents'] = []
     context['favorites'] = []

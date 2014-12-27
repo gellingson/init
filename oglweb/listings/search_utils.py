@@ -377,19 +377,22 @@ def get_listings(query, number=50, offset=0, user=None, show='new_only'):
         if not user.is_superuser:
             flag_set = flagset_for_user(user)
 
+    tossed = 0
     for item in search_resp['hits']['hits']:
         car = Bunch(item['_source'])
         removal_date = force_date(car.removal_date, None)
         if int(car.id) in flag_set:
             pass  # throw it out
+            tossed += 1
         elif removal_date and removal_date < now_utc():
             pass # expired, throw it out
+            tossed += 1
         else:
             listing = prettify_listing(car,
                                        favorites=fav_dict,
                                        mark_since=query.mark_date)
             listings.append(listing)
-    return search_resp['hits']['total'], listings
+    return search_resp['hits']['total'], listings, tossed
 
 
 # flagset_for_user()
