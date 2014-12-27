@@ -59,6 +59,8 @@ def force_date(maybedate, default=False):
 #
 # just a tiny convenience method to return a TZ-aware datetime
 #
+# UNBELIEVABLE that datetime's builtin utcnow() method returns a NAIVE obj!
+#
 def now_utc():
     return datetime.datetime.now(pytz.UTC)
 

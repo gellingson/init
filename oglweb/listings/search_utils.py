@@ -17,6 +17,7 @@ from listings.display_utils import prettify_listing
 from listings.models import Zipcode, Listing, SavedQuery, ActionLog
 from listings.favlist_utils import favdict_for_user
 from listings.query_utils import *
+from listings.utils import *
 
 #
 # builds an es query based on request vars
@@ -377,10 +378,14 @@ def get_listings(query, number=50, offset=0, user=None, show='new_only'):
             flag_set = flagset_for_user(user)
 
     for item in search_resp['hits']['hits']:
-        if int(item['_source']['id']) in flag_set:
+        car = Bunch(item['_source'])
+        removal_date = force_date(car.removal_date, None)
+        if int(car.id) in flag_set:
             pass  # throw it out
+        elif removal_date and removal_date < now_utc():
+            pass # expired, throw it out
         else:
-            listing = prettify_listing(Bunch(item['_source']),
+            listing = prettify_listing(car,
                                        favorites=fav_dict,
                                        mark_since=query.mark_date)
             listings.append(listing)

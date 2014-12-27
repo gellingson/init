@@ -14,11 +14,14 @@ from collections import defaultdict
 import datetime
 from decimal import Decimal
 import errno
+import iso8601
 import simplejson as json  # handles Decimal fields; regular json does not
 import logging
 import os
+import pytz
 import re
 import sys
+import time
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -99,7 +102,96 @@ _TAG_RELS = {}
 # ============================================================================
 
 
-# load_refdata_cache
+# GuessDate class:
+#
+# guesses a date from the object passed in & returns a datetime
+#
+# NOTES:
+# inputs handled:
+#     string with any of these date formats:
+#     datetime
+#     number (int or float) containing utime info
+# to force a ValueException on failure to parse, call with default=False.
+# datetime returned will be TZ-aware & in UTC unless instructed otherwise.
+# optimization: string format most recently successful is retained and tried
+# first if guess_date() is called again within the same process space.
+# this is a class to cleanly encapsulate storing date format(s) across calls
+#
+# some practical info/common inputs:
+# ebay uses iso8601 date & time strings with trailing Z indicating UTC
+# 3taps uses unix timestamps in ints
+#
+# SEE ALSO: force_date() method in oglweb.listings.utils
+#
+class GuessDate(object):
+    def __init__(self):
+        self._successful_format = None
+        self._formats = [
+            'timestamp',  # mock format string, use datetime.fromtimestamp()
+            'iso8601', # mock format string, use iso8601.parse_date()
+            '%Y-%m-%dT%H:%M:%S', # used by eBay
+        ]
+
+    def _try(self, maybedate, format):
+        d = None
+        try:
+            if format == 'timestamp':
+                # specialcasing this as a mock format
+                d = datetime.datetime.fromtimestamp(float(maybedate))  # UTC
+            elif format == 'iso8601':
+                d = iso8601.parse_date(maybedate)
+            else:
+                d = datetime.datetime.strptime(maybedate,
+                                               format).replace(tzinfo=tzinfo)
+        except (ValueError, TypeError):
+            pass
+        return d
+
+    def __call__(self, maybedate, default=None, tzinfo=pytz.UTC):
+        if isinstance(maybedate, datetime.datetime):
+            if maybedate.tzinfo and maybedate.tzinfo.utcoffset(maybedate) != None:
+                # any TZ-aware/localized datetime will be returned as-is, not
+                # converted to the specified TZ
+                d = maybedate
+            else:
+                # assume we are in UTC & the date was intended that way
+                # UNSAFE TZ HANDLING, but in our usage better than failing
+                d = pytz.utc.localize(maybedate)
+        elif isinstance(maybedate, str):
+
+            # try whatever worked last time
+            fmt = self._successful_format
+            d = self._try(maybedate, fmt)
+
+            if not d:
+                # try everything else
+                for format in self._formats:
+                    if format != fmt:  # tried that one already above...
+                        d = self._try(maybedate, format)
+                        if d:
+                            self._successful_format = format  # try 1st next time
+                            break
+
+        elif isinstance(maybedate, float) or isinstance(maybedate, int):
+            try:
+                d = datetime.datetime.fromtimestamp(maybedate)
+            except ValueError:
+                pass
+        else:
+            pass # we're screwed -- fall through to the fail
+
+        if not d:
+            if default==False:  # caller wants exception on failure to parse
+                raise ValueError
+            else:
+                d = default
+        return d
+
+# create a file global callable for the class
+guessDate = GuessDate()
+
+
+# load_refdata_cache()
 #
 # cache some stable (read-only) db entries into globals for quicker access
 # GEE TODO: these reference data may outgrow this approach eventually...
@@ -1302,6 +1394,11 @@ def process_ebay_listing(session, item, classified, counts, dblog=False):
         listing.price = regularize_price(
             item['sellingStatus']['currentPrice']['value'])
 
+    # auction end date will also serve as our removal date
+    listing.removal_date = guessDate(item.listingInfo.get('endTime'))
+
+    # GEE TODO: get other listingInfo, e.g. buy-it-now price
+
     # validate model_year
     try:
         int(listing.model_year)
@@ -1579,9 +1676,14 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
                         listing.stock_no)
         listing.local_id = listing.stock_no
 
-    # GEE: expirations are now on cl listings, but @ +6weeks. No use.
-    #if item.expires:
-    #  ... set removal_date and add code to check expiry in searches & removal
+    # set removal date as requested, within limits...
+    # e.g. most cl posts are set to expire in +6 weeks. That's too long.
+    # listing time is capped relative to now (maybe update), not listing date
+    listing.removal_date = (datetime.datetime.now() +
+                            datetime.timedelta(days=classified.keep_days))
+    if item.expires:
+        listing.removal_date = min(listing.removal_date,
+                                   guessDate(item.expires))
 
     if (item.deleted or item.flagged_status or
           item.state != 'available' or item.status != 'for_sale'):

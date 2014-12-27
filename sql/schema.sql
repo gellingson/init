@@ -281,8 +281,7 @@ parse_listing_func varchar(1024),
 anchor varchar(1024),
 inventory_url varchar(1024),
 owner_account_id int,
-lat float,
-lon float,
+keep_days int,
 primary key (id)
 );
 
@@ -438,6 +437,7 @@ user_id   int,
 ref       varchar(24),
 descr     varchar(80),
 query     varchar(2048),
+params    varchar(2048),
 mark_date datetime,
 primary key (id),
 unique index (user_id, ref),

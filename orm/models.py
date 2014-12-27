@@ -94,6 +94,7 @@ class Classified(IDMixIn, Base):
     anchor = Column(String(1024))
     inventory_url = Column(String(1024))
     owner_account_id = Column(Integer)
+    keep_days = Column(Integer)
 
 
 class Dealership(IDMixIn, Base):
@@ -333,6 +334,8 @@ class ZipcodeTemp(Base):
     lon = Column(Numeric(10, 7))
 
 
+# query contains JSONified elasticsearch param
+# params contains JSONified dict of input params/other stuff (notably zipcode)
 class SavedQuery(IDMixIn, Base):
     querytype = Column(String(1), nullable=False)
     user_id = Column(Integer,
@@ -340,6 +343,7 @@ class SavedQuery(IDMixIn, Base):
     ref = Column(String(24))
     descr = Column(String(80))
     query = Column(String(2048))
+    params = Column(String(2048))
     mark_date = Column(DateTime)
 
 

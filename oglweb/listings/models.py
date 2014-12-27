@@ -52,6 +52,7 @@ class SavedQuery(models.Model):
     ref = models.CharField(max_length=24)
     descr = models.CharField(max_length=80)
     query = JSONCharField(max_length=2048)
+    params = JSONCharField(max_length=2048)
     mark_date = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
@@ -76,6 +77,7 @@ class Classified(models.Model):
     parse_listing_func = models.CharField(max_length=1024, blank=True)
     inventory_url = models.CharField(max_length=1024, blank=True)
     owner_account_id = models.IntegerField(blank=True, null=True)
+    keep_days = models.IntegerField(blank=True, null=True)
                                                  
     def __str__(self):
         return self.full_name
