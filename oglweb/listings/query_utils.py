@@ -131,7 +131,14 @@ class Query(object):
         return "{}/{}/{}/{}".format(self.id, self.ref, self.descr, self.query)
 
 
-FIRST_SUGGESTED_SEARCH_LIST = {
+PREFAB_SEARCH_LIST = {
+    '_default':
+    {
+        'ref': '_default',
+        'descr': 'recently-listed cars',
+        'type': QUERYTYPE_DEFAULT,
+        'query': {'query': {'filtered': {'query': {'constant_score': { 'filter': { 'range': { 'listing_date': { 'from': datetime.date.fromtimestamp(time.time()-86400).__str__(), 'to': datetime.date.fromtimestamp(time.time()+86400).__str__()}}}}}}}}
+    },
     '_sotw_vette':
     {
         'ref': '_sotw_vette',
@@ -152,8 +159,9 @@ FIRST_SUGGESTED_SEARCH_LIST = {
         'descr': '99-05 MX-5 Miatas',
         'type': QUERYTYPE_SUGGESTED,
         'query': {'query': {'filtered': {'query': {'query_string': {'query': 'nb', 'default_operator': 'AND'}}}}, 'sort': [{'_geo_distance': {'unit': 'mi', 'order': 'asc', 'location': {'lon': -121.8818207, 'lat': 37.3415451}}}]}
-    }
+    },
 }
+
 SUGGESTED_SEARCH_LIST = {
     '_sotw_c5z06':
     {
@@ -385,7 +393,15 @@ def update_recents(session, current_query):
 #
 def get_query_by_ref(session, query_ref):
     if query_ref.startswith(QUERYTYPE_SUGGESTED):
-        return Query().from_dict(SUGGESTED_SEARCH_LIST[query_ref])
+        # might be a real (current) suggested query
+        qd = SUGGESTED_SEARCH_LIST.get(query_ref, None)
+        # or it might be some other prefab query (e.g. expired favorite)
+        if not qd:
+            qd = PREFAB_SEARCH_LIST.get(query_ref, None)
+        if qd:
+            return Query().from_dict(qd)
+        else:
+            return None
     # otherwise, look in the session
     querylist = []
     querylist = querylist_from_session(session, query_ref[0])

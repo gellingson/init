@@ -156,37 +156,48 @@ def adminflag(request, id=None):
 # a next-page link) as a mini-page
 #
 # NOTES:
-# for now this is used as an ajax endpoint for additional pages of listings
+# this is used only as an ajax endpoint for additional pages of listings.
+# this returns fully formated listing row HTML via a template, not raw JSON.
+# this does NOT use the django-ajax framework. GEE TODO: switch it over.
 #
 def cars_api(request, query_ref=None, number=50, offset=0):
 
     if request.method == 'GET':
         number = int(number)
         offset = int(offset)
-
+        if not query_ref:  # then look in the GET params
+            query_ref = request.GET.get('q', None)
+        # how to interp 'show' default: anything != 'new_only' -> all cars;
+        # will validate & throw out this value if not applicable to query
+        show = request.GET.get('show', None) 
         q = None
         total_hits = 0
         listings = []
 
-        # GEE TODO: handle cases other than addl pages of the most recent search!
-        if not query_ref:
-            recents = querylist_from_session(request.session,
-                                             QUERYTYPE_RECENT)
-            q = recents[0]
+        if query_ref:
+            q = get_query_by_ref(request.session, query_ref)
+        # else we're toast; q will remain unset & will error out below
 
+        context = {}
         if q:
-            show = get_show_cars_option(request.session, q)
+            if not q.mark_date:
+                show = None
             total_hits, listings = get_listings(q,
                                                 number=number,
                                                 offset=offset,
                                                 user=request.user,
                                                 show=show)
-        context = {}
-        # this api may be pulling any page of the results; are there even more?
-        if total_hits > (offset + number):
-            context['next_page_offset'] = offset + number
-        context['listings'] = listings
-        return render(request, LISTINGSAPI, context)
+            context['listings'] = listings
+            # this api may be pulling any page of the results; are there even more?
+            if total_hits > (offset + number):
+                context['next_page_offset'] = offset + number
+                return render(request, LISTINGSAPI, context)
+
+        else: # no query found to execute
+            context['listings'] = []
+            context['message'] = 'Unable to access query reference: {}'.format(
+                query_ref)
+            raise Http404  # GEE TODO: make a 404 response template
 
 
 # cars()

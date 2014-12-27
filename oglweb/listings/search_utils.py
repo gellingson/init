@@ -181,6 +181,7 @@ def build_new_query(args):
         # no criteria at all; don't retrieve everything; give
         # cars from the last few days
         q.type = QUERYTYPE_DEFAULT
+        q.query_ref = '_default'
         search_term = {
             "constant_score": {
                 "filter": {
