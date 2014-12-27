@@ -16,7 +16,7 @@
 	  {% endif %}
 	  {% if next_page_offset %}
 	  <div class="hidden">
-		<a class="more-listings-link" href="/carsapi/{{ next_page_offset }}/50"></a>
+		<a class="more-listings-link" href="/carsapi/{{ next_page_offset }}/50?q={{query_ref|default:"_default"}}{% if new_only %}&show=new_only{% endif %}"></a>
 	  </div>
 	  {% endif %}
 	</div>
