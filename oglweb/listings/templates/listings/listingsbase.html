@@ -6,7 +6,7 @@
 {% block header %}
 	<div class="page-header">
 	  {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
-	  <form class="searchform" role="form" action="{{ abs_url }}" method="get">
+	  <form class="searchform" role="form" action="{{ abs_url }}" method="get" id="search_form">
 		<ul class="nav nav-tabs" role="tablist">
 		  <li{% if tab != 'advanced' and tab != 'saved' %} class="active"{% endif %}><a href="#simple" role="tab" data-toggle="tab">Simple</a></li>
 		  <li{% if tab == 'advanced' %} class="active"{% endif %}><a href="#advanced" role="tab" data-toggle="tab">Advanced</a></li>

@@ -63,5 +63,11 @@ $(document).ready(function(){
 	$('.search-sync').blur(function(){
 		$('.search-sync').val($(this).val());
 	});
+	$('#search_form').on('submit', function(e) {
+		if ($('#query_string_dup').is(':focus')) {
+			// may have been modified & not triggered blur()
+			$('#query_string').val($('#query_string_dup').val());
+		}
+	});
 	setup_header_buttons();
 });
