@@ -46,6 +46,8 @@ from orm.models import NonCanonicalMake, NonCanonicalModel, Zipcode
 # CONSTANTS AND GLOBALS
 # ============================================================================
 
+LOG = logging.getLogger('importer')  # will configure further in main()
+
 # extra logging settings (beyond even the DEBUG log setting); to be used
 # only in one-off situations because these are very resource-intensive
 XL = Bunch({
@@ -53,7 +55,6 @@ XL = Bunch({
     'dump': False
 })
     
-
 # GEE TODO refine this: what headers do we want to send?
 # some sites don't want to offer up inventory without any headers.
 # Not sure why, but let's impersonate some real browser and such to get through
@@ -447,7 +448,7 @@ def regularize_url(href_in, base_url=None,
                         href_out = href_candidate  # good enough, hopefully
             except:
                 pass  # well, that didn't work
-    logging.debug('regularized href=%s from input href=%s', href_out, href_in)
+    LOG.debug('regularized href=%s from input href=%s', href_out, href_in)
     return href_out
 
 
@@ -497,7 +498,7 @@ def tagify(listing):
                 model = _MODELS[twowordmodel]
         if model:
 
-            logging.debug('found model: %s', model.canonical_name)
+            LOG.debug('found model: %s', model.canonical_name)
             new_tags.append('known_model')
             if model.canonical_name == 'Miata':
                 if listing.model_year <= '1994':
@@ -538,11 +539,11 @@ def tagify(listing):
         #new_tags.append(implied_tag_set)
 
     if new_tags:
-        logging.debug('adding tags: %s for %s %s %s',
-                      new_tags, listing.model_year,
-                      listing.make, listing.model)
+        LOG.debug('adding tags: %s for %s %s %s',
+                  new_tags, listing.model_year,
+                  listing.make, listing.model)
     else:
-        logging.debug('no new tags')
+        LOG.debug('no new tags')
     listing.add_tags(new_tags)
 
     # GEE TODO: if I'm really going to use this mechanism (much) then
@@ -615,13 +616,13 @@ def soup_from_url(url):
         req = urllib.request.Request(url, headers=_HDRS)
         page = urllib.request.urlopen(req)
     except urllib.error.HTTPError as error:
-        logging.error('Unable to load inventory page ' + url + ': HTTP ' +
-                      str(error.code) + ' ' + error.reason)
+        LOG.error('Unable to load inventory page ' + url + ': HTTP ' +
+                  str(error.code) + ' ' + error.reason)
         return None
 
     if page.getcode() != 200:
-        logging.error('Failed to pull an inventory page for ' + url +
-                      ' with HTTP response code ' + str(page.getcode()))
+        LOG.error('Failed to pull an inventory page for ' + url +
+                  ' with HTTP response code ' + str(page.getcode()))
         return None
 
     return BeautifulSoup(page)
@@ -827,14 +828,14 @@ def fj_parse_listing(listing, entry, detail):
 #
 def lc_parse_listing(listing, entry, detail):
 
-    logging.debug(entry)
-    logging.debug(detail)
+    LOG.debug(entry)
+    LOG.debug(detail)
     # first of all, since the inventory page has so little useful tagging
     # we may get some entries that are not really car listings. Detect
     # them here and return False...
     if entry.name != 'tr':
-        logging.debug('skipping putative entry because it is not in '
-                      'a <tr> (was a {})'.format(entry.name))
+        LOG.debug('skipping putative entry because it is not in '
+                  'a <tr> (was a {})'.format(entry.name))
         return False
 
     # as with cvc, there is no useful tagging....
@@ -1000,7 +1001,7 @@ def specialty_parse_listing(listing, entry, detail):
 #
 def pull_dealer_inventory(dealer, session=None):
 
-    logging.info('Beginning inventory pull for {}'.format(dealer.textid))
+    LOG.info('Beginning inventory pull for {}'.format(dealer.textid))
 
     # implicit param from environment:
     # [currently unused in dealer pulls, but for consistency & future use...]
@@ -1014,19 +1015,19 @@ def pull_dealer_inventory(dealer, session=None):
     try:
         full_inv_url = urllib.parse.urljoin(dealer.base_url,
                                             dealer.inventory_url)
-        logging.info('Pulling ' + dealer.textid + ' inventory from ' +
-                     full_inv_url + '....')
+        LOG.info('Pulling ' + dealer.textid + ' inventory from ' +
+                 full_inv_url + '....')
         req = urllib.request.Request(full_inv_url, headers=_HDRS)
         page = urllib.request.urlopen(req)
     except urllib.error.HTTPError as error:
-        logging.error('Unable to load inventory page ' + full_inv_url +
-                      ': HTTP ' + str(error.code) + ' ' + error.reason)
+        LOG.error('Unable to load inventory page ' + full_inv_url +
+                  ': HTTP ' + str(error.code) + ' ' + error.reason)
         return list_of_listings
 
     # GEE TODO: handle URLError that might have been raised...
     if page.getcode() != 200:
-        logging.error('Failed to pull an inventory page for ' + full_inv_url +
-                      ' with HTTP response code ' + str(page.getcode()))
+        LOG.error('Failed to pull an inventory page for ' + full_inv_url +
+                  ' with HTTP response code ' + str(page.getcode()))
         return list_of_listings
 
     while True:
@@ -1037,7 +1038,7 @@ def pull_dealer_inventory(dealer, session=None):
         myfunc = eval(dealer.extract_car_list_func)
 
         listings = myfunc(soup)
-        logging.info('Number of car listings found: {}'.format(len(listings)))
+        LOG.info('Number of car listings found: {}'.format(len(listings)))
         for item in listings:
             ok = True
             listing = Listing()
@@ -1098,8 +1099,8 @@ def pull_dealer_inventory(dealer, session=None):
                     scheme = 'tel'
                 if scheme and scheme != 'http' and scheme != 'https':
                     # uh... let's skip this one if we can't link to it as http
-                    logging.warning('found non-http detail URL: %s',
-                                    detail_url)
+                    LOG.warning('found non-http detail URL: %s',
+                                detail_url)
                     listing.listing_href = detail_url # just to prevent barfs
                     ok = False
                 else:
@@ -1110,7 +1111,7 @@ def pull_dealer_inventory(dealer, session=None):
                         # shouldn't be quoted. What to do?
                         listing.listing_href = urllib.parse.urljoin(
                             full_inv_url, detail_url)
-                        logging.debug('detail page: ' + listing.listing_href)
+                        LOG.debug('detail page: ' + listing.listing_href)
                         req = urllib.request.Request(
                             listing.listing_href, headers=_HDRS)
                         detail_page = urllib.request.urlopen(req)
@@ -1122,9 +1123,9 @@ def pull_dealer_inventory(dealer, session=None):
                             detail = body
 
                     except urllib.error.HTTPError as error:
-                        logging.error('Unable to load detail page ' +
-                                      listing.listing_href + ': HTTP ' +
-                                      str(error.code) + ' ' + error.reason)
+                        LOG.error('Unable to load detail page ' +
+                                  listing.listing_href + ': HTTP ' +
+                                  str(error.code) + ' ' + error.reason)
                         ok = False
 
             # look for an image in the entry
@@ -1197,9 +1198,9 @@ def pull_dealer_inventory(dealer, session=None):
                 # need a listing_id
                 if listing.local_id == last_local_id:
                     # not getting clean, unique local_ids from the page
-                    logging.warning('Duplicate local_ids '
-                                    '[{}] from {} inventory'.format(
-                                        last_local_id, dealer.textid))
+                    LOG.warning('Duplicate local_ids '
+                                '[{}] from {} inventory'.format(
+                                    last_local_id, dealer.textid))
                     ok = False
                 last_local_id = listing.local_id
                 # model_year must be a string containing an integer
@@ -1219,9 +1220,9 @@ def pull_dealer_inventory(dealer, session=None):
                     listing.add_tag('interesting')
                 tagify(listing)
                 list_of_listings.append(listing)
-                logging.debug('pulled listing: {}'.format(listing))
+                LOG.debug('pulled listing: {}'.format(listing))
             else:
-                logging.warning('skipped listing: {}'.format(listing))
+                LOG.warning('skipped listing: {}'.format(listing))
 
             # END LOOP over listings on the page
 
@@ -1233,8 +1234,8 @@ def pull_dealer_inventory(dealer, session=None):
             # build the full URL (it may be relative to current URL)
             full_inv_url = urllib.parse.urljoin(
                 full_inv_url, next_ref.get('href'))
-            logging.debug('Loading next page of inventory via URL: %s',
-                          full_inv_url)
+            LOG.debug('Loading next page of inventory via URL: %s',
+                      full_inv_url)
             req = urllib.request.Request(full_inv_url, headers=_HDRS)
             page = urllib.request.urlopen(req)
             # GEE TODO - check that this is really a listings page and has
@@ -1246,8 +1247,8 @@ def pull_dealer_inventory(dealer, session=None):
             break
         # END LOOP over all inventory pages
 
-    logging.info('Loaded ' + str(len(list_of_listings)) + ' cars from ' +
-                 dealer.textid)
+    LOG.info('Loaded ' + str(len(list_of_listings)) + ' cars from ' +
+             dealer.textid)
     return list_of_listings
 
 
@@ -1288,7 +1289,7 @@ def ebay_attr_get(item, attr_name):
 def process_ebay_listing(session, item, classified, counts, dblog=False):
     ok = True
     item = Bunch(item) # for convenience
-    logging.debug('eBay ITEM: {}'.format(item['itemId']))
+    LOG.debug('eBay ITEM: {}'.format(item['itemId']))
     listing = Listing()
     listing.source_type = 'C'
     listing.source_id = classified.id
@@ -1304,7 +1305,7 @@ def process_ebay_listing(session, item, classified, counts, dblog=False):
         lsinfo.detail_enc = 'X'
         lsinfo.detail = None
     if XL.dump:
-        logging.debug(json.dumps(item))
+        LOG.debug(json.dumps(item))
 
     # local_id & stock_no
     listing.local_id = item.itemId
@@ -1365,7 +1366,7 @@ def process_ebay_listing(session, item, classified, counts, dblog=False):
             listing.location_text = '{}, {}'.format(city, state)
             # leave lat/lon/zip empty
     if not (listing.lat and listing.lon and listing.zip and listing.location_text):
-        logging.debug("location information bad: {} {} {} {}".format(
+        LOG.debug("location information bad: {} {} {} {}".format(
             listing.lat, listing.lon, listing.location_text, listing.zip))
         counts['badloc'] += 1
 
@@ -1404,8 +1405,8 @@ def process_ebay_listing(session, item, classified, counts, dblog=False):
         int(listing.model_year)
     except (ValueError, TypeError):
         counts['badyear'] += 1
-#        logging.warning('bad year [%s] for item %s',
-#                        listing.model_year, listing.local_id)
+        LOG.debug('bad year [%s] for item %s',
+                  listing.model_year, listing.local_id)
         listing.model_year = '1'
 
     return ok, listing, lsinfo
@@ -1505,14 +1506,14 @@ def pull_ebay_inventory(classified, session,
     }
 
     if 'local' in inv_settings:
-        logging.debug('limiting to local cars')
+        LOG.debug('limiting to local cars')
         api_request['itemFilter'].append({'name': 'MaxDistance',
                                           'value': 150})
     else:
-        logging.debug('NOT limiting to local cars')
+        LOG.debug('NOT limiting to local cars')
 
-    logging.info('batch {} sub {}'.format(inventory_marker['batch'],
-                                          inventory_marker['sub']))
+    LOG.info('batch {} sub {}'.format(inventory_marker['batch'],
+                                      inventory_marker['sub']))
     # batching by year-groupings; if the 2nd "year" in the batch tuple is not a
     # year but a small #, then this is a single-year batch with sub-batches
     for year in range(ebay_year_batches[inventory_marker['batch']][0],
@@ -1527,7 +1528,7 @@ def pull_ebay_inventory(classified, session,
                                             colors[inventory_marker['sub']]})
 
     # log the API request for page 1 (not again each page inside the next loop)
-    logging.debug('eBay API request: {}'.format(api_request))
+    LOG.debug('eBay API request: {}'.format(api_request))
 
     while True:
 
@@ -1539,20 +1540,20 @@ def pull_ebay_inventory(classified, session,
         response = api.execute('findItemsAdvanced', api_request)
         r = response.dict()
         if r['ack'] != 'Success':
-            logging.error('eBay reports failure: {}'.format(response))
+            LOG.error('eBay reports failure: {}'.format(response))
             break # note: breaks out of loop over pages
         # _count may be empty, or '0', or 0, or... who knows, but skip it
         if (
                 not r['searchResult']['_count']
                 or int(r['searchResult']['_count']) == 0
         ):
-            logging.warning('eBay returned a set of zero records')
+            LOG.warning('eBay returned a set of zero records')
             break # note: breaks out of loop over pages
 
         # note: _count may not be present if we got a bad fetch from eBay;
         # hopefully we've done all our checks above and called a break...
-        logging.info('Number of car listings found: %s',
-                     r['searchResult']['_count'])
+        LOG.info('Number of car listings found: %s',
+                 r['searchResult']['_count'])
         for item in r['searchResult']['item']:
             ok, listing, lsinfo = process_ebay_listing(session, item,
                                                        classified, counts,
@@ -1572,10 +1573,10 @@ def pull_ebay_inventory(classified, session,
                 accepted_listings.append(listing)
                 if dblog:
                     accepted_lsinfos.append(lsinfo)
-                logging.debug('pulled listing: {}'.format(listing))
+                LOG.debug('pulled listing: {}'.format(listing))
             else:
                 # debug not warn b/c we're throwing out lots of stuff
-                logging.debug('skipped listing: {}'.format(listing))
+                LOG.debug('skipped listing: {}'.format(listing))
                 if dblog:
                     rejected_lsinfos.append(lsinfo)
 
@@ -1588,7 +1589,7 @@ def pull_ebay_inventory(classified, session,
         # and "of 53" on another page of the same pull
         current_page = int(r['paginationOutput']['pageNumber'])
         total_pages = int(r['paginationOutput']['totalPages'])
-        logging.info('Loaded page {} of {}'.format(current_page, total_pages))
+        LOG.info('Loaded page {} of {}'.format(current_page, total_pages))
         if current_page < total_pages:
             api_request['paginationInput']['pageNumber'] = current_page + 1
             response = api.execute('findItemsAdvanced', api_request)
@@ -1597,8 +1598,8 @@ def pull_ebay_inventory(classified, session,
         # END LOOP over all inventory pages
 
     if accepted_listings:
-        logging.info('Loaded %s cars from ebay',
-                     str(len(accepted_listings)))
+        LOG.info('Loaded %s cars from ebay',
+                 str(len(accepted_listings)))
 
     # do we increment sub-batch (color) or move to the next batch?
     if inventory_marker['sub']:
@@ -1644,7 +1645,7 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
     html = item.get('html')
     item.html = None
 
-    logging.debug('3taps ITEM: {}'.format(item.id))
+    LOG.debug('3taps ITEM: {}'.format(item.id))
     listing = Listing()
     listing.source_type = 'C'
     listing.source_id = classified.id
@@ -1660,7 +1661,7 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
         lsinfo.detail_enc = 'B'
         lsinfo.detail = html
     if XL.dump:
-        logging.debug(json.dumps(item))
+        LOG.debug(json.dumps(item))
 
     # local_id & stock_no
     # the source identifier to minimizes dupes (3taps ID changes each update)
@@ -1670,10 +1671,10 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
     if not listing.local_id:
         # some feeds (e.g. autod) *occasionally* lack the local_id;
         # fall back to stock_no
-        logging.warning('listing for a %s %s %s has no local ID; ' +
-                        'using 3taps ID %s',
-                        listing.model_year, listing.make, listing.model,
-                        listing.stock_no)
+        LOG.warning('listing for a %s %s %s has no local ID; ' +
+                    'using 3taps ID %s',
+                    listing.model_year, listing.make, listing.model,
+                    listing.stock_no)
         listing.local_id = listing.stock_no
 
     # set removal date as requested, within limits...
@@ -1688,10 +1689,10 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
     if (item.deleted or item.flagged_status or
           item.state != 'available' or item.status != 'for_sale'):
         counts['inactive'] += 1
-        logging.debug('maybe-not-active: d/e/f/s/s=%s/%s/%s/%s/%s',
-                      str(item.deleted), str(item.expires),
-                      str(item.flagged_status), str(item.state),
-                      str(item.status))
+        LOG.debug('maybe-not-active: d/e/f/s/s=%s/%s/%s/%s/%s',
+                  str(item.deleted), str(item.expires),
+                  str(item.flagged_status), str(item.state),
+                  str(item.status))
         
     # status
     # GEE TODO: examine & use flagging info
@@ -1741,8 +1742,8 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
         try:
             html_decoded = b64decode(html)
         except:  # GEE TODO: figure out how to catch 'binascii.Error'
-            logging.error('Failed to decode item html for item %s',
-                          item.external_id)
+            LOG.error('Failed to decode item html for item %s',
+                      item.external_id)
         if html_decoded:
             soup = BeautifulSoup(html_decoded)
             for p in soup.find_all(class_='attrgroup'):
@@ -1786,8 +1787,8 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
     # and move validation to separate method
     if not listing.model_year and not listing.model:
         ok = False
-        logging.warning('skipping item with no year/make/model info: %s',
-                        listing.local_id)
+        LOG.warning('skipping item with no year/make/model info: %s',
+                    listing.local_id)
         counts['badmakemodel'] += 1
         
     else:
@@ -1795,22 +1796,22 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
             int(listing.model_year)
         except (ValueError, TypeError):
             counts['badyear'] += 1
-#            logging.warning('bad year [%s] for item %s',
-#                            listing.model_year, listing.local_id)
+            LOG.debug('bad year [%s] for item %s',
+                      listing.model_year, listing.local_id)
             listing.model_year = '1'
 
     # logging what year/make/model we ended up with [and what we started from]
     # GEE TODO: cl 1996 1996 nissan pulsar -> model=1996 :(.
     # Can fix that one (header was right, annotations and html were wrong)
     if classified.textid == 'craig':
-        logging.debug('Final year/make/model: %s %s %s [an: %s %s %s, h: %s, html: %s %s %s]',
-                      listing.model_year, listing.make, listing.model,
-                      an_model_year, an_make, an_model, item.heading,
-                      ht_model_year, ht_make, ht_model)
+        LOG.debug('Final year/make/model: %s %s %s [an: %s %s %s, h: %s, html: %s %s %s]',
+                  listing.model_year, listing.make, listing.model,
+                  an_model_year, an_make, an_model, item.heading,
+                  ht_model_year, ht_make, ht_model)
     else:
-        logging.debug('Final year/make/model: %s %s %s [an: %s %s %s, h: %s]',
-                      listing.model_year, listing.make, listing.model,
-                      an_model_year, an_make, an_model, item.heading)
+        LOG.debug('Final year/make/model: %s %s %s [an: %s %s %s, h: %s]',
+                  listing.model_year, listing.make, listing.model,
+                  an_model_year, an_make, an_model, item.heading)
 
     # pic_href
     try:
@@ -1845,7 +1846,7 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
                     listing.lon = z.lon
 
     if not (listing.lat and listing.lon and listing.zip and listing.location_text):
-        logging.debug("location information bad: {} {} {} {}".format(
+        LOG.debug("location information bad: {} {} {} {}".format(
             listing.lat, listing.lon, listing.location_text, listing.zip))
         counts['badloc'] += 1
 
@@ -1945,8 +1946,8 @@ def pull_3taps_inventory(classified, session,
         # caller doesn't specify; start from the anchor in classified
         inventory_marker = classified.anchor
 
-    logging.info('Pulling inventory from 3taps for %s starting with marker %s',
-                 classified.textid, inventory_marker)
+    LOG.info('Pulling inventory from 3taps for %s starting with marker %s',
+             classified.textid, inventory_marker)
 
     # no dedicated python sdk, but simple enough JSON APIs to call directly
     url = ('http://polling.3taps.com/poll?'
@@ -1962,15 +1963,15 @@ def pull_3taps_inventory(classified, session,
     url_params = ['&source={}'.format(classified.textid.upper())]
     url_params.append('&anchor={}'.format(inventory_marker))
     if 'local' in inv_settings:
-        logging.debug('limiting to local cars')
+        LOG.debug('limiting to local cars')
         # GEE TODO: note that inventory will get really screwed up if we switch
         # back and forth between local and not
         url_params.append('&location.state=USA-CA')
     else:
-        logging.debug('NOT limiting to local cars')
+        LOG.debug('NOT limiting to local cars')
 
     url = url + ''.join(url_params)
-    logging.info('inventory URL is: {}'.format(url))
+    LOG.info('inventory URL is: {}'.format(url))
 
     try:
         req = urllib.request.Request(url, headers=_HDRS)
@@ -1978,25 +1979,25 @@ def pull_3taps_inventory(classified, session,
         bytestream = page.read()
         r = json.loads(bytestream.decode())
     except urllib.error.HTTPError as error:
-        logging.error('Unable to poll 3taps at ' + url + ': HTTP ' +
-                      str(error.code) + ' ' + error.reason)
+        LOG.error('Unable to poll 3taps at ' + url + ': HTTP ' +
+                  str(error.code) + ' ' + error.reason)
         return None, None, None, None
 
     if page.getcode() != 200:
-        logging.error('Failed to poll 3taps at ' + url +
-                      ' with HTTP response code ' + str(page.getcode()))
-        logging.error('Full error page:'.format(bytestream.decode()))
+        LOG.error('Failed to poll 3taps at ' + url +
+                  ' with HTTP response code ' + str(page.getcode()))
+        LOG.error('Full error page:'.format(bytestream.decode()))
         return None, None, None, None
 
     if not r['success']:
-        logging.error('3taps reports failure: {}'.format(json.dumps(r)))
+        LOG.error('3taps reports failure: {}'.format(json.dumps(r)))
         return None, None, None, None
 
     if len(r['postings']) == 0:
-        logging.warning('3taps returned a set of zero records')
+        LOG.warning('3taps returned a set of zero records')
         return None, None, None, None
 
-    logging.info('Number of car listings found: {}'.format(len(r['postings'])))
+    LOG.info('Number of car listings found: {}'.format(len(r['postings'])))
 
     for item in r['postings']:
         ok, listing, lsinfo = process_3taps_posting(session, item,
@@ -2019,35 +2020,35 @@ def pull_3taps_inventory(classified, session,
         # a few more CL junk-data tests: drop records that fail
         if ok and classified.textid == 'craig' and not listing.has_tag('interesting'):
             if not listing.model_year or listing.model_year < '1800':
-                logging.warning('skipping item with no useful year: %s',
-                                item)                
+                LOG.warning('skipping item with no useful year: %s',
+                            item)                
                 ok = False
             elif not listing.model or listing.model == 'None':
-                logging.warning('skipping item with no useful model: %s',
-                                item)
+                LOG.warning('skipping item with no useful model: %s',
+                            item)
                 ok = False
             elif listing.price < 100:
-                logging.warning('skipping item with no useful price: %s',
-                                item)
+                LOG.warning('skipping item with no useful price: %s',
+                            item)
                 ok = False
         if ok:
             tagify(listing)
             accepted_listings.append(listing)
             if dblog:
                 accepted_lsinfos.append(lsinfo)
-            logging.debug('pulled listing: {}'.format(listing))
+            LOG.debug('pulled listing: {}'.format(listing))
         else:
             # debug not warn b/c we're throwing out lots of stuff
-            logging.debug('skipped listing: {}'.format(listing))
+            LOG.debug('skipped listing: {}'.format(listing))
             if dblog:
                 rejected_lsinfos.append(lsinfo)
 
     # report on outcomes
     if accepted_listings:
-        logging.info('Loaded %s cars from 3taps for %s',
-                     str(len(accepted_listings)), classified.textid)
+        LOG.info('Loaded %s cars from 3taps for %s',
+                 str(len(accepted_listings)), classified.textid)
     for key in counts:
-        logging.info(' - %s: %s', key, str(counts[key]))
+        LOG.info(' - %s: %s', key, str(counts[key]))
 
     # update the classified record with the new 3taps anchor AND
     # send the same value back as the inventory marker.
@@ -2101,8 +2102,8 @@ def import_from_dealer(dealer, session, es):
 
         # commit the block of listings (which generates ids on new records)
         session.commit()
-        logging.debug('committed a block of listings for %s',
-                      dealer.textid)
+        LOG.debug('committed a block of listings for %s',
+                  dealer.textid)
 
         for listing in db_listings:
             index_listing(es, listing, session)
@@ -2135,7 +2136,7 @@ def import_from_dealer(dealer, session, es):
 #
 def import_from_classified(classified, session, es, dblog=False):
 
-    logging.info('Beginning inventory pull for {}'.format(classified.textid))
+    LOG.info('Beginning inventory pull for {}'.format(classified.textid))
 
     # clear out existing sourceinfo records (this table grows FAST)
     clear_listing_sourceinfo(session, 'C', classified.id)
@@ -2185,7 +2186,7 @@ def import_from_classified(classified, session, es, dblog=False):
         remove_marked_listings('C', classified.id, session, es=es)
 
     session.commit() # aaaaaand commit (catches the marked listing handling)
-    logging.info('Completed inventory pull for {}'.format(classified.textid))
+    LOG.info('Completed inventory pull for {}'.format(classified.textid))
 
     return True
 
@@ -2206,10 +2207,10 @@ def clear_listing_sourceinfo(session, source_type, source_id=None):
         parms['source_id'] = source_id
     result = session.execute(stmt, parms)
     if source_id:
-        logging.debug('Deleted listing_sourceinfo for all %s', source_type)
+        LOG.debug('Deleted listing_sourceinfo for all %s', source_type)
     else:
-        logging.debug('Deleted listing_sourceinfo for %s %s',
-                      source_type, source_id)
+        LOG.debug('Deleted listing_sourceinfo for %s %s',
+                  source_type, source_id)
     return result.rowcount
 
 
@@ -2225,8 +2226,8 @@ def mark_listings_pending_delete(source_type, source_id, session):
         "where source_type = :source_type and source_id = :source_id "
         "and status = 'F'",
         {'source_type': source_type, 'source_id': source_id})
-    logging.debug('Painted %s existing records for %s site %s',
-                  result.rowcount, source_type, source_id)
+    LOG.debug('Painted %s existing records for %s site %s',
+              result.rowcount, source_type, source_id)
     return result.rowcount
 
 
@@ -2245,8 +2246,8 @@ def remove_marked_listings(source_type, source_id, session, es=None):
     # any other solution would involve generating the set to pass to es
     # so for now, let's just iterate
     if es:
-        logging.info('Removing listings that have been taken down '
-                     'since the last pull')
+        LOG.info('Removing listings that have been taken down '
+                 'since the last pull')
         result = session.execute(
             "select id from listing "
             "where source_type = :source_type and source_id = :source_id "
@@ -2259,9 +2260,9 @@ def remove_marked_listings(source_type, source_id, session, es=None):
                           doc_type="listing-type",
                           id=listing_id)
             except NotFoundError as err:
-                logging.warning('record with id=%s not found during ' +
-                                'attempted deletion: %s',
-                                listing_id, err)
+                LOG.debug('record with id=%s not found during ' +
+                          'attempted deletion: %s',
+                          listing_id, err)
 
     # mark them all in the db in one query to avoid per-record round-trips
     # NOTE: we didn't pull the full rows into Listing objects, so we can't
@@ -2275,8 +2276,8 @@ def remove_marked_listings(source_type, source_id, session, es=None):
             where source_type = :source_type and source_id = :source_id
               and instr(ifnull(markers, ''), 'P') != 0""",
         {'source_type': source_type, 'source_id': source_id})
-    logging.debug('Marked %s rows as no longer active on %s site #%s',
-                  result.rowcount, source_type, source_id)
+    LOG.debug('Marked %s rows as no longer active on %s site #%s',
+              result.rowcount, source_type, source_id)
     return result.rowcount
 
 
@@ -2316,15 +2317,15 @@ def remove_marked_listings(source_type, source_id, session, es=None):
 #
 def add_or_update_found_listing(session, current_listing):
 
-    logging.debug('checking on existence of listing %s',
-                  current_listing.local_id)
+    LOG.debug('checking on existence of listing %s',
+              current_listing.local_id)
     try:
         existing_listing = session.query(Listing).filter_by(
             local_id=current_listing.local_id,
             source_type=current_listing.source_type,
             source_id=current_listing.source_id).one()
 
-        logging.debug('found: {}'.format(existing_listing))
+        LOG.debug('found: {}'.format(existing_listing))
         if existing_listing.markers:
             s = set(existing_listing.markers)
             if 'P' in s:
@@ -2347,8 +2348,8 @@ def add_or_update_found_listing(session, current_listing):
         # all other fields will be taken from the current listing record
 
     except NoResultFound:
-        logging.debug('no match for local_id=%s',
-                      current_listing.local_id)
+        LOG.debug('no match for local_id=%s',
+                  current_listing.local_id)
         pass # current_listing will not get an id until merge & flush
 
     # GEE TODO: this setting of last_update should not be required, but...
@@ -2385,8 +2386,8 @@ def record_listings(listings, accepted_lsinfos, rejected_lsinfos,
         # commit the block of listings (which generates ids on new records)
         # also commits everything else, e.g. updated classified.anchors, etc
         session.commit()
-        logging.debug('committed a block of listings for %s',
-                      source_textid)
+        LOG.debug('committed a block of listings for %s',
+                  source_textid)
 
     # now using those db_listings with ids we can continue...
 
@@ -2402,9 +2403,9 @@ def record_listings(listings, accepted_lsinfos, rejected_lsinfos,
                 lsinfo.listing_id = ls.id
                 session.add(lsinfo)
             elif ls:
-                logging.warn('db_listing without ls_info')
+                LOG.warning('db_listing without ls_info')
             elif lsinfo: 
-                logging.warn('ls_info without db_listing')
+                LOG.warning('ls_info without db_listing')
     if (rejected_lsinfos):
         for lsinfo in rejected_lsinfos:
             session.add(lsinfo)
@@ -2452,9 +2453,9 @@ def index_listing(es, listing, session):
             es.delete(index="carbyr-index", doc_type="listing-type",
                       id=listing.id)
         except NotFoundError as err:
-            logging.warning('record with id=%s not found during attempted ' +
-                            'deletion: %s',
-                            listing.id, err)
+            LOG.debug('record with id=%s not found during attempted ' +
+                      'deletion: %s',
+                      listing.id, err)
             # NOTE: this can easily happen if we find a record of a SOLD car
             # but did not already have the car listing open
     return True
@@ -2476,7 +2477,7 @@ def text_store_listing(list_dir, listing):
     list_file.write(listing)
     list_file.close()
 
-    logging.debug("wrote listing id {} ({} {} {}) to file {}".format(
+    LOG.debug("wrote listing id {} ({} {} {}) to file {}".format(
         listing.id, listing.model_year, listing.make, listing.model, pathname))
     return True
 
@@ -2514,8 +2515,25 @@ def process_command_line():
 def main():
     args = process_command_line()
 
-    # start logging
-    logging.basicConfig(level=args.log_level.upper(),format='%(asctime)s %(message)s')
+    # start logging: config the local __name__ logger
+    formatter = logging.Formatter(
+        '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s',
+        datefmt="%d/%b/%Y %H:%M:%S")
+    fh = None
+    try:
+        fh = logging.FileHandler(os.path.join(os.environ.get('OGL_LOGDIR',
+                                                             '/tmp'),
+                                              'importlog'))
+    except:
+        fh = logging.StreamHandler()  # fall back to stderr
+    fh.setFormatter(formatter)
+    LOG.addHandler(fh)
+    LOG.setLevel(args.log_level.upper())
+
+    # now set this fh on the root logger so that loggers defined in whatever
+    # other modules might be used (e.g. elasticsearch)will also output there
+    tmp = logging.getLogger('')
+    tmp.addHandler(fh)
 
     if args.extra_logging == 'DBLOG':
         XL.dblog = True
@@ -2587,10 +2605,10 @@ def main():
                         import_from_classified(classified, session, es)
                         found = True
                 if not found:
-                    logging.error('request of import from unknown source: %s',
-                                  source)
+                    LOG.error('request of import from unknown source: %s',
+                              source)
     else: # uh, shouldn't be possible?
-        logging.error('oops -- action {} not recognized'.format(args.action))
+        LOG.error('oops -- action {} not recognized'.format(args.action))
 
     return True
 
