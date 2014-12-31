@@ -17,11 +17,6 @@ import errno
 import logging
 
 # third party modules used
-from bunch import Bunch
-from bs4 import BeautifulSoup
-import ebaysdk
-from ebaysdk.exception import ConnectionError
-from ebaysdk.finding import Connection as ebaysdk_finding
 from elasticsearch import Elasticsearch
 import elasticsearch.exceptions
 import pymysql as db

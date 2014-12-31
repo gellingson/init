@@ -22,30 +22,31 @@ def find():
     api = finding(debug=True, appid=None, config_file='../conf/ebay.yaml',warnings=True)
     api_request = {
         #'keywords': u'niño',
+        'keywords': 'WRX',
         'categoryId': 6001,
         'GLOBAL-ID': 100,
         'buyerPostalCode': 95112,
-#        'keywords': u'Corvette',
-        'itemFilter': [
-            {'name': 'MaxDistance', 'value': 500},
-            ],
+        #        'keywords': u'Corvette',
+#        'itemFilter': [
+#            {'name': 'MaxDistance', 'value': 500},
+#        ],
         'aspectFilter': [
+#            {'aspectName': 'Model Year',
+#             'aspectValueName': '1963'},
             {'aspectName': 'Model Year',
-             'aspectValueName': '1963'
-             },
-            {'aspectName': 'Model Year',
-             'aspectValueName': '1964'
-             },
-            {'aspectName': 'Model Year',
-             'aspectValueName': '2011'
-             },
+             'aspectValueName': '2006'},
+#            {'aspectName': 'Model Year',
+#             'aspectValueName': '2011'},
             {'aspectName': 'Make',
-             'aspectValueName': 'Chevrolet'},
-            ],
+             'aspectValueName': 'Subaru'},
+        ],
         'affiliate': {'trackingId': 1},
         'sortOrder': 'YearAscending',
-#        'outputSelector': 'categoryHistogram',  # example has initcap on Cat too??
-        'outputSelector': ['PictureURLLarge', 'PictureURLSuperSize'],
+        # This is how you get a list of the aspects for a category:
+        # note that some examples/docs have initcap on 1st word but that is WRONG
+#        'outputSelector': ['categoryHistogram', 'aspectHistogram']
+        'outputSelector': ['CategoryHistogram', 'AspectHistogram']
+#        'outputSelector': ['PictureURLLarge', 'PictureURLSuperSize', 'ItemSpecifics'],
         }
     response = api.execute('findItemsAdvanced', api_request)
     cars = response.json()
