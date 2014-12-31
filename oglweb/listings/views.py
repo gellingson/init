@@ -191,12 +191,12 @@ def cars_api(request, query_ref=None, number=50, offset=0):
             # this api may be pulling any page of the results; are there even more?
             if total_hits > (offset + number):
                 context['next_page_offset'] = offset + number
-                return render(request, LISTINGSAPI, context)
                 context['query_ref'] = query_ref
                 if show == 'new_only':
                     context['new_only'] = True
                 else:
                     context['new_only'] = False
+                return render(request, LISTINGSAPI, context)
 
         else: # no query found to execute
             context['listings'] = []
