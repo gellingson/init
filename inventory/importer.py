@@ -1163,9 +1163,9 @@ def pull_dealer_inventory(dealer, session=None):
                             detail = body
 
                     except urllib.error.HTTPError as error:
-                        LOG.error('Unable to load detail page ' +
-                                  listing.listing_href + ': HTTP ' +
-                                  str(error.code) + ' ' + error.reason)
+                        LOG.warning('Unable to load detail page ' +
+                                    listing.listing_href + ': HTTP ' +
+                                    str(error.code) + ' ' + error.reason)
                         ok = False
 
             # look for an image in the entry
@@ -1918,7 +1918,13 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
 
     # listing_text
     listing.listing_text = item.heading
-
+    if classified.textid == 'ccars' and listing_text:
+        # drop leading site ID in format '(CC-123456) '
+        if listing_text[:4] == '(CC-':
+            try:
+                listing_text = ') '.join(listing_text.split(') ')[1:])
+            except IndexError:
+                pass  # huh, there was no closing paren; ignore...
     # price - may be @ top level or in the annotations
     listing.price = regularize_price(item.price)
     if listing.price <= 1000 and 'price' in anno:
