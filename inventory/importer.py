@@ -84,13 +84,31 @@ _BORING_MAKES = [
 ]
 
 _INTERESTING_MODELS = [
-    'Viper',
-    'NSX', 'MR2', 'MR-2', 'Supra', 'LFA', '300zx', 'Skyline', 'GTR',
-    'MX5', 'MX-5', 'Miata', 'MX-5 Miata', 'rx7', 'STI', 'Evolution', 'Evo',
-    'Corvette', 'Grand National',
-    'Boss', 'Shelby', 'GT',
-    'M3', 'M5', 'M6', 'SLS', 'AMG', 'R8'
+    'VIPER',
+    'NSX', 'MR2', 'MR-2', 'SUPRA', 'LFA', '300ZX', 'SKYLINE', 'GTR', 'LEAF',
+    'MX5', 'MX-5', 'MIATA', 'MX-5 MIATA', 'RX7',
+    'EVOLUTION', 'EVO', 'I-MIEV', 'I',
+    'CORVETTE', 'VOLT', 'GRAND NATIONAL', 'ELR', 'SPARK', 'CTS-V',
+    'BOSS', 'SHELBY', 'GT', 'MUSTANG', 'C-MAX',
+    '1M', 'Z3M', 'M3', 'M5', 'M6', 'I3', 'I8',
+    '330', '330CI', '330I', '335', '335D', '335I', 'SLS',
+    'E-GOLF', 'E-UP', 'XL1', 'R8',
+    '500', '500E',
 ]
+
+_INTERESTING_WORDS = [
+    'ENERGI', 'ELECTRIC', 'AMG', 'PHEV', 'CLARITY', 'EV',
+    'STI', 'WRX', 'GTI', 'R32', 'SI', 'GLH', 'GLHS'
+    'SWAP', 'SWAPPED', 'MODS', 'MODDED', 'JDM', 'DRAG', 'RACE', 'RACECAR',
+    'AUTOCROSS', 'SCCA', 'CRAPCAN', 'LEMONS',
+    'CUSTOM', 'RESTORED', 'PROJECT',
+    'LS1', 'LS2', 'LS7',
+    'TURBO', 'TURBOCHARGED', 'SUPERCHARGED', 'SUPERCHARGER',
+    'V10', 'V12', 'ROTARY', '12A', '13B', '20B',
+]
+
+# GEE TODO: specific submodels that can only be recognized by multiple words,
+# e.g. Focus ST/RS, Integra Type R.
 
 # global hashes (caches) of refdata objects from the db, populated at startup
 _MAKES = {}
@@ -469,11 +487,7 @@ def tagify(listing):
 
     # GEE TODO: maybe we should be doing some of this tagging in the
     # relevant regularize() methods?
-
-    if (
-            listing.make and listing.make.upper() in _MAKES and
-            _MAKES[listing.make.upper()].canonical_name == listing.make
-    ):
+    if (listing.make and listing.make.upper() in _MAKES):
         make = _MAKES[listing.make.upper()]
         new_tags.append('known_make')
     else:
@@ -578,23 +592,49 @@ def make_sure_path_exists(path):
 def is_car_interesting(listing, unknown_make_is_interesting=True):
     if int(listing.model_year) > 1800 and int(listing.model_year) <= 1975:
         return True # automatically interesting
+    if int(listing.price) > 100000: # Prima facia evidence of interesting? :)
+        return True
     if not unknown_make_is_interesting:
-        if not (
-                listing.make and listing.make.upper() in _MAKES and
-                _MAKES[listing.make.upper()].canonical_name == listing.make
-        ):
-            return False
+        # any known make should already be regularized so we don't need
+        # to worry about fuzzy matching here:
+        if listing.make and listing.make.upper() in _MAKES:
+            pass  # known make; continue
+        else:
+            return False  # unknown make is, in this case, uninteresting
+
     # GEE TODO: case of comparisons & substrings make this.... interesting.
     # we need to split model to model/submodel, then us db rels/orm model
     # objects to make all this easier to handle without all the string stuff
+
+    # keep everything that isn't from a boring make
+    # listing.make is regularized (ie spelled & capitalized consistently),
+    # at least for any boring make (ie for the cases that matter here):
     if listing.make not in _BORING_MAKES:
         # wow is this inefficient - need make/model db stuff
         return True
-    # pull particular models back in
-    if listing.model and listing.model.split(' ')[0] in _INTERESTING_MODELS:
+
+    # keep particular models even from boring makes
+    # model is NOT reliably regularized so we have to do some extra work
+    # first check primary model designation (first word)
+    if listing.model and listing.model.split(' ')[0].upper() in _INTERESTING_MODELS:
         return True
-    if int(listing.price) > 100000: # Prima facia evidence of interesting? :)
-        return True
+    # and keep specific sub-models/trim & cars with other "interesting" signals
+    # some sources will have lots of words in the "model" field for trim;
+    # other sources (notably ebay) do not & we really need to use listing_text
+    #
+    # GEE TODO: improve this for consistency (some sites are getting minimal
+    # listing text from subject while others are importing more lengthy text)
+    # & to not reward sellers stuffing keywords in listing titles
+    # (e.g. "1992 mercury capri like miata")
+    if listing.model:
+        for word in listing.model.upper().split(' '):
+            if word in _INTERESTING_WORDS:
+                return True
+    if listing.listing_text:
+        for word in listing.listing_text.upper().split(' '):
+            if word in _INTERESTING_WORDS:
+                return True
+    # heh, can't think of any reason to keep this record, so...
     return False
 
 
@@ -1469,8 +1509,8 @@ def pull_ebay_inventory(classified, session,
         (1981, 1990), (1991, 1995), (1996, 1999),
         (2000, 2003), (2004, 2005), (2006, 2006),
         (2007, 2007), (2008, 2008), (2009, 2009),
-        (2010, 2010), (2011, 2011), (2012, 2012),
-        (2013, 2013), (2014, 1), (2015, 2015)
+        (2010, 2010), (2011, 2011), (2012, 1),
+        (2013, 1), (2014, 1), (2015, 1)
     ]
 
     # for any years that are too big we further segment by color (!)
@@ -1512,8 +1552,9 @@ def pull_ebay_inventory(classified, session,
     else:
         LOG.debug('NOT limiting to local cars')
 
-    LOG.info('batch {} sub {}'.format(inventory_marker['batch'],
-                                      inventory_marker['sub']))
+    LOG.info('batch starting with year {}, sub {}'.format(
+        ebay_year_batches[inventory_marker['batch']][0],
+        inventory_marker['sub']))
     # batching by year-groupings; if the 2nd "year" in the batch tuple is not a
     # year but a small #, then this is a single-year batch with sub-batches
     for year in range(ebay_year_batches[inventory_marker['batch']][0],
@@ -2527,11 +2568,10 @@ def main():
     except:
         fh = logging.StreamHandler()  # fall back to stderr
     fh.setFormatter(formatter)
-    LOG.addHandler(fh)
     LOG.setLevel(args.log_level.upper())
 
-    # now set this fh on the root logger so that loggers defined in whatever
-    # other modules might be used (e.g. elasticsearch)will also output there
+    # set this fh on the root logger so that the local LOG and loggers defined
+    # in whatever other modules (e.g. elasticsearch) will all output there
     tmp = logging.getLogger('')
     tmp.addHandler(fh)
 
