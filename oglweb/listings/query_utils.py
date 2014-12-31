@@ -62,6 +62,7 @@ class Query(object):
         self.orig_ref = None
         self.descr = None
         self.query = None
+        self.params = None
         self.type = QUERYTYPE_NONE
         self.mark_date = None
 
@@ -80,6 +81,7 @@ class Query(object):
         self.orig_ref = qd.get('orig_ref', None)
         self.descr = qd.descr
         self.query = qd.query
+        self.params = qd.get('params', {})
         self.type = qd.get('type', qd.ref[0])
         self.mark_date = qd.get('mark_date', None)
         return self
@@ -94,6 +96,7 @@ class Query(object):
         self.orig_ref = None
         self.descr = qd.desc
         self.query = qd.query
+        self.params = None  # old dict will never have params
         self.type = qd.get('querytype', qd.id[0])
         self.mark_date = None
         return self
@@ -104,6 +107,7 @@ class Query(object):
         self.orig_ref = None
         self.descr = sq.descr
         self.query = sq.query
+        self.params = sq.params
         self.type = sq.querytype
         if sq.mark_date:
             self.mark_date = sq.mark_date.isoformat()
@@ -118,6 +122,7 @@ class Query(object):
         sq.ref = self.ref
         sq.descr = self.descr
         sq.query = self.query
+        sq.params = self.params
         sq.querytype = self.type
         if self.mark_date:
             sq.mark_date = iso8601.parse_date(self.mark_date)
@@ -137,28 +142,32 @@ PREFAB_SEARCH_LIST = {
         'ref': '_default',
         'descr': 'recently-listed cars',
         'type': QUERYTYPE_DEFAULT,
-        'query': {'query': {'filtered': {'query': {'constant_score': { 'filter': { 'range': { 'listing_date': { 'from': datetime.date.fromtimestamp(time.time()-86400).__str__(), 'to': datetime.date.fromtimestamp(time.time()+86400).__str__()}}}}}}}}
+        'query': {'query': {'filtered': {'query': {'constant_score': { 'filter': { 'range': { 'listing_date': { 'from': datetime.date.fromtimestamp(time.time()-86400).__str__(), 'to': datetime.date.fromtimestamp(time.time()+86400).__str__()}}}}}}}},
+        'params': {},
     },
     '_sotw_vette':
     {
         'ref': '_sotw_vette',
         'descr': 'C2 Corvettes',
         'type': QUERYTYPE_SUGGESTED,
-        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'model_year:[1963 TO 1967] make: chevrolet model:corvette'}}}}}
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'model_year:[1963 TO 1967] make: chevrolet model:corvette'}}}}},
+        'params': {'query_string': 'model_year:[1963 TO 1967] make: chevrolet model:corvette'},
     },
     '_sotw_tesla':
     {
         'ref': '_sotw_tesla',
         'descr': 'Tesla Roadsters',
         'type': QUERYTYPE_SUGGESTED,
-        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'tesla roadster'}}}}}
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'tesla roadster'}}}}},
+        'params': {'query_string': 'tesla roadster'},
     },
     '_sotw_nb':
     {
         'ref': '_sotw_nb',
         'descr': '99-05 MX-5 Miatas',
         'type': QUERYTYPE_SUGGESTED,
-        'query': {'query': {'filtered': {'query': {'query_string': {'query': 'nb', 'default_operator': 'AND'}}}}, 'sort': [{'_geo_distance': {'unit': 'mi', 'order': 'asc', 'location': {'lon': -121.8818207, 'lat': 37.3415451}}}]}
+        'query': {'query': {'filtered': {'query': {'query_string': {'query': 'nb', 'default_operator': 'AND'}}}}, 'sort': [{'_geo_distance': {'unit': 'mi', 'order': 'asc', 'location': {'lon': -121.8818207, 'lat': 37.3415451}}}]},
+        'params': {'query_string': 'NB'},
     },
 }
 
@@ -168,21 +177,24 @@ SUGGESTED_SEARCH_LIST = {
         'ref': '_sotw_c5z06',
         'descr': 'C5 Z06s',
         'type': QUERYTYPE_SUGGESTED,
-        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'C5 Z06 make:chevrolet model:corvette'}}}}}
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'C5 Z06 make:chevrolet model:corvette'}}}}},
+        'params': {'query_string': 'C5 Z06 make:chevrolet model:corvette'},
     },
     '_sotw_morgan':
     {
         'ref': '_sotw_morgan',
         'descr': 'Morgans',
         'type': QUERYTYPE_SUGGESTED,
-        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'make:morgan'}}}}}
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'make:morgan'}}}}},
+        'params': {'query_string': 'make:morgan'},
     },
     '_sotw_308':
     {
         'ref': '_sotw_308',
         'descr': 'Ferrari 308s',
         'type': QUERYTYPE_SUGGESTED,
-        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': '308 make:ferrari'}}}}}
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': '308 make:ferrari'}}}}},
+        'params': {'query_string': '308 make:ferrari'},
     }
 }
 

@@ -113,34 +113,39 @@ def populate_search_context(context, args, query):
         # and populate the context from the query
         if query.type == QUERYTYPE_DEFAULT:  # default query, no parms
             return
-        try:
-            context['query_string'] = query.query['query']['filtered']['query']['query_string']['query']
-        except KeyError:
-            pass
-        filters = None
-        try:
-            filters = query.query['query']['filtered']['filter']['and']
-        except KeyError:
-            return  # no filters present
-        for filter in filters:
-            if 'geo_distance' in filter:
-                context['limit'] = True
-                # GEE TODO: really store input zip -- this is a BIG cheat! :)
-                list = query.descr.split(" ")
-                near_found = False
-                for word in list:
-                    if word == 'near':
-                        near_found = True
-                    elif near_found:
-                        context['zip'] = word.translate({ord(','):None})
-                        break
-            if 'range' in filter:
-                if 'price' in filter['range']:
-                    context['min_price'] = filter['range']['price'].get('gte', None)
-                    context['max_price'] = filter['range']['price'].get('lte', None)
-                if 'model_year' in filter['range']:
-                    context['min_year'] = filter['range']['model_year'].get('gte', None)
-                    context['max_year'] = filter['range']['model_year'].get('lte', None)
+
+        if query.params:
+            for key, value in query.params.items():
+                context[key] = value
+        else:  # might be an old pre-params-field query (from 2014)
+            try:
+                context['query_string'] = query.query['query']['filtered']['query']['query_string']['query']
+            except KeyError:
+                pass
+            filters = None
+            try:
+                filters = query.query['query']['filtered']['filter']['and']
+            except KeyError:
+                return  # no filters present
+            for filter in filters:
+                if 'geo_distance' in filter:
+                    context['limit'] = True
+                    # GEE TODO: really store input zip -- this is a BIG cheat! :)
+                    list = query.descr.split(" ")
+                    near_found = False
+                    for word in list:
+                        if word == 'near':
+                            near_found = True
+                        elif near_found:
+                            context['zip'] = word.translate({ord(','):None})
+                            break
+                if 'range' in filter:
+                    if 'price' in filter['range']:
+                        context['min_price'] = filter['range']['price'].get('gte', None)
+                        context['max_price'] = filter['range']['price'].get('lte', None)
+                    if 'model_year' in filter['range']:
+                        context['min_year'] = filter['range']['model_year'].get('gte', None)
+                        context['max_year'] = filter['range']['model_year'].get('lte', None)
     else: # repop the user's most recent inputs
         if args.limit or args.limit_zip or args.min_price or args.max_price or args.min_year or args.max_year:
             context['tab'] = 'advanced'
@@ -167,6 +172,14 @@ def populate_search_context(context, args, query):
 def build_new_query(args):
     q = Query()
     q.type = QUERYTYPE_RECENT  # presume we have some args (checked below)
+    q.params = {}
+    q.params['min_year'] = args.min_year
+    q.params['max_year'] = args.max_year
+    q.params['min_price'] = args.min_price
+    q.params['max_price'] = args.max_price
+    q.params['limit'] = args.limit
+    q.params['zip'] = args.limit_zip
+    
     descr_list = [] # used to assemble the descr of the query
 
     # building the query string:
