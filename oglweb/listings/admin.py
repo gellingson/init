@@ -3,7 +3,7 @@ from listings.models import Classified, Dealership, Listing, NonCanonicalMake, N
 
 class ClassifiedAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None, {'fields': ['full_name', 'textid', 'base_url', 'inventory_url', 'status', 'markers']}),
+        (None, {'fields': ['full_name', 'textid', 'base_url', 'inventory_url', 'status', 'markers', 'anchor', 'keep_days']}),
         ('Functions', {'fields': ['custom_pull_func','extract_car_list_func','listing_from_list_item_func', 'parse_listing_func']})]
 
 class DealershipAdmin(admin.ModelAdmin):
