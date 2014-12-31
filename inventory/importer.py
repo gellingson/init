@@ -1869,6 +1869,11 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
 
     # listing_href
     listing.listing_href = item.external_url
+    # workaround for 3taps issue with broken autod URLs:
+    if classified.textid == 'autod':
+        if not 'listingId=' in listing.listing_href:
+            LOG.debug('discarding record due to broken autod external_url')
+            ok = False  # unfixable error, unfortunately
 
     # location - from annotations
     # one note on quality: sometimes the feeds have USA-05602 zip and
