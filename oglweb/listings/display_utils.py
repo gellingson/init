@@ -50,7 +50,7 @@ def prettify_listing(listing, favorites={}, mark_since=None):
         listing.price = 'Contact for price'
     else:
         m = Money(listing.price, 'USD')
-        listing.price = m.format('en_US')
+        listing.price = m.format('en_US', '$0,000')  # no cents
 
     # add pretty status
     listing.pretty_status = PRETTY_STATUS[listing.status]
