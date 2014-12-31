@@ -77,6 +77,7 @@ class Classified(models.Model):
     parse_listing_func = models.CharField(max_length=1024, blank=True)
     inventory_url = models.CharField(max_length=1024, blank=True)
     owner_account_id = models.IntegerField(blank=True, null=True)
+    anchor = models.CharField(max_length=1024, blank=True)
     keep_days = models.IntegerField(blank=True, null=True)
                                                  
     def __str__(self):
