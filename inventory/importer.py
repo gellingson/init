@@ -1857,6 +1857,13 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
     # pic_href
     try:
         listing.pic_href = item.images[0]['full']
+        # now work around some 3taps issues where they pull scaled-down
+        # thumbnails rather than full size images; we can fix the URLs
+        if classified.textid == 'carsd':
+            listing.pic_href = listing.pic_href.split('&width')[0]
+        if classified.textid == 'autod':
+            listing.pic_href = listing.pic_href.replace('/scaler/80/60/',
+                                                        '/scaler/544/408/')
     except (KeyError, IndexError):
         listing.pic_href = 'N/A'
 
