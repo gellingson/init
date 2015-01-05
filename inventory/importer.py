@@ -20,6 +20,7 @@ import logging
 import os
 import pytz
 import re
+import socket
 import sys
 import time
 import urllib.request
@@ -2033,6 +2034,8 @@ def pull_3taps_inventory(classified, session,
     LOG.info('inventory URL is: {}'.format(url))
 
     try:
+        # set a longer socket timeout. 3taps can be slow, esp for craig
+        socket.setdefaulttimeout(180)
         req = urllib.request.Request(url, headers=_HDRS)
         page = urllib.request.urlopen(req)
         bytestream = page.read()
