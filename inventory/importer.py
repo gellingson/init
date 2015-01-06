@@ -2035,10 +2035,16 @@ def pull_3taps_inventory(classified, session,
 
     try:
         # set a longer socket timeout. 3taps can be slow, esp for craig
+        # however, we;re being blocked by a timeout at an intermediate
+        # server somewhere (http 504) so this isn't effective :(
         socket.setdefaulttimeout(180)
         req = urllib.request.Request(url, headers=_HDRS)
+        t1 = int(time.time())
         page = urllib.request.urlopen(req)
+        t2 = int(time.time())
         bytestream = page.read()
+        t3 = int(time.time())
+        LOG.info('open time (sec): {}, read time (sec): {}'.format(t2-t1, t3-t2))
         r = json.loads(bytestream.decode())
     except urllib.error.HTTPError as error:
         LOG.error('Unable to poll 3taps at ' + url + ': HTTP ' +
