@@ -23,6 +23,7 @@ import re
 import socket
 import sys
 import time
+import traceback
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -120,6 +121,22 @@ _TAG_RELS = {}
 # ============================================================================
 # UTILITY METHODS
 # ============================================================================
+
+
+# log_unhandled_exception()
+#
+# attached to sys.excepthook, logs unhandled exceptions to LOG not stderr
+#
+def log_unhandled_exception(type, value, tb):
+    if issubclass(type, KeyboardInterrupt):
+        sys.__excepthook__(type, value, tb)
+        return
+    LOG.error("Uncaught exception {}: {}".format(type, value))
+    if tb:
+        LOG.error("Traceback:")
+        LOG.error(''.join(traceback.format_tb(tb)))
+
+sys.excepthook = log_unhandled_exception
 
 
 # GuessDate class:
