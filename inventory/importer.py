@@ -716,6 +716,11 @@ def autorevo_parse_listing(listing, entry, detail):
     except AttributeError:
         listing.listing_text = ''
 
+    # inv page thumbs are tiny; try to find an image from the detail page
+    pic = detail.find('img', id='detailMainPhoto')
+    if pic:
+        listing.pic_href = pic.attrs['src']
+
     return True
 
 
@@ -797,6 +802,9 @@ def cvc_parse_listing(listing, entry, detail):
         pe = pe.split(':')[-1]
     listing.price = regularize_price(pe)
 
+    # inv page thumbs are small but the detail page uses dynamically-created
+    # pic hrefs that are not worth sorting out
+
     return True
 
 
@@ -833,16 +841,23 @@ def dawydiak_parse_listing(listing, entry, detail):
 #
 def fj_parse_listing(listing, entry, detail):
 
-    # get the short listing text from the inventory page
+    # get the year/make/model from listing or detail page
+    # note: it is also in the detail header, but we've chucked that :(
+    s = None
+    if entry.find('h1'):
+        s = entry.find('h1').text
+    elif detail.find('h1', class_='entry-header'):
+        s = detail.find('h1', class_='entry-header').text
+    s = s.split(', ')[0]  # take of trailing content, e.g. ', s/n 1234'
+    LOG.debug('FJ: title is: %s', s)
+    (listing.model_year,
+     listing.make,
+     listing.model) = regularize_year_make_model(s)
+
+    # and short listing text from the inventory page
     listing.listing_text = entry.find(class_="entry-subheader blue").get_text()
 
     # pull the rest of the fields from the detail page
-
-    if detail.find('title'):
-        s = detail.find('title').text
-        (listing.model_year,
-         listing.make,
-         listing.model) = regularize_year_make_model(s)
 
     listing.local_id = detail.find(id="ContactCarId")['value']
     listing.stock_no = listing.local_id # no separate stock#
