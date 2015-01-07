@@ -384,6 +384,9 @@ class Zipcode(models.Model):
     lat = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
     lon = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
 
+    def __str__(self):
+        return zip
+
     class Meta:
         managed = False
         db_table = 'zipcode'

@@ -227,7 +227,7 @@ def build_new_query(args):
     if args.limit:
         # go ahead and use implicit zip if the user requests a limit func...
         if not args.zip or 'invalid_zip' in args.errors:
-            error_message = 'Unknown zip code "{}"; geographic limit not applied.'.format(zip)
+            pass  # will throw an error message to the user; no geolimit term
         else:
             geolimit_term = {
                 "geo_distance" : {

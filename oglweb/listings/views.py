@@ -219,7 +219,7 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
         # queue up any messages related to nonfatal errors
         if 'invalid_zip' in args.errors:
             if args.limit:
-                error_message = 'Unknown zip code "{}"; geographic limit not applied.'.format(zip)
+                error_message = 'Unknown zip code "{}"; geographic limit not applied.'.format(args.zip)
             else:
                 error_message = 'ZIP code not understood; unable to sort by distance.'
 
