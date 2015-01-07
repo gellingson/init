@@ -42,7 +42,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from orm.models import Classified, Dealership, Listing, ListingSourceinfo
 from orm.models import ConceptTag, ConceptImplies
 from orm.models import NonCanonicalMake, NonCanonicalModel, Zipcode
-from utils import guessDate, ImportReport
+from inventory.utils import guessDate, ImportReport
 
 # ============================================================================
 # CONSTANTS AND GLOBALS
@@ -1487,6 +1487,7 @@ def pull_ebay_inventory(classified, session,
     accepted_lsinfos = []  # to keep in sync with accepted_listings
     rejected_lsinfos = []
     counts = defaultdict(int)  # track some data/import quality measures
+    import_report = ImportReport()
 
     # wonky workaround for ebay's 10K limit. Mostly we can split by model years
     # but for years with lots of inventory (basically the current model year)
@@ -1656,7 +1657,6 @@ def pull_ebay_inventory(classified, session,
         # need to sub-batch this new batch; start with sub-batch index=1
         inventory_marker['sub'] = 1 # 1st color is @ ind 1, not 0, in list
 
-    import_report = ImportReport()
     import_report.add_accepted_lsinfos(accepted_lsinfos)
     import_report.add_accepted_lsinfos(rejected_lsinfos)
     return accepted_listings, inventory_marker, import_report
@@ -1986,6 +1986,7 @@ def pull_3taps_inventory(classified, session,
     accepted_lsinfos = []  # to keep in sync with accepted_listings
     rejected_lsinfos = []
     counts = defaultdict(int)  # track some data/import quality measures
+    import_report = ImportReport()
 
     # for 3taps we want to keep the anchor in the classified record (which
     # ultimately means in the db) but we will also feed it through the
@@ -2042,21 +2043,21 @@ def pull_3taps_inventory(classified, session,
     except urllib.error.HTTPError as error:
         LOG.error('Unable to poll 3taps at ' + url + ': HTTP ' +
                   str(error.code) + ' ' + error.reason)
-        return [], None, None
+        return [], None, import_report
 
     if page.getcode() != 200:
         LOG.error('Failed to poll 3taps at ' + url +
                   ' with HTTP response code ' + str(page.getcode()))
         LOG.error('Full error page:'.format(bytestream.decode()))
-        return [], None, None
+        return [], None, import_report
 
     if not r['success']:
         LOG.error('3taps reports failure: {}'.format(json.dumps(r)))
-        return [], None, None
+        return [], None, import_report
 
     if len(r['postings']) == 0:
         LOG.warning('3taps returned a set of zero records')
-        return [], None, None
+        return [], None, import_report
 
     LOG.info('Number of car listings found: {}'.format(len(r['postings'])))
 
