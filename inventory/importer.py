@@ -14,7 +14,6 @@ from collections import defaultdict
 import datetime
 from decimal import Decimal
 import errno
-import iso8601
 import simplejson as json  # handles Decimal fields; regular json does not
 import logging
 import os
@@ -34,6 +33,7 @@ from bs4 import BeautifulSoup
 from ebaysdk.finding import Connection as ebaysdk_finding
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
+import iso8601
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
@@ -42,7 +42,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from orm.models import Classified, Dealership, Listing, ListingSourceinfo
 from orm.models import ConceptTag, ConceptImplies
 from orm.models import NonCanonicalMake, NonCanonicalModel, Zipcode
-
+from utils import guessDate, ImportReport
 
 # ============================================================================
 # CONSTANTS AND GLOBALS
@@ -127,105 +127,16 @@ _TAG_RELS = {}
 #
 # attached to sys.excepthook, logs unhandled exceptions to LOG not stderr
 #
-def log_unhandled_exception(type, value, tb):
-    if issubclass(type, KeyboardInterrupt):
-        sys.__excepthook__(type, value, tb)
+def log_unhandled_exception(exc_type, exc_value, exc_tb):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_tb)
         return
-    LOG.error("Uncaught exception {}: {}".format(type, value))
-    if tb:
+    LOG.error("Uncaught exception {}: {}".format(exc_type, exc_value))
+    if exc_tb:
         LOG.error("Traceback:")
-        LOG.error(''.join(traceback.format_tb(tb)))
+        LOG.error(''.join(traceback.format_tb(exc_tb)))
 
 sys.excepthook = log_unhandled_exception
-
-
-# GuessDate class:
-#
-# guesses a date from the object passed in & returns a datetime
-#
-# NOTES:
-# inputs handled:
-#     string with any of these date formats:
-#     datetime
-#     number (int or float) containing utime info
-# to force a ValueException on failure to parse, call with default=False.
-# datetime returned will be TZ-aware & in UTC unless instructed otherwise.
-# optimization: string format most recently successful is retained and tried
-# first if guess_date() is called again within the same process space.
-# this is a class to cleanly encapsulate storing date format(s) across calls
-#
-# some practical info/common inputs:
-# ebay uses iso8601 date & time strings with trailing Z indicating UTC
-# 3taps uses unix timestamps in ints
-#
-# SEE ALSO: force_date() method in oglweb.listings.utils
-#
-class GuessDate(object):
-    def __init__(self):
-        self._successful_format = None
-        self._formats = [
-            'timestamp',  # mock format string, use datetime.fromtimestamp()
-            'iso8601', # mock format string, use iso8601.parse_date()
-            '%Y-%m-%dT%H:%M:%S', # used by eBay
-        ]
-
-    def _try(self, maybedate, format):
-        d = None
-        try:
-            if format == 'timestamp':
-                # specialcasing this as a mock format
-                d = datetime.datetime.fromtimestamp(float(maybedate))  # UTC
-            elif format == 'iso8601':
-                d = iso8601.parse_date(maybedate)
-            else:
-                d = datetime.datetime.strptime(maybedate,
-                                               format).replace(tzinfo=tzinfo)
-        except (ValueError, TypeError):
-            pass
-        return d
-
-    def __call__(self, maybedate, default=None, tzinfo=pytz.UTC):
-        if isinstance(maybedate, datetime.datetime):
-            if maybedate.tzinfo and maybedate.tzinfo.utcoffset(maybedate) != None:
-                # any TZ-aware/localized datetime will be returned as-is, not
-                # converted to the specified TZ
-                d = maybedate
-            else:
-                # assume we are in UTC & the date was intended that way
-                # UNSAFE TZ HANDLING, but in our usage better than failing
-                d = pytz.utc.localize(maybedate)
-        elif isinstance(maybedate, str):
-
-            # try whatever worked last time
-            fmt = self._successful_format
-            d = self._try(maybedate, fmt)
-
-            if not d:
-                # try everything else
-                for format in self._formats:
-                    if format != fmt:  # tried that one already above...
-                        d = self._try(maybedate, format)
-                        if d:
-                            self._successful_format = format  # try 1st next time
-                            break
-
-        elif isinstance(maybedate, float) or isinstance(maybedate, int):
-            try:
-                d = datetime.datetime.fromtimestamp(maybedate)
-            except ValueError:
-                pass
-        else:
-            pass # we're screwed -- fall through to the fail
-
-        if not d:
-            if default==False:  # caller wants exception on failure to parse
-                raise ValueError
-            else:
-                d = default
-        return d
-
-# create a file global callable for the class
-guessDate = GuessDate()
 
 
 # load_refdata_cache()
@@ -1503,9 +1414,8 @@ def process_ebay_listing(session, item, classified, counts, dblog=False):
 #
 # returns:
 # accepted_listings: a list of listings (could be partial or entire set)
-# accepted_lsinfos: a list of lsinfos corresponding to the listings
-# rejected_lsinfos: a list of lsinfos that did NOT become listings
 # inventory_marker: pagination/subset marker (will be None if done)
+# import_report: an ImportReport object that can report on what happened
 #
 # NOTES:
 #
@@ -1697,7 +1607,10 @@ def pull_ebay_inventory(classified, session,
         # need to sub-batch this new batch; start with sub-batch index=1
         inventory_marker['sub'] = 1 # 1st color is @ ind 1, not 0, in list
 
-    return accepted_listings, accepted_lsinfos, rejected_lsinfos, inventory_marker
+    import_report = ImportReport()
+    import_report.add_accepted_lsinfos(accepted_lsinfos)
+    import_report.add_accepted_lsinfos(rejected_lsinfos)
+    return accepted_listings, inventory_marker, import_report
 
 
 # process_3taps_posting()
@@ -1990,9 +1903,8 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
 #
 # returns:
 # accepted_listings: a list of listings (could be partial or entire set)
-# accepted_lsinfos: a list of lsinfos corresponding to the listings
-# rejected_lsinfos: a list of lsinfos that did NOT become listings
 # inventory_marker: pagination/subset marker (will be None if done)
+# import_report: an ImportReport object that can report on what happened
 #
 # NOTES:
 #
@@ -2081,21 +1993,21 @@ def pull_3taps_inventory(classified, session,
     except urllib.error.HTTPError as error:
         LOG.error('Unable to poll 3taps at ' + url + ': HTTP ' +
                   str(error.code) + ' ' + error.reason)
-        return None, None, None, None
+        return [], None, None
 
     if page.getcode() != 200:
         LOG.error('Failed to poll 3taps at ' + url +
                   ' with HTTP response code ' + str(page.getcode()))
         LOG.error('Full error page:'.format(bytestream.decode()))
-        return None, None, None, None
+        return [], None, None
 
     if not r['success']:
         LOG.error('3taps reports failure: {}'.format(json.dumps(r)))
-        return None, None, None, None
+        return [], None, None
 
     if len(r['postings']) == 0:
         LOG.warning('3taps returned a set of zero records')
-        return None, None, None, None
+        return [], None, None
 
     LOG.info('Number of car listings found: {}'.format(len(r['postings'])))
 
@@ -2161,7 +2073,10 @@ def pull_3taps_inventory(classified, session,
     if len(r['postings']) < 500: # arbitrary number
         inventory_marker = None # signal that we are done!
 
-    return accepted_listings, accepted_lsinfos, rejected_lsinfos, inventory_marker
+    import_report = ImportReport()
+    import_report.add_accepted_lsinfos(accepted_lsinfos)
+    import_report.add_accepted_lsinfos(rejected_lsinfos)
+    return accepted_listings, inventory_marker, import_report
 
 
 # import_from_dealer
@@ -2264,15 +2179,20 @@ def import_from_classified(classified, session, es, dblog=False):
             f = globals()[classified.custom_pull_func]
         else:
             f = pull_classified_inventory
+
         (listings,
-         accepted_lsinfos,
-         rejected_lsinfos,
-         inventory_marker) = f(classified, session,
-                               inventory_marker=inventory_marker, dblog=dblog)
+         inventory_marker,
+         import_report) = f(classified, session,
+                            inventory_marker=inventory_marker, dblog=dblog)
 
         # record listings and lsinfos in the db (this method commits!)
-        record_listings(listings, accepted_lsinfos, rejected_lsinfos,
+        record_listings(listings,
+                        # GEE TODO: move this lsinfo stuff into import_report
+                        import_report.accepted_lsinfos,
+                        import_report.rejected_lsinfos,
                         classified.textid, session, es)
+        import_report.text_report(classified, logger=LOG)
+        import_report.db_report(classified, session)
 
         # check if we're done?
         if not inventory_marker:
