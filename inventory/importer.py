@@ -651,6 +651,55 @@ def autorevo_parse_listing(listing, entry, detail):
 
     return True
 
+# bat_parse_listing
+#
+# parses Bring A Trailer Auctions listings
+#
+# implementing this as a dealership for now because we don't have
+# generic classified handling yet
+#
+def bat_parse_listing(listing, entry, detail):
+
+    # get some stuff from the inventory page
+    title = entry.find(class_="current-listing-details-title-link")
+    if title:
+        (listing.model_year,
+         listing.make,
+         listing.model) = regularize_year_make_model(title.text)
+
+    text = entry.find(class_="current-listing-details-excerpt")
+    if text:
+        if text.find('p'):
+            listing.listing_text = text.find('p').text
+
+    price_button_div = entry.find(class_="current-listing-details-button")
+    if price_button_div:
+        if price_button_div.find('a'):
+            price_string = price_button_div.find('a').text
+            try:
+                price_string = price_string.split(':')[1]
+            except:
+                pass
+            listing.price = regularize_price(price_string)
+
+    # pull the rest of the fields from the detail page
+
+    # so far, this is my only "dealership" where location varies by car.
+    # we can pull location text but let's not try to infer zip yet
+
+    listing.location_text = 'contact for location'
+    location_li = detail.find('li',
+                              class_='listing-essential-item',
+                              text=re.compile('Location:'))
+    if location_li:
+        try:
+            listing.location_text = location_li.text.split(':')[1].strip()
+        except:
+            pass
+    
+
+    return True
+
 
 # carbuffs_parse_listing
 #
