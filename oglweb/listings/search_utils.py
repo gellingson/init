@@ -71,6 +71,8 @@ def handle_search_args(request, filter=None, base_url = None, query_ref=None):
         args.zip = '95112';  # GEE TODO: get default zip from client IP
 
     # validate zip
+    args.lat = None
+    args.lon = None
     try:
         zipcode = Zipcode.objects.get(zip=args.zip)
         args.lat = float(zipcode.lat)
@@ -224,7 +226,7 @@ def build_new_query(args):
 
     if args.limit:
         # go ahead and use implicit zip if the user requests a limit func...
-        if not args.zip or 'zip_error' in args.errors:
+        if not args.zip or 'invalid_zip' in args.errors:
             error_message = 'Unknown zip code "{}"; geographic limit not applied.'.format(zip)
         else:
             geolimit_term = {
