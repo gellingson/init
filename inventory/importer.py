@@ -1059,8 +1059,8 @@ def pull_dealer_inventory(dealer, session=None):
 
     # GEE TODO: handle URLError that might have been raised...
     if page.getcode() != 200:
-        LOG.error('Failed to pull an inventory page for ' + full_inv_url +
-                  ' with HTTP response code ' + str(page.getcode()))
+        LOG.warning('Failed to pull an inventory page for ' + full_inv_url +
+                    ' with HTTP response code ' + str(page.getcode()))
         return list_of_listings
 
     while True:
@@ -1778,8 +1778,8 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
         try:
             html_decoded = b64decode(html)
         except:  # GEE TODO: figure out how to catch 'binascii.Error'
-            LOG.error('Failed to decode item html for item %s',
-                      item.external_id)
+            LOG.warning('Failed to decode item html for item %s',
+                        item.external_id)
         if html_decoded:
             soup = BeautifulSoup(html_decoded)
             for p in soup.find_all(class_='attrgroup'):
