@@ -2137,6 +2137,9 @@ def pull_3taps_inventory(classified, session,
 # con: db connection (None if no db access is possible/requested)
 # es: indexing connection (None if no indexing is possible/requested)
 #
+# returns:
+# True if the import succeeded, False if something broke
+#
 # Notes:
 #
 # This is basically a wrapper around pull_dealer_inventory() that handles the
@@ -2155,7 +2158,16 @@ def import_from_dealer(dealer, session, es):
     session.commit()
 
     # get the current listings on the dealer's website inventory
-    listings = pull_dealer_inventory(dealer, session)
+    listings = []
+    try:
+        listings = pull_dealer_inventory(dealer, session)
+    except (ValueError, AttributeError, IndexError):
+        # if we were stopped by one of these data-related errors, log it and
+        # return to the caller rather than halting execution because there
+        # may be other actions to take (e.g. other sites to import)
+        LOG.exception('Importing inventory from dealer %s halted by exception',
+                      dealer.textid)
+        return False
 
     # now put the located records in the db & es index
     # GEE TODO: switch this over to use record_listings()
@@ -2172,7 +2184,11 @@ def import_from_dealer(dealer, session, es):
 
         for listing in db_listings:
             index_listing(es, listing, session)
+    else:
+        LOG.warning('no inventory found for dealer %s', dealer.textid)
 
+    # we want to remove the marked listings even if there are no new
+    # listings -- there might be no inventory.
     remove_marked_listings('D', dealer.id, session, es=es)
 
     # and commit (marked-as-removed inventory)
@@ -2217,6 +2233,7 @@ def import_from_classified(classified, session, es, dblog=False):
 
     inventory_marker = None
     done = False
+    import_report = None
     while not done:
 
         listings = []
@@ -2230,10 +2247,24 @@ def import_from_classified(classified, session, es, dblog=False):
         else:
             f = pull_classified_inventory
 
-        (listings,
-         inventory_marker,
-         import_report) = f(classified, session,
-                            inventory_marker=inventory_marker, dblog=dblog)
+        try:
+            (listings,
+             inventory_marker,
+             import_report) = f(classified, session,
+                                inventory_marker=inventory_marker, dblog=dblog)
+        except (ValueError, AttributeError, IndexError):
+            # if we were stopped by one of these data-related errors, log it and
+            # return to the caller rather than halting execution because there
+            # may be other actions to take (e.g. other sites to import)
+
+            # note that this may leave existing records marked for pending
+            # deletion and some previous blocks of inventory committed
+            # that is harmless; both 3taps and non-3taps cases will handle
+            # that fine when the import is next attempted
+
+            LOG.exception('Importing inventory from dealer %s halted by exception',
+                          dealer.textid)
+            return False            
 
         # record listings and lsinfos in the db (this method commits!)
         record_listings(listings,
