@@ -90,7 +90,7 @@ _INTERESTING_MODELS = [
     'NSX', 'MR2', 'MR-2', 'SUPRA', 'LFA', '300ZX', 'SKYLINE', 'GTR', 'LEAF',
     'MX5', 'MX-5', 'MIATA', 'MX-5 MIATA', 'RX7',
     'EVOLUTION', 'EVO', 'I-MIEV', 'I',
-    'CORVETTE', 'VOLT', 'GRAND NATIONAL', 'ELR', 'SPARK', 'CTS-V',
+    'CORVETTE', 'VOLT', 'GRAND NATIONAL', 'ELR', 'CTS-V',
     'BOSS', 'SHELBY', 'GT', 'MUSTANG', 'C-MAX',
     '1M', 'Z3M', 'M3', 'M5', 'M6', 'I3', 'I8',
     '330', '330CI', '330I', '335', '335D', '335I', 'SLS',
@@ -206,8 +206,8 @@ def regularize_price(price_string):
         # strip out 'Price:' or similar if included
         if ':' in price_string:  # then take the part after the colon
             (junk, junk, price_string) = price_string.rpartition(':') # noqa
-        # strip out any letters that might remain...
-        price_string = re.sub(r'[a-zA-Z]', '', price_string)
+        # strip out any letters & irrelevant punctuation that might remain...
+        price_string = re.sub(r'[a-zA-Z\!]', '', price_string)
         try:
             price = int(re.sub(r'[$,]', '', price_string))
         except ValueError:
@@ -326,7 +326,7 @@ def regularize_year_make_model(year_make_model_string):
                 # GEE TODO handle multiple words here; for now just the first
                 if (
                         ncm.consume_list and makemodel and
-                        makemodel[0] in ncm.consume_list
+                        makemodel[0].upper() in ncm.consume_list
                 ):
                     makemodel.pop(0)  # throw it away
                 if ncm.push_list:
@@ -419,8 +419,10 @@ def tagify(listing):
     if (listing.make and listing.make.upper() in _MAKES):
         make = _MAKES[listing.make.upper()]
         new_tags.append('known_make')
+        remove_tags.append('unknown_make')
     else:
         new_tags.append('unknown_make')
+        remove_tags.append('known_make')
 
     # models may be 1 or 2 words long, and it is OK if the listing has
     # extra words on the end of the model string; ignore them
@@ -443,6 +445,7 @@ def tagify(listing):
 
             LOG.debug('found model: %s', model.canonical_name)
             new_tags.append('known_model')
+            remove_tags.append('unknown_model')
             if model.canonical_name == 'Miata':
                 if listing.model_year <= '1994':
                     new_tags.append('NA6')
@@ -471,8 +474,47 @@ def tagify(listing):
                     new_tags.append('C6')
                 else:
                     new_tags.append('C7')
+            if listing.make == 'Nissan' and model.canonical_name == 'Leaf':
+                new_tags.append('electric')
+            if listing.make == 'Chevrolet' and model.canonical_name == 'Volt':
+                new_tags.append('electric')
         else:
             new_tags.append('unknown_model')
+        if listing.make == 'Subaru' and 'WRX' in listing.model.upper():
+            new_tags.append('rally')
+        if listing.make == 'Mitsubishi' and 'EVO' in listing.model.upper():
+            new_tags.append('rally')
+        if listing.make == 'Mazda' and '323 GTX' in listing.model.upper():
+            new_tags.append('rally')
+        if listing.make == 'Audi' and '323 GTX' in listing.model.upper():
+            new_tags.append('rally')
+        if listing.make == 'Ford' and 'ESCORT' in listing.model.upper() and 'MK' in listing.model.upper():
+            new_tags.append('rally')
+        if  'RALLY' in listing.model.upper():
+            new_tags.append('rally')
+        if  'WRC' in listing.model.upper():
+            new_tags.append('rally')
+        
+        if listing.make == 'Tesla':
+            new_tags.append('electric')
+        if listing.make == 'Fisker':
+            new_tags.append('electric')
+        if listing.make == 'BMW' and listing.model[0].upper() == 'I':
+            new_tags.append('electric')
+        if listing.make == 'Volkswagen' and listing.model.upper().startswith('E-'):
+            new_tags.append('electric')
+        if listing.make == 'Volkswagen' and listing.model.upper().startswith('XL1'):
+            new_tags.append('electric')
+        if listing.make == 'Ford' and 'ENERGI' in listing.model.upper():
+            new_tags.append('electric')
+        if listing.make == 'Mitsubishi' and 'MIEV' in listing.model.upper():
+            new_tags.append('electric')
+        if listing.make == 'Chevrolet' and listing.model.upper().startswith('SPARK EV'):
+            new_tags.append('electric')
+        if listing.make == 'Fiat' and listing.model.split(' ')[0].upper() == '500E':
+            new_tags.append('electric')
+        if 'ELECTRIC' in listing.model.upper():
+            new_tags.append('electric')
 
         # GEE TODO: method not yet implemented; also, resolve handling of
         # text and ConceptTag objects!
@@ -487,10 +529,16 @@ def tagify(listing):
                   listing.make, listing.model)
     else:
         LOG.debug('no new tags')
+
     listing.add_tags(new_tags)
 
     # GEE TODO: if I'm really going to use this mechanism (much) then
     # I should make a remove_tags() method
+    #
+    # IMPORTANT NOTE: if the listing already exists, the tagset from any
+    # update record will be UNIONED with existing tagset, meaning that
+    # an updated record has no mechanism for removing tags already on the
+    # db listing. Until that changes, this is of very limited utility....
     for tag in remove_tags:
         listing.remove_tag(tag)
 
@@ -2183,7 +2231,7 @@ def import_from_dealer(dealer, session, es):
                   dealer.textid)
 
         for listing in db_listings:
-            index_listing(es, listing, session)
+            index_listing(es, listing)
     else:
         LOG.warning('no inventory found for dealer %s', dealer.textid)
 
@@ -2494,7 +2542,7 @@ def record_listings(listings, accepted_lsinfos, rejected_lsinfos,
 
     # put the listings in the text index
     for listing in db_listings:
-        index_listing(es, listing, session)
+        index_listing(es, listing)
 
     # store lsinfos for future debugging/reference
     if (db_listings and accepted_lsinfos):
@@ -2526,7 +2574,7 @@ def record_listings(listings, accepted_lsinfos, rejected_lsinfos,
 # only indexing the fields, NOT sucking in the full listing detail pages
 # (but we could, if we added the page text to the listing dict)
 #
-def index_listing(es, listing, session):
+def index_listing(es, listing):
     if listing.status == 'F':
         # elasticsearch uses the builtin JSON serialization module, which does
         # not understand arbitrary objects nor does it understand certain types
