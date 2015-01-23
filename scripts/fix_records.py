@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 #
+# !!! ATTENTION !!!
+#
+# This script is now OBSOLETE, please use fix_records_sqlalchemy
+# instead unless the updates are so large that the commit behavior
+# is unmanageable in sqlalchemy.
+#
+# !!! ATTENTION !!!
+#
 # fix_records.py
 #
 # utility script to pull an arbirary set of records from the db,
