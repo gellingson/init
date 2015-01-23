@@ -169,17 +169,6 @@ PREFAB_SEARCH_LIST = {
         'query': {'query': {'filtered': {'query': {'query_string': {'query': 'nb', 'default_operator': 'AND'}}}}, 'sort': [{'_geo_distance': {'unit': 'mi', 'order': 'asc', 'location': {'lon': -121.8818207, 'lat': 37.3415451}}}]},
         'params': {'query_string': 'NB'},
     },
-}
-
-SUGGESTED_SEARCH_LIST = {
-    '_sotw_c5z06':
-    {
-        'ref': '_sotw_c5z06',
-        'descr': 'C5 Z06s',
-        'type': QUERYTYPE_SUGGESTED,
-        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'C5 Z06 make:chevrolet model:corvette'}}}}},
-        'params': {'query_string': 'C5 Z06 make:chevrolet model:corvette'},
-    },
     '_sotw_morgan':
     {
         'ref': '_sotw_morgan',
@@ -188,6 +177,14 @@ SUGGESTED_SEARCH_LIST = {
         'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'make:morgan'}}}}},
         'params': {'query_string': 'make:morgan'},
     },
+    '_sotw_c5z06':
+    {
+        'ref': '_sotw_c5z06',
+        'descr': 'C5 Z06s',
+        'type': QUERYTYPE_SUGGESTED,
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'C5 Z06 make:chevrolet model:corvette'}}}}},
+        'params': {'query_string': 'C5 Z06 make:chevrolet model:corvette'},
+    },
     '_sotw_308':
     {
         'ref': '_sotw_308',
@@ -195,6 +192,33 @@ SUGGESTED_SEARCH_LIST = {
         'type': QUERYTYPE_SUGGESTED,
         'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': '308 make:ferrari'}}}}},
         'params': {'query_string': '308 make:ferrari'},
+    }
+}
+
+SUGGESTED_SEARCH_LIST = {
+    '_sotw_bat':
+    {
+        'ref': '_sotw_bat',
+        'descr': 'Bring a Trailer Auctions',
+        'type': QUERYTYPE_SUGGESTED,
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'source_textid:bat'}}}}},
+        'params': {'query_string': 'source_textid:bat'},
+    },
+    '_sotw_electric':
+    {
+        'ref': '_sotw_electric',
+        'descr': 'Electric Cars',
+        'type': QUERYTYPE_SUGGESTED,
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'tags:electric'}}}}},
+        'params': {'query_string': 'tags:electric'},
+    },
+    '_sotw_rally':
+    {
+        'ref': '_sotw_rally',
+        'descr': 'Rally(-Inspired) Cars',
+        'type': QUERYTYPE_SUGGESTED,
+        'query': {'query': {'filtered': {'query': {'query_string': {'default_operator': 'AND', 'query': 'tags:rally'}}}}},
+        'params': {'query_string': 'tags:rally'},
     }
 }
 
