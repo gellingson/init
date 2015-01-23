@@ -121,8 +121,6 @@ listing_type_map = {
     }
 }
 
-es = Elasticsearch()
-
 logging.basicConfig(level='INFO')
 
 es = Elasticsearch()
