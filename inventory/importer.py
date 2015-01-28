@@ -2230,8 +2230,10 @@ def import_from_dealer(dealer, session, es):
         LOG.debug('committed a block of listings for %s',
                   dealer.textid)
 
-        for listing in db_listings:
-            index_listing(es, listing)
+        if es:
+            # put the listings in the text index
+            for listing in db_listings:
+                index_listing(es, listing)
     else:
         LOG.warning('no inventory found for dealer %s', dealer.textid)
 
@@ -2402,16 +2404,17 @@ def remove_marked_listings(source_type, source_id, session, es=None):
             "where source_type = :source_type and source_id = :source_id "
             "and instr(ifnull(markers, ''), 'P') != 0",
             {'source_type': source_type, 'source_id': source_id})
-        for row in result:
-            listing_id = row[0]
-            try:
-                es.delete(index="carbyr-index",
-                          doc_type="listing-type",
-                          id=listing_id)
-            except NotFoundError as err:
-                LOG.debug('record with id=%s not found during ' +
-                          'attempted deletion: %s',
-                          listing_id, err)
+        if es:
+            for row in result:
+                listing_id = row[0]
+                try:
+                    es.delete(index="carbyr-index",
+                              doc_type="listing-type",
+                              id=listing_id)
+                except NotFoundError as err:
+                    LOG.debug('record with id=%s not found during ' +
+                              'attempted deletion: %s',
+                              listing_id, err)
 
     # mark them all in the db in one query to avoid per-record round-trips
     # NOTE: we didn't pull the full rows into Listing objects, so we can't
@@ -2540,9 +2543,10 @@ def record_listings(listings, accepted_lsinfos, rejected_lsinfos,
 
     # now using those db_listings with ids we can continue...
 
-    # put the listings in the text index
-    for listing in db_listings:
-        index_listing(es, listing)
+    if es:
+        # put the listings in the text index
+        for listing in db_listings:
+            index_listing(es, listing)
 
     # store lsinfos for future debugging/reference
     if (db_listings and accepted_lsinfos):
@@ -2724,6 +2728,7 @@ def main():
     load_refdata_cache(session)
 
     if args.index:
+        # set es; other code will use es == None as implying to skip indexing
         es = Elasticsearch()
 
     # now do what the user requested (the action)
