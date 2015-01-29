@@ -1834,7 +1834,6 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
             # pyquery is 10x FASTER than beautiful soup for this simple task
             d = pq(html_decoded)
             for span in d('.attrgroup').find('span').items():
-                d_count += 1
                 if not listing.model_year or not listing.make:
                     try:
                         (ht_model_year,
