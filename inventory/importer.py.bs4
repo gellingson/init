@@ -34,8 +34,6 @@ from ebaysdk.finding import Connection as ebaysdk_finding
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
 import iso8601
-from lxml import etree
-from pyquery import PyQuery as pq
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
@@ -1803,7 +1801,7 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
     #   (model field even retains a leading space, heh)
     #   (hemmings seems to enforce/regularize year/make/model at the
     #    beginning of the heading but then permit more verbiage)
-    # craig sometimes has year in annotations but usually not the others
+    # craig sometimes has year in annocations but usually not the others
 
     # from the annotations:
     (an_model_year,
@@ -1831,22 +1829,16 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
             LOG.warning('Failed to decode item html for item %s',
                         item.external_id)
         if html_decoded:
-            # pyquery is 10x FASTER than beautiful soup for this simple task
-            d = pq(html_decoded)
-            for span in d('.attrgroup').find('span').items():
-                d_count += 1
-                if not listing.model_year or not listing.make:
-                    try:
+            soup = BeautifulSoup(html_decoded)
+            for p in soup.find_all(class_='attrgroup'):
+                for span in p.find_all('span'):
+                    if not listing.model_year or not listing.make:
                         (ht_model_year,
                          ht_make,
-                         ht_model) = regularize_year_make_model(span.text())
+                         ht_model) = regularize_year_make_model(span.text)
                         listing.model_year = ht_model_year
                         listing.make = ht_make
                         listing.model = ht_model
-                    except:
-                        LOG.warning('failed while attempting to get year/make/model from html for element ',
-                                    listing.local_id)
-                
             # and store the decoded version since we've bothered to make it
             if dblog and lsinfo.detail_enc == 'B':
                 lsinfo.detail_enc = 'T'
