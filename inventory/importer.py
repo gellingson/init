@@ -1832,20 +1832,22 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
                         item.external_id)
         if html_decoded:
             # pyquery is 10x FASTER than beautiful soup for this simple task
-            d = pq(html_decoded)
-            for span in d('.attrgroup').find('span').items():
-                if not listing.model_year or not listing.make:
-                    try:
+            # but it does throw an occasional exception on bad inputs (heh)
+            try:
+                d = pq(html_decoded)
+                for span in d('.attrgroup').find('span').items():
+                    if not listing.model_year or not listing.make:
                         (ht_model_year,
                          ht_make,
                          ht_model) = regularize_year_make_model(span.text())
                         listing.model_year = ht_model_year
                         listing.make = ht_make
                         listing.model = ht_model
-                    except:
-                        LOG.warning('failed while attempting to get year/make/model from html for element ',
-                                    listing.local_id)
-                
+            except:
+                LOG.exception('exception encountered while getting ',
+                              'year/make/model from html for element ',
+                              listing.local_id)
+
             # and store the decoded version since we've bothered to make it
             if dblog and lsinfo.detail_enc == 'B':
                 lsinfo.detail_enc = 'T'
