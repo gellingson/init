@@ -1824,7 +1824,17 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
     # GEE TODO: some of the other attrgroup spans are also interesting
     ht_model_year = ht_make = ht_model = None
     if classified.textid == 'craig' and html:
+        # the encoded html gets chopped at 64k blob size, and there may
+        # be other situations where something gets munged; if the length
+        # is wrong pad chop off a few chars until it is a multiple of
+        # 4 bytes so that b64decode will at least be able to pull out what
+        # is there. Chopping rather than padding because it happens to deal
+        # with an "incorrect" last character too (such as \n) in case that
+        # has happened, at the cost of potentially chopping up the last tag
         html_decoded = None
+        extrabytes = len(html) % 4
+        if extrabytes:
+            html = html[:-extrabytes]
         try:
             html_decoded = b64decode(html)
         except:  # GEE TODO: figure out how to catch 'binascii.Error'
