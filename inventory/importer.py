@@ -401,6 +401,29 @@ def regularize_url(href_in, base_url=None,
     return href_out
 
 
+# validate_listing()
+#
+# takes in a completely-imported listing and determines whether to store it
+# or throw it away as useless
+#
+# note that this is a VALIDITY test ie is-this-OK, not is-this-interesting
+#
+def validate_listing(listing, counts):
+    ok = True
+    if not listing.listing_href:
+        ok = False
+        counts['badurl'] += 1
+    try:
+        model_year_int = int(listing.model_year)
+        if model_year_int < 1800 or model_year_int > 2020:
+            ok = False
+            counts['badyear'] += 1
+    except:
+        ok = False
+        counts['badyear'] += 1
+    return ok
+
+
 # tagify()
 #
 # examines a listing and adds tags
@@ -524,6 +547,13 @@ def tagify(listing):
         #for tag in new_tags:
         #    implied_tag_set.add(_TAGS[tag].implied_tags())
         #new_tags.append(implied_tag_set)
+
+    # tag trailers/RVs
+    if listing.source_textid == 'craig':
+        if '/rvs/' in listing.listing_href:
+            new_tags.append('rv')
+        if '/rvd/' in listing.listing_href:
+            new_tags.append('rv')
 
     if new_tags:
         LOG.debug('adding tags: %s for %s %s %s',
@@ -1388,8 +1418,7 @@ def process_ebay_listing(session, item, classified, counts, dblog=False):
         lsinfo.detail_enc = 'X'
         lsinfo.detail = None
     if XL.dump:
-        LOG.debug(json.dumps(item))
-
+        LOG.debug(json.dumps(item, indent=4, sort_keys=True))
     # local_id & stock_no
     listing.local_id = item.itemId
     listing.stock_no = listing.local_id
@@ -1747,7 +1776,7 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
         lsinfo.detail_enc = 'B'
         lsinfo.detail = html
     if XL.dump:
-        LOG.debug(json.dumps(item))
+        LOG.debug(json.dumps(item, indent=4, sort_keys=True))
 
     # local_id & stock_no
     # the source identifier to minimizes dupes (3taps ID changes each update)
@@ -1774,18 +1803,37 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
 
     if (item.deleted or item.flagged_status or
           item.state != 'available' or item.status != 'for_sale'):
-        counts['inactive'] += 1
         LOG.debug('maybe-not-active: d/e/f/s/s=%s/%s/%s/%s/%s',
                   str(item.deleted), str(item.expires),
                   str(item.flagged_status), str(item.state),
                   str(item.status))
         
     # status
-    # GEE TODO: examine & use flagging info
+    # per 3taps deleted=True is the primary thing to check now that they are
+    # doing deletion updates, but let's also take status !='for_sale' -> !'F'
     if item.status == 'for_sale' and item.deleted is False:
         listing.status = 'F' # 'F' -> For Sale
     else:
+        counts['inactive'] += 1
         listing.status = 'R' # 'R' -> Removed, unknown reason
+
+    # drop all cars from outside the US (temporarily, we hope!)
+    # (assuming missing country and/or currency are USA/USD for all feeds)
+    country = None
+    if item.location:
+        country = item.location.get('country')
+    if country and country != 'USA' and country != 'US':
+        # yes, there is a mix of 'US' and 'USA' in the feeds... sigh.
+        # from looking at a few examples it seems like the 'US' records
+        # are cases where 3taps failed to get full location info, but
+        # these listings do seem to be likely US cars, sometimes with
+        # partial US addresses (maybe state, maybe zip)
+        counts['outsideusa:' + country] += 1
+        ok = False
+
+    if item.currency and item.currency != 'USD':
+        counts['nonusd'] += 1
+        ok = False
 
     # year/make/model: this is complicated...
     # there are three possible places to find year/make/model from 3taps:
@@ -1898,10 +1946,11 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
         try:
             int(listing.model_year)
         except (ValueError, TypeError):
-            counts['badyear'] += 1
             LOG.debug('bad year [%s] for item %s',
                       listing.model_year, listing.local_id)
             listing.model_year = '1'
+            counts['badyear'] += 1
+            ok = False
 
     # logging what year/make/model we ended up with [and what we started from]
     # GEE TODO: cl 1996 1996 nissan pulsar -> model=1996 :(.
@@ -1926,7 +1975,8 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
         if classified.textid == 'autod':
             listing.pic_href = listing.pic_href.replace('/scaler/80/60/',
                                                         '/scaler/544/408/')
-    except (KeyError, IndexError):
+    except (KeyError, IndexError, TypeError):
+        LOG.debug('Failed to find a picture for a posting')
         listing.pic_href = 'N/A'
 
     # listing_href
@@ -1999,6 +2049,10 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
     if listing.price <= 100:
         counts['badprice'] += 1
         # GEE TODO: check to see if we can salvage any of these via raw html?
+
+    # now run final validations of the listing
+    if ok:
+        ok = validate_listing(listing, counts)
 
     return ok, listing, lsinfo
 
@@ -2119,9 +2173,9 @@ def pull_3taps_inventory(classified, session,
         return [], None, import_report
 
     if not r['success']:
-        LOG.error('3taps reports failure: {}'.format(json.dumps(r)))
+        ret = json.dumps(r, indent=4, sort_keys=True)
+        LOG.error('3taps reports failure: {}'.format(ret))
         return [], None, import_report
-
     if len(r['postings']) == 0:
         LOG.warning('3taps returned a set of zero records')
         return [], None, import_report
@@ -2162,6 +2216,8 @@ def pull_3taps_inventory(classified, session,
                 ok = False
         if ok:
             tagify(listing)
+            for tag in listing.tags.split(' '):
+                counts[tag] += 1
             accepted_listings.append(listing)
             if dblog:
                 accepted_lsinfos.append(lsinfo)
@@ -2497,6 +2553,8 @@ def add_or_update_found_listing(session, current_listing):
             source_id=current_listing.source_id).one()
 
         LOG.debug('found: {}'.format(existing_listing))
+
+        # remove pending-delete marker, if present
         if existing_listing.markers:
             s = set(existing_listing.markers)
             if 'P' in s:
@@ -2504,11 +2562,22 @@ def add_or_update_found_listing(session, current_listing):
                 existing_listing.markers = ''.join(s)
 
         if existing_listing.status == 'X':
-            # remove the pending-delete marker but make no other changes
+            # record has been excluded, do not reactivate it
+            # make no other changes (besides pending-delete flag above)
             return existing_listing # already in session; discard new listing
 
-        # mark the current record with the id of the existing record
-        # and carry forward (merge) tags and markers, etc
+        # sometimes updates will be deletion requests that are placeholder
+        # posting records without full/proper details on them. In this case
+        # keep the existing listing (for history) and just mark it removed...
+        if current_listing.status == 'R' and current_listing.model_year == '1':
+            # deletion presumed to lack details/be less accurate than original
+            existing_listing.status = current_listing.status
+            # GEE TODO: this should be server/db time, not python time: how?!
+            existing_listing.removal_date = datetime.datetime.now()
+            return existing_listing # already in session; discard new listing
+
+        # ... otherwise  mark the current record with the id of the
+        # existing record and carry forward (merge) tags and markers, etc
         current_listing.id = existing_listing.id
         current_listing.add_tags(existing_listing.tagset)
         current_listing.add_markers(existing_listing.markers)
