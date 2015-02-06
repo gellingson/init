@@ -1683,6 +1683,11 @@ def pull_ebay_inventory(classified, session,
 
             if ok:
                 tagify(listing)
+                # more checks after tagification (checks that leverage tagging)
+                if listing.has_tag('rv'):
+                    ok = False
+            if ok:
+                # it's a keeper!
                 accepted_listings.append(listing)
                 if dblog:
                     accepted_lsinfos.append(lsinfo)
