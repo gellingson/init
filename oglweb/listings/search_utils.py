@@ -448,9 +448,12 @@ def flag_listing(user, listing_id, reason, other_reason=None):
 
     if remove:
         es = Elasticsearch()
-        es.delete(index="carbyr-index",
-                  doc_type="listing-type",
-                  id=listing_id)
+        try:
+            es.delete(index="carbyr-index",
+                      doc_type="listing-type",
+                      id=listing_id)
+        except NotFoundError as err:
+            pass
         # load listing again to make sure it isn't stale (missing adj?)
         listing = Listing.objects.get(pk=listing_id)
         listing.status = 'X'

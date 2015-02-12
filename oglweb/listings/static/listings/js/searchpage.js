@@ -9,36 +9,6 @@ $('.listings').waypoint('infinite', {
 	  onAfterPageLoad: setup_listing_buttons
 	});
 
-// unfav version for searchpage
-// another version exists for dashboard page -- KEEP THEM IN SYNC!
-function unfav(listing_id, title, elt){
-	$('#unfavcartitle').text(title)
-	$('#unfavlisting_id').val(listing_id);
-	$('#unfavform').submit(function(event) {
-		var form = $(this);
-		ajaxPost(form.attr('action'), form.serialize(), function(content){
-			// on search page, unfav = change buttons
-			elt.addClass('hidden');
-			elt.parent().children('.addfav').removeClass('hidden');
-			elt.parent().children('.editnote').addClass('hidden');
-			elt.closest('.listing-row').children('.noteframe').addClass('hidden');
-		});
-		event.preventDefault();
-		$('#unFavCarModal').modal('hide');
-	});
-	$('#unFavCarModal').modal();
-}
-
-function fav(listing_id, title, elt){
-	$('#favcartitle').text(title)
-	ajaxPost('/ajax/savecar', {'listing_id': listing_id}, function(content){
-		elt.addClass('hidden');
-		elt.parent().children('.unfav').removeClass('hidden');
-		elt.parent().children('.editnote').removeClass('hidden');
-		$('#favCarModal').modal();
-	});
-}
-
 function show_buttons(elt){
 	// the label is getting the click event, not the radio input
 	button = $(elt).find('input');
