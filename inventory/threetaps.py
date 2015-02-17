@@ -187,6 +187,9 @@ def extract_3taps_urls(listing, item, classified, counts):
     ok = True
     # pic_href
     try:
+        # for all 3taps sites the listing pic _should_ be first in the list
+        # many times we don't get the right pic at all, but so far if the
+        # right pic is there, it is first in the list. So use that....
         listing.pic_href = item.images[0]['full']
         # now work around some 3taps issues where they pull scaled-down
         # thumbnails rather than full size images; we can fix the URLs
