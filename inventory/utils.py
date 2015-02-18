@@ -669,6 +669,8 @@ def add_or_update_found_listing(session, current_listing):
             # record has been excluded, do not reactivate it
             # make no other changes (besides pending-delete flag above)
             return existing_listing # already in session; discard new listing
+        # note that other records CAN be returned to 'F' status by
+        # an active update record... which can lead to removal_date wonkiness
 
         # sometimes updates will be deletion requests that are placeholder
         # posting records without full/proper details on them. In this case
@@ -689,6 +691,9 @@ def add_or_update_found_listing(session, current_listing):
         if current_listing.status != 'F' and not existing_listing.removal_date:
             # GEE TODO: this should be server/db time, not python time: how?!
             current_listing.removal_date = datetime.datetime.now()
+        current_listing.removal_date = \
+            min(current_listing.removal_date, existing_listing.removal_date) \
+            or current_listing.removal_date or existing_listing.removal_date
         # all other fields will be taken from the current listing record
 
     except NoResultFound:

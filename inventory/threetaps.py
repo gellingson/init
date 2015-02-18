@@ -94,7 +94,8 @@ def extract_3taps_location(listing, item, classified, counts, session):
                     listing.lat = z.lat
                     listing.lon = z.lon
 
-    if not (listing.lat and listing.lon and listing.zip and listing.location_text):
+    if not listing.lat and listing.lon and listing.zip \
+       and listing.location_text:
         LOG.debug("location information bad: {} {} {} {}".format(
             listing.lat, listing.lon, listing.location_text, listing.zip))
         counts['badloc'] += 1
@@ -109,10 +110,39 @@ def extract_3taps_desc_fields(listing, item, classified, counts):
     anno = item.get('annotations') or {}
     ok = True
     # set removal date as requested, within limits...
-    # e.g. most cl posts are set to expire in +6 weeks. That's too long.
-    # listing time is capped relative to now (maybe update), not listing date
+    # e.g. most cl posts are set to expire (per 3taps) in +6 weeks.
+    # That's too long; cl expires them in 30 or even 7 days, and most
+    # cars are long-gone before then anyway. So we have a per-classified
+    # max-length setting, plus some special logic to identify and cap
+    # the 7-day craigslist postings (non-dealer ads in "List A" cities).
+    # listing time is calculated relative to the current date, but if
+    # the current record is an update the db write logic will prevent
+    # us from extending the removal_date at that time (since we have
+    # not yet pulled any existing matching record we can't do it now)
     listing.removal_date = (datetime.datetime.now() +
                             datetime.timedelta(days=classified.keep_days))
+    if classified.textid == 'craig' and '/cto/' in item['external_url']:
+        # it's a craigslist "by owner" listing, perhaps expiring sooner
+        try:
+            metro = item['location']['metro']
+            # note: using 3taps metros which do NOT equal cl metros in
+            # all cases; e.g. waco.craigslist.org -> USA-AUT (Austin)
+            # & NYM includes Long Island... but close enough for now.
+            # hmm, cross-posts also F this up (e.g. a Seattle car posted
+            # on Portland CL might have Seattle metro info per 3taps)
+            # GEE TODO: maybe fix this... eventually
+            craigslist_list_A_metros = [
+                'USA-ATL', 'USA-AUT', 'USA-BOS', 'USA-CHI', 'USA-DAL',
+                'USA-DEN', 'USA-HOU', 'USA-LAX', 'USA-NYM', # OC=LAX
+                'USA-PHI', 'USA-PHX', 'USA-POR', 'USA-SAC', 'USA-SAN',
+                'USA-SEA', 'USA-SFO', 'USA-MIA', 'USA-WAS'
+            ]
+            if metro in craigslist_list_A_metros:
+                listing.removal_date = \
+                    datetime.datetime.now() + datetime.timedelta(days=7)
+        except KeyError:
+            pass
+    # then if ever 3taps says the expiration is even sooner, make it so
     if item.expires:
         listing.removal_date = min(listing.removal_date,
                                    u.guessDate(item.expires))
