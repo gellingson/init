@@ -688,12 +688,31 @@ def add_or_update_found_listing(session, current_listing):
         current_listing.add_tags(existing_listing.tagset)
         current_listing.add_markers(existing_listing.markers)
         current_listing.listing_date = existing_listing.listing_date
-        if current_listing.status != 'F' and not existing_listing.removal_date:
-            # GEE TODO: this should be server/db time, not python time: how?!
-            current_listing.removal_date = datetime.datetime.now()
-        current_listing.removal_date = \
-            min(current_listing.removal_date, existing_listing.removal_date) \
-            or current_listing.removal_date or existing_listing.removal_date
+        # set removal date to record actual deletion date if we are deleting
+        if current_listing.status == 'F':
+            if current_listing.removal_date and existing_listing.removal_date:
+                # set removal_date to the shortest of original & update;
+                # while this is an issue for sources where updates can be
+                # used to extend the life of the listing, most normal
+                # updates (e.g. price drops) do NOT extend posting lifetime
+                current_listing.removal_date = \
+                        min(current_listing.removal_date,
+                            existing_listing.removal_date)
+            elif existing_listing.removal_date:
+                # had a removal_date set already so preserve it
+                current_listing.removal_date = existing_listing.removal_date
+            else:
+                # leave current_listing.removal_date alone even if it is null
+                # (certain active records -- from dealers -- don't expire)
+                pass
+        else:
+            # not/no longer active: set removal_date to actual deletion date
+            if existing_listing.status != 'F' and existing_listing.removal_date:
+                # already removed & date already set -- do not overwrite it
+                current_listing.removal_date = existing_listing.removal_date
+            else:
+                # well, it is deleted/inactive now...
+                current_listing.removal_date = datetime.datetime.now()
         # all other fields will be taken from the current listing record
 
     except NoResultFound:
