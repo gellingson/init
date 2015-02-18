@@ -91,6 +91,8 @@ primary key (id)
 );
 create index sourceidx on listing(source_type, source_id, local_id);
 create index sourcetextidx on listing(source_textid);
+create index localididx on listing(local_id);
+create index removalidx on listing(source_textid, status, removal_date);
 
 # LISTING_SOURCEINFO
 #
