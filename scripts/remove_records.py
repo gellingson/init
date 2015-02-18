@@ -12,18 +12,32 @@ import pymysql as db
 # OGL modules used
 from inventory.importer import *
 
-def remove_old_records_for_source(con, es, source_textid, daysold):
+# remove_old_records_for_source()
+#
+# if daysold is omitted this will remove records that have expired
+# (reached the removal_date stored on the specific listing)
+#
+def remove_old_records_for_source(con, es, source_textid, daysold=None):
     count = 0
-    logging.info("De-indexing records from %s: that are %s days old",
-                 source_textid, daysold)
-    # cursor type SSDictCursor to get result as a dict rather than a list for
-    # prettier interaction, and store result set server side to save memory
     c = con.cursor(db.cursors.SSDictCursor)
-    c.execute("select * from listing"
-              " where status = 'F'"
-              "   and source_textid = %s"
-              "   and last_update < date_sub(curdate(), INTERVAL %s DAY)",
-              (source_textid, daysold))
+    if daysold:
+        logging.info("De-indexing records from %s that are %s days old",
+                     source_textid, daysold)
+        # cursor type SSDictCursor to get result as a dict rather than a list for
+        # prettier interaction, and store result set server side to save memory
+        c.execute("select * from listing"
+                  " where status = 'F'"
+                  "   and source_textid = %s"
+                  "   and last_update < date_sub(curdate(), INTERVAL %s DAY)",
+                  (source_textid, daysold))
+    else:    
+        logging.info("De-indexing records from %s that have expired",
+                     source_textid)
+        c.execute("select * from listing"
+                  " where status = 'F'"
+                  "   and source_textid = %s"
+                  "   and removal_date < curdate()",
+                  (source_textid))
     db_listing = c.fetchone()
     while db_listing is not None:
         try:
@@ -39,11 +53,21 @@ def remove_old_records_for_source(con, es, source_textid, daysold):
     print(str(datetime.datetime.now()), "Total records processed:", count)
     logging.info('Marking db records')
     c = con.cursor(db.cursors.Cursor)
-    r = c.execute("update listing set status = 'R', removal_date = now(), last_update = now()"
-                  " where status = 'F'"
-                  "   and source_textid = %s"
-                  "   and last_update < date_sub(curdate(), INTERVAL %s DAY)",
-                  (source_textid, daysold))
+    # note that these updates set removal_date, potentially overwriting the
+    # previously-specified value. This seems correct; better to keep what
+    # happened than what we were planning to do.
+    if daysold:
+        r = c.execute("update listing set status = 'R', removal_date = now(), last_update = now()"
+                      " where status = 'F'"
+                      "   and source_textid = %s"
+                      "   and last_update < date_sub(curdate(), INTERVAL %s DAY)",
+                      (source_textid, daysold))
+    else:
+        r = c.execute("update listing set status = 'R', removal_date = now(), last_update = now()"
+                      " where status = 'F'"
+                      "   and source_textid = %s"
+                      "   and removal_date < curdate()",
+                      (source_textid))
     logging.info('Marked %s records', str(r))
     con.commit()
     return
@@ -56,6 +80,8 @@ def process_command_line():
                         help='set the logging level')
     parser.add_argument('--daysold', default='7',
                         help='how many days old (and older) should be removed')
+    parser.add_argument('--expired', action='store_true',
+                        help='only records that have reached their removal_date are removed')
     parser.add_argument('sources', nargs='*', help='the source(s) to take action on')
 
     return parser.parse_args()
@@ -82,15 +108,22 @@ def main():
 
     # GEE TODO: test session success here
 
-    # check that we have a useful # for daysold
-    daysold = int(args.daysold)
-    if daysold < 2 or daysold > 30:
-        print("Are you sure you know what you are doing? :-)")
-        sys.exit(1)
+    if args.expired:
+        print("expired")
+        for source in args.sources:
+            remove_old_records_for_source(con, es, source)
+    else:
+        print("daysold")
+        # check that we have a useful # for daysold
+        daysold = int(args.daysold)
+        if daysold < 2 or daysold > 30:
+            print("Are you sure you know what you are doing? :-)")
+            sys.exit(1)
 
-    # now do it
-    for source in args.sources:
-        remove_old_records_for_source(con, es, source, daysold)
+            # now do it
+            for source in args.sources:
+                remove_old_records_for_source(con, es, source, daysold)
+
     return True
     
 if __name__ == "__main__":
