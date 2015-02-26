@@ -109,20 +109,18 @@ def main():
     # GEE TODO: test session success here
 
     if args.expired:
-        print("expired")
         for source in args.sources:
             remove_old_records_for_source(con, es, source)
     else:
-        print("daysold")
         # check that we have a useful # for daysold
         daysold = int(args.daysold)
         if daysold < 2 or daysold > 30:
             print("Are you sure you know what you are doing? :-)")
             sys.exit(1)
-
-            # now do it
-            for source in args.sources:
-                remove_old_records_for_source(con, es, source, daysold)
+        # now do it
+        for source in args.sources:
+            logging.info(source)
+            remove_old_records_for_source(con, es, source, daysold)
 
     return True
     
