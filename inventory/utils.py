@@ -67,12 +67,12 @@ class GuessDate(object):
         try:
             if format == 'timestamp':
                 # specialcasing this as a mock format
-                d = datetime.datetime.fromtimestamp(float(maybedate))  # UTC
+                d = datetime.datetime.fromtimestamp(float(maybedate)).replace(tzinfo=pytz.utc)
             elif format == 'iso8601':
-                d = iso8601.parse_date(maybedate)
+                d = iso8601.parse_date(maybedate).replace(tzinfo=pytz.utc)
             else:
                 d = datetime.datetime.strptime(maybedate,
-                                               format).replace(tzinfo=tzinfo)
+                                               format).replace(tzinfo=pytz.utc)
         except (ValueError, TypeError):
             pass
         return d
@@ -104,7 +104,7 @@ class GuessDate(object):
 
         elif isinstance(maybedate, float) or isinstance(maybedate, int):
             try:
-                d = datetime.datetime.fromtimestamp(maybedate)
+                d = datetime.datetime.fromtimestamp(maybedate).replace(tzinfo=pytz.utc)
             except ValueError:
                 pass
         else:
@@ -149,6 +149,14 @@ class ImportReport(object):
 # ============================================================================
 # UTILITY METHODS
 # ============================================================================
+
+
+# now_utc()
+#
+# I can't believe how convoluted this in in python. WTF.
+#
+def now_utc():
+    return datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
 
 
 # regularize methods will take a string input that may be "messy" or
@@ -678,8 +686,9 @@ def add_or_update_found_listing(session, current_listing):
         if current_listing.status == 'R' and current_listing.model_year == '1':
             # deletion presumed to lack details/be less accurate than original
             existing_listing.status = current_listing.status
-            # GEE TODO: this should be server/db time, not python time: how?!
-            existing_listing.removal_date = datetime.datetime.now()
+            # GEE TODO: this should be server/db time, not server time as UTC
+            # ... but to do that would require a db round trip (meh)
+            existing_listing.removal_date = now_utc()
             return existing_listing # already in session; discard new listing
 
         # ... otherwise  mark the current record with the id of the
@@ -712,7 +721,7 @@ def add_or_update_found_listing(session, current_listing):
                 current_listing.removal_date = existing_listing.removal_date
             else:
                 # well, it is deleted/inactive now...
-                current_listing.removal_date = datetime.datetime.now()
+                current_listing.removal_date = now_utc()
         # all other fields will be taken from the current listing record
 
     except NoResultFound:
@@ -721,7 +730,7 @@ def add_or_update_found_listing(session, current_listing):
         pass # current_listing will not get an id until merge & flush
 
     # GEE TODO: this setting of last_update should not be required, but...
-    current_listing.last_update = datetime.datetime.now()
+    current_listing.last_update = now_utc()
     return session.merge(current_listing) # behavior dependent upon id
 
 

@@ -1,8 +1,11 @@
 
 # coding: utf-8
+
+# builtin modules used
 from decimal import Decimal
 import re
 
+# third party modules used
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, Text
 from sqlalchemy import String, text
 from sqlalchemy.sql.functions import func
@@ -10,6 +13,8 @@ from sqlalchemy.orm import reconstructor
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 
+# OGL modules used
+from orm.UTCDateTime import UTCDateTime
 
 # id column is used on most but not all tables, so make a mixin
 class IDMixIn(object):
@@ -48,7 +53,7 @@ class Base(object):
 
     def get_iter(self):
         for c in self.__table__.columns:
-            if getattr(self, c.name) and isinstance(c.type, DateTime):
+            if getattr(self, c.name) and isinstance(c.type, UTCDateTime):
                 value = Listing.convert_datetime(getattr(self, c.name))
             elif getattr(self, c.name) and isinstance(getattr(self, c.name),
                                                       Decimal):
@@ -125,7 +130,7 @@ class Dealership(IDMixIn, Base):
 class DealershipActivityLog(IDMixIn, Base):
 
     dealership_id = Column(Integer)
-    activity_timestamp = Column(DateTime)
+    activity_timestamp = Column(UTCDateTime)
     action_code = Column(String(32))
     message = Column(String(1024))
 
@@ -134,7 +139,7 @@ class InventoryImportLog(IDMixIn, Base):
 
     source_type = Column(String(1))
     source_id = Column(Integer)
-    import_timestamp = Column(DateTime)
+    import_timestamp = Column(UTCDateTime)
     message = Column(String(1024))
 
 
@@ -147,7 +152,7 @@ class ActionLog(IDMixIn, Base):
     action = Column(String(1), nullable=False)
     reason = Column(String(255))
     adjustment = Column(Integer)
-    action_timestamp = Column(DateTime, default=func.now())
+    action_timestamp = Column(UTCDateTime, default=func.utc_timestamp())
 
 
 class Listing(IDMixIn, Base):
@@ -177,9 +182,9 @@ class Listing(IDMixIn, Base):
     mileage = Column(Integer)
     tags = Column(String(2048))
     dynamic_quality = Column(Integer)
-    listing_date = Column(DateTime, default=func.now())
-    removal_date = Column(DateTime)
-    last_update = Column(DateTime,
+    listing_date = Column(UTCDateTime, default=func.utc_timestamp())
+    removal_date = Column(UTCDateTime)
+    last_update = Column(UTCDateTime,
                          server_default=text(
                              'CURRENT TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'))
 
@@ -229,7 +234,7 @@ class ListingSourceinfo(IDMixIn, Base):
     source_type = Column(String(1))
     source_id = Column(Integer)
     local_id = Column(String(255))
-    proc_time = Column(DateTime, default=func.now())
+    proc_time = Column(UTCDateTime, default=func.utc_timestamp())
     listing_id = Column(Integer,
                         ForeignKey('listing.id'))
     entry = Column(Text)
@@ -344,7 +349,7 @@ class SavedQuery(IDMixIn, Base):
     descr = Column(String(80))
     query = Column(String(2048))
     params = Column(String(2048))
-    mark_date = Column(DateTime)
+    mark_date = Column(UTCDateTime)
 
 
 class SavedListing(IDMixIn, Base):

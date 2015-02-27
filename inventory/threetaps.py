@@ -119,7 +119,7 @@ def extract_3taps_desc_fields(listing, item, classified, counts):
     # the current record is an update the db write logic will prevent
     # us from extending the removal_date at that time (since we have
     # not yet pulled any existing matching record we can't do it now)
-    listing.removal_date = (datetime.datetime.now() +
+    listing.removal_date = (u.now_utc() +
                             datetime.timedelta(days=classified.keep_days))
     if classified.textid == 'craig' and '/cto/' in item['external_url']:
         # it's a craigslist "by owner" listing, perhaps expiring sooner
@@ -139,11 +139,19 @@ def extract_3taps_desc_fields(listing, item, classified, counts):
             ]
             if metro in craigslist_list_A_metros:
                 listing.removal_date = \
-                    datetime.datetime.now() + datetime.timedelta(days=7)
+                    u.now_utc() + datetime.timedelta(days=7)
         except KeyError:
             pass
     # then if ever 3taps says the expiration is even sooner, make it so
     if item.expires:
+        if not listing.removal_date.tzinfo:
+            print("FUCKed removal_date")
+            print(listing)
+        if not u.guessDate(item.expires).tzinfo:
+            print("FUCKed item.expires")
+            print(item.expires)
+            print(listing)
+
         listing.removal_date = min(listing.removal_date,
                                    u.guessDate(item.expires))
 
@@ -416,7 +424,7 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
             # now run final validations of the listing
             ok = ok and u.validate_listing(listing, counts)
         else:  # item/listing is NOT for sale
-            listing.removal_date = datetime.datetime.now()
+            listing.removal_date = u.now_utc()
             # don't bother to look for other data fields...
             # This seems odd but 3taps injects some removal records
             # representing records no longer present in source site
