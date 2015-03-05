@@ -326,8 +326,8 @@ def extract_3taps_year_make_model(listing, item,
                         listing.make = ht_make
                         listing.model = ht_model
             except:
-                LOG.exception('exception encountered while getting ',
-                              'year/make/model from html for element ',
+                LOG.exception('exception encountered while getting ' +
+                              'year/make/model from html for element ' +
                               str(listing.local_id))
 
             # and store the decoded version since we've bothered to make it
