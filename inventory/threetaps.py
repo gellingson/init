@@ -99,6 +99,7 @@ def extract_3taps_location(listing, item, classified, counts, session):
         LOG.debug("location information bad: {} {} {} {}".format(
             listing.lat, listing.lon, listing.location_text, listing.zip))
         counts['badloc'] += 1
+        listing.static_quality -= 50
     return True
 
 
@@ -213,6 +214,7 @@ def extract_3taps_desc_fields(listing, item, classified, counts):
         listing.price = u.regularize_price(anno['price'])
     if listing.price <= 100:
         counts['badprice'] += 1
+        listing.static_quality -= 25
         # GEE TODO: check to see if we can salvage any of these via raw html?
     return ok
 
@@ -239,6 +241,8 @@ def extract_3taps_urls(listing, item, classified, counts):
     except (KeyError, IndexError, TypeError):
         LOG.debug('Failed to find a picture for a posting')
         listing.pic_href = 'N/A'
+        counts['badpic'] += 1
+        listing.static_quality -= 100
 
     # listing_href
     listing.listing_href = item.external_url
@@ -395,6 +399,7 @@ def process_3taps_posting(session, item, classified, counts, dblog=False):
     listing.source_id = classified.id
     listing.source_textid = classified.textid
     listing.source = classified.full_name
+    listing.static_quality = classified.score_adjustment or 0
 
     lsinfo = None
     if dblog:

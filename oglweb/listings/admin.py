@@ -3,12 +3,12 @@ from listings.models import Classified, Dealership, Listing, NonCanonicalMake, N
 
 class ClassifiedAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None, {'fields': ['full_name', 'textid', 'base_url', 'inventory_url', 'status', 'markers', 'anchor', 'keep_days']}),
+        (None, {'fields': ['full_name', 'textid', 'base_url', 'inventory_url', 'status', 'markers', 'anchor', 'keep_days', 'score_adjustment']}),
         ('Functions', {'fields': ['custom_pull_func','extract_car_list_func','listing_from_list_item_func', 'parse_listing_func']})]
 
 class DealershipAdmin(admin.ModelAdmin):
     fieldsets = [
-        (None, {'fields': ['full_name', 'textid', 'base_url', 'inventory_url', 'status', 'markers']}),
+        (None, {'fields': ['full_name', 'textid', 'base_url', 'inventory_url', 'status', 'markers', 'score_adjustment']}),
         ('Location', {'fields': ['address_line1','address_line2','city','state','zip','lat','lon']}),
         ('More', {'fields': ['phone', 'owner_info', 'owner_account_id', 'license_info', 'primary_dealership_id', 'id']}),
         ('Functions', {'fields': ['extract_car_list_func','listing_from_list_item_func', 'parse_listing_func']})]

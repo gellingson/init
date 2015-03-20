@@ -529,6 +529,7 @@ def pull_dealer_inventory(dealer, session=None):
             listing.source_id = dealer.id
             listing.source_textid = dealer.textid
             listing.source = dealer.full_name
+            listing.static_quality = dealer.static_quality or 0
             listing.lat = dealer.lat
             listing.lon = dealer.lon
             listing.location_text = '{}, {}'.format(dealer.city, dealer.state)
@@ -777,6 +778,7 @@ def process_ebay_listing(session, item, classified, counts, dblog=False, batch_y
     listing.source_id = classified.id
     listing.source_textid = classified.textid
     listing.source = classified.full_name
+    listing.static_quality = classified.score_adjustment or 0
 
     lsinfo = None
     if dblog:
@@ -817,19 +819,25 @@ def process_ebay_listing(session, item, classified, counts, dblog=False, batch_y
     # GEE TODO: probably should be storing mult sizes on our side
     listing.pic_href = u.regularize_url(item.get('pictureURLSuperSize', '') or
                                         item.get('pictureURLLarge', '') or
-                                        item.get('galleryPlusPictureURL') or
-                                        item.get('galleryURL'),
+                                        item.get('galleryPlusPictureURL'),
                                         absolute_only=True)
 
+    if not listing.pic_href:
+        listing.pic_href = u.regularize_url(item.get('galleryURL'),
+                                            absolute_only=True)
+        if listing.pic_href: # got at least a small pic
+            listing.static_quality -= 25
+        else:  # no pic at all
+            listing.static_quality -= 100
+
     # listing_href
-    LOG.debug('EBAY HAS ITEM URL:' + item.get('viewItemURL'))
     listing.listing_href = u.regularize_url(item.get('viewItemURL'),
                                             absolute_only=True)
-    if listing.listing_href:
-        LOG.debug('WE SAW ITEM URL:' + listing.listing_href)
-    else:
-        LOG.debug('WE SAW NADA')
 
+    if not listing.listing_href:  # broken href = failed; discard
+        counts['badhref'] += 1
+        ok = False
+    
     # location
     # ebay offers a "city,state,country" string and postalCode
     # let's use postalCode and the other string as fallback only

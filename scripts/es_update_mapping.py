@@ -135,14 +135,13 @@ es = Elasticsearch()
 #mapping_resp = es.indices.get_mapping(index="carbyr-index")
 #print("original mapping:\n{}".format(json.dumps(mapping_resp, indent=2, sort_keys=True)))
 
-try:
-    es.indices.delete(index="carbyr-index")
-except elasticsearch.exceptions.NotFoundError:
-    logging.warning('Index not found while attempting to drop it')
+#try:
+#    es.indices.delete(index="carbyr-index")
+#except elasticsearch.exceptions.NotFoundError:
+#    logging.warning('Index not found while attempting to drop it')
 
-index_resp = es.indices.create(index="carbyr-index",
-                               body={"settings": {"number_of_shards" : 5},
-                                     "mappings": {"listing-type": listing_type_map}})
+index_resp = es.indices.put_mapping(index="carbyr-index", doc_type="listing-type",
+                                    body={"listing-type": listing_type_map})
 print(index_resp)
 
 # alternatively, we could just put the mapping into an existing index
@@ -151,6 +150,8 @@ print(index_resp)
 
 mapping_resp = es.indices.get_mapping(index="carbyr-index")
 print("new mapping:\n{}".format(json.dumps(mapping_resp, indent=2, sort_keys=True)))
+
+sys.exit(0)
 
 con = None
 try:

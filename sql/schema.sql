@@ -84,6 +84,7 @@ vin            varchar(20),
 mileage        int,
 tags           varchar(2048),
 dynamic_quality int,
+static_quality int,
 listing_date   DATETIME,
 removal_date   DATETIME,
 last_update    DATETIME,
@@ -263,6 +264,7 @@ license_info varchar(255),
 owner_account_id int,
 lat float,
 lon float,
+score_adjustment int,
 primary key (id)
 );
 
@@ -284,6 +286,7 @@ anchor varchar(1024),
 inventory_url varchar(1024),
 owner_account_id int,
 keep_days int,
+score_adjustment int,
 primary key (id)
 );
 

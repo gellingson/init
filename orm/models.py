@@ -100,6 +100,7 @@ class Classified(IDMixIn, Base):
     inventory_url = Column(String(1024))
     owner_account_id = Column(Integer)
     keep_days = Column(Integer)
+    score_adjustment = Column(Integer)
 
 
 class Dealership(IDMixIn, Base):
@@ -125,6 +126,7 @@ class Dealership(IDMixIn, Base):
     owner_account_id = Column(Integer)
     lat = Column(Numeric(10, 7))
     lon = Column(Numeric(10, 7))
+    score_adjustment = Column(Integer)
 
 
 class DealershipActivityLog(IDMixIn, Base):

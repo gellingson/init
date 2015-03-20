@@ -1,6 +1,7 @@
 
 import copy
 import datetime
+import json
 import pytz
 import time
 
@@ -18,6 +19,89 @@ from listings.models import Zipcode, Listing, SavedQuery, ActionLog
 from listings.favlist_utils import favdict_for_user
 from listings.query_utils import *
 from listings.utils import *
+
+
+# hash of scoring functions
+SCORING_FUNCS = {
+    "staticqual": {
+        "filter": {
+            "exists" : { "field" : "static_quality" }
+        },
+        "field_value_factor": {
+            "field": "static_quality",
+            "factor": 0.001
+        }
+    },
+    "dynamicqual": {
+        "filter": {
+            "exists" : { "field" : "dynamic_quality" }
+        },
+        "field_value_factor": {
+            "field": "dynamic_quality",
+            "factor": 0.001
+        }
+    },
+    "recency": {
+        "gauss": {
+            "listing_date": {
+                # defaults to current time so don't need this:
+                # "origin": datetime.now().__str__(),
+                "scale": "10d",
+                "offset": 0,
+                "decay": 0.7
+            }
+        }
+    },
+    "distance": {
+        "gauss": {
+            "location": {
+                "origin": "37.34, -121.88",  # default to be overridden
+                "scale": "100m",
+                "offset": "5m",
+                "decay": 0.95
+            }
+        }
+    },
+    "sub100": {
+        "filter": { "range": { "price": { "lte": 100 }}},
+        "boost_factor": -0.05 # becomes 'weight' in es 1.4
+    },
+    "sub1k": {
+        "filter": { "range": { "price": { "lte": 1000 }}},
+        "boost_factor": -0.04 # becomes 'weight' in es 1.4
+    },
+    "over10k": {
+        "filter": { "range": { "price": { "gte": 10000 }}},
+        "boost_factor": 0.02 # becomes 'weight' in es 1.4
+    }
+}
+#NO_NEED_DO_STATIC = {
+#    "nopic": {
+#        "filter": { "term": { "pic_href": "N/A" }},
+#        "boost_factor": 0.5 # becomes 'weight' in es 1.4
+#    },
+#    "hmngs": {
+#        "filter": { "term": { "source_textid": "hmngs" }},
+#        "boost_factor": 0.199 # becomes 'weight' in es 1.4
+#    },
+#    {
+#        "filter": { "term": { "source_textid": "ccars" }},
+#        "boost_factor": 0.96 # becomes 'weight' in es 1.4
+#    },
+#    {
+#        "filter": { "term": { "source_textid": "carsd" }},
+#        "boost_factor": 0.95
+#    },
+#    {
+#        "filter": { "term": { "source_textid": "autod" }},
+#        "boost_factor": 0.94
+#    },
+#    {
+#        "filter": { "term": { "source_textid": "craig" }},
+#        "boost_factor": 0.92
+#    }
+#}
+
 
 #
 # builds an es query based on request vars
@@ -300,6 +384,28 @@ def build_new_query(args):
                 }
             }
         ]
+    else:
+        scoring_wrapper = {
+            "query": {
+                "function_score": {
+                    "functions": [
+                    ],
+                "score_mode": "sum",
+                }
+            }
+        }
+        fs = scoring_wrapper['query']['function_score']['functions']
+        fs.append(SCORING_FUNCS['staticqual'])
+        fs.append(SCORING_FUNCS['dynamicqual'])
+        fs.append(SCORING_FUNCS['recency'])
+        #if not geolimit_term:
+            #fs.append(SCORING_FUNCS['distance'])
+            # GEE TODO: edit this func to have the correct reference geopoint
+        if not price_term:
+            fs.append(SCORING_FUNCS['sub100'])
+            fs.append(SCORING_FUNCS['sub1k'])
+            fs.append(SCORING_FUNCS['over10k'])
+        
 
     # assemble the pieces
     q.query = {"query": {"filtered": {}}}
@@ -317,11 +423,16 @@ def build_new_query(args):
         add_filter(q.query, year_term)
     if sort_term:
         q.query['sort'] = sort_term
+    elif scoring_wrapper:
+        inner_query = q.query
+        #inner_query = { 'query': { 'filtered': { 'query': { 'query_string': { 'query': 'corvette', 'default_operator': 'and' }}}}}
+        q.query = scoring_wrapper
+        q.query['query']['function_score']['query'] = inner_query['query']
 
     # build query description out of all the descr_list terms
     q.descr = ', '.join(descr_list)
 
-    LOG.info('NEW ES QUERY: ' + str(q.query))
+    LOG.info('NEW ES QUERY: ' + json.dumps(q.query, indent=2, sort_keys=True))
     # return the user-friendly description and the actual es query body
     return q
 
@@ -394,6 +505,7 @@ def get_listings(query, number=50, offset=0, user=None, show='new_only'):
 
     tossed = 0
     for item in search_resp['hits']['hits']:
+        LOG.info('SCORE: ' + str(item['_score']) + '(' + str(item['_source']['dynamic_quality']) + '): ' + item['_source']['listing_text'])
         car = Bunch(item['_source'])
         removal_date = force_date(car.removal_date, None)
         if int(car.id) in flag_set:
@@ -441,7 +553,7 @@ def flag_listing(user, listing_id, reason, other_reason=None):
         return False
     if not listing.dynamic_quality:
         listing.dynamic_quality = 0
-    if listing.dynamic_quality + adj < -800:  # arbitrary threshold :)
+    if listing.dynamic_quality + adj < -1100:  # arbitrary threshold :)
         remove = True
 
     apply_quality_adj(user, ACTION_FLAG, reason, adj, listing=listing)
@@ -492,7 +604,7 @@ def calc_quality_adj(user, listing_id, action, reason=None):
             adj = -300
         if user.is_authenticated:
             if user.is_superuser:
-                adj = adj * 10
+                adj = adj * 10  # 10x the adjustment for superuser acts
         else:
             adj = adj / 10
     elif action == ACTION_FAV:
@@ -534,8 +646,30 @@ def apply_quality_adj(user, action,
             listing.dynamic_quality = 0
         listing.dynamic_quality += adj
         listing.save()
-        return True
-    return False
+
+    # now apply the update to elasticsearch, which uses it for scoring;
+    # always fetch the listing from es since the listing object we have will
+    # be from the db, not es, and will have wrong geo info & misc issues
+    LOG.info('GEE TEMP: ABOUT TO UPDATE DYNAMIC QUALITY FOR ITEM #' + str(listing.id))
+    es = Elasticsearch()
+    try:
+        r = es.get(index="carbyr-index",
+                   doc_type="listing-type",
+                   id=listing.id)
+        if r['found']:
+            es_listing = r['_source']
+            if not es_listing['dynamic_quality']:
+                es_listing['dynamic_quality'] = 0
+            es_listing['dynamic_quality'] += adj
+            es.index(index="carbyr-index",
+                     doc_type="listing-type",
+                     id=es_listing['id'],
+                     body=es_listing)
+            LOG.info('GEE TEMP: UPDATED DYNAMIC QUALITY FOR ITEM #' + str(es_listing['id']))
+    except NotFoundError as err:
+        pass
+        return False
+    return True
 
 
 # log_action()

@@ -79,6 +79,7 @@ class Classified(models.Model):
     owner_account_id = models.IntegerField(blank=True, null=True)
     anchor = models.CharField(max_length=1024, blank=True)
     keep_days = models.IntegerField(blank=True, null=True)
+    score_adjustment = models.IntegerField(blank=True, null=True)
                                                  
     def __str__(self):
         return self.full_name
@@ -111,6 +112,7 @@ class Dealership(models.Model):
     owner_account_id = models.IntegerField(blank=True, null=True)
     lat = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
     lon = models.DecimalField(max_digits=10, decimal_places=7, blank=True, null=True)
+    score_adjustment = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
         return self.full_name
