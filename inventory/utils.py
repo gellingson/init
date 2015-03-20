@@ -15,6 +15,7 @@ import pytz
 import re
 import sys
 import time
+import urllib.parse
 
 # third party modules used
 from bunch import Bunch
@@ -368,6 +369,7 @@ def regularize_url(href_in, base_url=None,
         else:
             try:
                 p = urllib.parse.urlsplit(href_in.strip())
+                LOG.debug(str(p)) # GEE TODO REMOVE
                 if p.scheme and p.netloc:
                     href_out = href_in  # complete & it works great
                 elif base_url:
@@ -383,6 +385,8 @@ def regularize_url(href_in, base_url=None,
                     if not absolute_only:
                         href_out = href_candidate  # good enough, hopefully
             except:
+                LOG.warning("Unexpected error regularizing URL: " + href_in)
+                LOG.warning(sys.exc_info()[0])
                 pass  # well, that didn't work
     LOG.debug('regularized href=%s from input href=%s', href_out, href_in)
     return href_out

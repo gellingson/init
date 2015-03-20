@@ -768,7 +768,7 @@ def ebay_attr_get(item, attr_name):
 # returns an ok flag, a Listing object, and a ListingSourceinfo object
 # ... and also modifies the running totals in counts
 #
-def process_ebay_listing(session, item, classified, counts, dblog=False):
+def process_ebay_listing(session, item, classified, counts, dblog=False, batch_year=None):
     ok = True
     item = Bunch(item) # for convenience
     LOG.debug('eBay ITEM: {}'.format(item['itemId']))
@@ -800,6 +800,12 @@ def process_ebay_listing(session, item, classified, counts, dblog=False):
     year = ebay_attr_get(item, 'Year')
     if year and len(year) > 4:
         year = year[:4] # ebayism: may have 4 addl trailing 0s, e.g. 20140000
+    if not year:
+        counts['ebay_bad_year'] += 1
+        year = str(batch_year)
+    else:
+        counts['ebay_good_year'] += 1
+
     make = item['title'].split(':')[0].strip()
     model = item['primaryCategory']['categoryName']
     (listing.model_year,
@@ -816,8 +822,13 @@ def process_ebay_listing(session, item, classified, counts, dblog=False):
                                         absolute_only=True)
 
     # listing_href
+    LOG.debug('EBAY HAS ITEM URL:' + item.get('viewItemURL'))
     listing.listing_href = u.regularize_url(item.get('viewItemURL'),
                                             absolute_only=True)
+    if listing.listing_href:
+        LOG.debug('WE SAW ITEM URL:' + listing.listing_href)
+    else:
+        LOG.debug('WE SAW NADA')
 
     # location
     # ebay offers a "city,state,country" string and postalCode
@@ -945,14 +956,21 @@ def pull_ebay_inventory(classified, session,
     # we use a magic value for the second year in a batch being 1, indicating
     # that the batch is one year only and must be further subdivided by color
 
-    ebay_year_batches = [
-        (1900, 1960), (1961, 1970), (1971, 1980),
-        (1981, 1990), (1991, 1995), (1996, 1999),
-        (2000, 2003), (2004, 2005), (2006, 2006),
-        (2007, 2007), (2008, 2008), (2009, 2009),
-        (2010, 2010), (2011, 2011), (2012, 1),
-        (2013, 1), (2014, 1), (2015, 1)
-    ]
+    
+    # GEE PATCH
+    #ebay_year_batches = [
+    #        (1900, 1960), (1961, 1970), (1971, 1980),
+    #        (1981, 1990), (1991, 1995), (1996, 1999),
+    #        (2000, 2003), (2004, 2005), (2006, 2006),
+    #        (2007, 2007), (2008, 2008), (2009, 2009),
+    #        (2010, 2010), (2011, 2011),
+    ebay_large_batches = [ (2012, 1),
+                           (2013, 1), (2014, 1), (2015, 1)
+                       ]
+    ebay_year_batches=[]
+    for year in range(1900,2011):
+        ebay_year_batches.append((year, year))
+    ebay_year_batches.extend(ebay_large_batches)
 
     # for any years that are too big we further segment by color (!)
     # (hey, it splits the inventory into reasonably-suitable chunks)
@@ -1036,10 +1054,13 @@ def pull_ebay_inventory(classified, session,
         # hopefully we've done all our checks above and called a break...
         LOG.info('Number of car listings found: %s',
                  r['searchResult']['_count'])
+        # GEE PATCH: delete the next line when ebay fixes the missing year attr
+        pull_year = ebay_year_batches[inventory_marker['batch']][0]
         for item in r['searchResult']['item']:
             ok, listing, lsinfo = process_ebay_listing(session, item,
                                                        classified, counts,
-                                                       dblog=dblog)
+                                                       dblog=dblog,
+                                                       batch_year=pull_year) # GEE PATCH
             # ok to date means we got something potentially useful
             if ok:
                 tagify(listing, strict=False, counts=counts)
