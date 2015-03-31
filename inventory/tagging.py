@@ -6,14 +6,20 @@
 # ...but for now is a man behind a curtain hackfest implementation
 #
 
+# builting modules used
+import logging
+
 # OGL modules used
-from inventory.settings import LOG, XL, _HDRS
 from inventory.settings import _BORING_MAKES, _INTERESTING_MODELS, _INTERESTING_WORDS
-from inventory.settings import _MAKES, _MODELS, _TAGS, _TAG_RELS, load_refdata_cache
+from inventory.settings import _MAKES, _MODELS, _TAGS, _TAG_RELS
 import inventory.utils as u
 from orm.models import Listing
 from orm.models import ConceptTag, ConceptImplies
 from orm.models import NonCanonicalMake, NonCanonicalModel, Zipcode
+
+
+LOG = logging.getLogger(__name__)
+
 
 # tagify()
 #

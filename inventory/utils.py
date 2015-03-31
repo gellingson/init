@@ -27,10 +27,13 @@ import sqlalchemy
 from sqlalchemy.orm.exc import NoResultFound
 
 # OGL modules used
-from inventory.settings import LOG, XL, _HDRS
+from inventory.settings import XL, _HDRS
 from inventory.settings import _BORING_MAKES, _INTERESTING_MODELS, _INTERESTING_WORDS
 from inventory.settings import _MAKES, _MODELS, _TAGS, _TAG_RELS, load_refdata_cache
 from orm.models import Listing
+
+
+LOG = logging.getLogger(__name__)
 
 
 # GuessDate class:
@@ -120,8 +123,6 @@ class GuessDate(object):
 
 # create a file global callable for the class
 guessDate = GuessDate()
-
-LOG = logging.getLogger(__name__)
 
 class ImportReport(object):
     def __init__(self):

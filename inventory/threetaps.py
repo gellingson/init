@@ -26,10 +26,14 @@ from lxml import etree
 from pyquery import PyQuery as pq
 
 # OGL modules used
-from inventory.settings import LOG, XL, _HDRS
+from inventory.settings import XL, _HDRS
 from inventory.tagging import tagify
 import inventory.utils as u
 from orm.models import Listing, ListingSourceinfo, Zipcode
+
+
+LOG = logging.getLogger(__name__)
+
 
 # extract_3taps_key_fields_and_status()
 #

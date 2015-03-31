@@ -20,9 +20,10 @@ from orm.models import ConceptTag, ConceptImplies
 from orm.models import NonCanonicalMake, NonCanonicalModel
 
 
-### logging
+LOG = logging.getLogger(__name__)
 
-LOG = logging.getLogger('importer')  # will configure further in main()
+
+### logging stuff
 
 # extra logging settings (beyond even the DEBUG log setting); to be used
 # only in one-off situations because these are very resource-intensive
