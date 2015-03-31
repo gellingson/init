@@ -128,7 +128,7 @@ listing_type_map = {
 }
 
 logging.basicConfig(level='INFO')
-
+logging.getLogger('elasticsearch').setLevel(logging.ERROR)
 es = Elasticsearch()
 
 # retrieve the mappings of the existing index
@@ -171,13 +171,13 @@ db_listing = c.fetchone()
 while db_listing is not None:
     if db_listing['lat'] and db_listing['lon']:
         db_listing['location'] = {'lat': db_listing['lat'], 'lon': db_listing['lon']}
-        index_resp = es.index(index="carbyr-index",
-                              doc_type="listing-type",
-                              id=db_listing['id'],
-                              body=db_listing)
-        count += 1
-        if (count % 1000) == 0:
-            print(str(datetime.datetime.now()), "Records processed:", count)
+    index_resp = es.index(index="carbyr-index",
+                          doc_type="listing-type",
+                          id=db_listing['id'],
+                          body=db_listing)
+    count += 1
+    if (count % 1000) == 0:
+        print(str(datetime.datetime.now()), "Records processed:", count)
     db_listing = c.fetchone()
 
 # fetchmany doesn't work with SSDictCursor, unfortunately....
@@ -192,3 +192,5 @@ while db_listing is not None:
 #                              id=db_listing['id'],
 #                              body=db_listing)
 #    result = c.fetchmany()
+
+print("Complete, total records processed", count)
