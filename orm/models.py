@@ -184,6 +184,7 @@ class Listing(IDMixIn, Base):
     mileage = Column(Integer)
     tags = Column(String(2048))
     dynamic_quality = Column(Integer)
+    static_quality = Column(Integer)
     listing_date = Column(UTCDateTime, default=func.utc_timestamp())
     removal_date = Column(UTCDateTime)
     last_update = Column(UTCDateTime,
