@@ -52,10 +52,12 @@ listing_type_map = {
             "type": "date"
         },
         "listing_href": {
-            "type": "string"
+            "type": "string",
+            "index": "not_analyzed"
         },
         "listing_text": {
-            "type": "string"
+            "type": "string",
+            "index_options": "docs"
         },
         "local_id": {
             "type": "string"
@@ -76,16 +78,19 @@ listing_type_map = {
             "type": "long"
         },
         "model": {
-            "type": "string"
+            "type": "string",
+            "index_options": "docs"
         },
         "model_year": {
             "type": "string"
         },
         "markers": {
-            "type": "string"
+            "type": "string",
+            "index": "not_analyzed"
         },
         "pic_href": {
-            "type": "string"
+            "type": "string",
+            "index": "not_analyzed"
         },
         "price": {
             "type": "long"
