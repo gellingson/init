@@ -235,13 +235,20 @@ def extract_3taps_urls(listing, item, classified, counts):
         # many times we don't get the right pic at all, but so far if the
         # right pic is there, it is first in the list. So use that....
         listing.pic_href = item.images[0]['full']
-        # now work around some 3taps issues where they pull scaled-down
-        # thumbnails rather than full size images; we can fix the URLs
-        if classified.textid == 'carsd':
-            listing.pic_href = listing.pic_href.split('&width')[0]
-        if classified.textid == 'autod':
-            listing.pic_href = listing.pic_href.replace('/scaler/80/60/',
-                                                        '/scaler/544/408/')
+        if listing.pic_href: 
+            # now work around some 3taps issues where they pull scaled-down
+            # thumbnails rather than full size images; we can fix the URLs
+            if classified.textid == 'carsd':
+                listing.pic_href = listing.pic_href.split('&width')[0]
+            if classified.textid == 'autod':
+                listing.pic_href = listing.pic_href.replace('/scaler/80/60/',
+                                                            '/scaler/544/408/')
+        else:  # oops... the key existed but was empty (null)
+            LOG.debug('Empty picture for a posting')
+            listing.pic_href = 'N/A'
+            counts['badpic'] += 1
+            listing.static_quality -= 100
+
     except (KeyError, IndexError, TypeError):
         LOG.debug('Failed to find a picture for a posting')
         listing.pic_href = 'N/A'
