@@ -17,7 +17,6 @@ from django.template import RequestContext
 from django.utils.html import escape
 from django_ajax.decorators import ajax
 from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import NotFoundError
 import humanize
 
 # OGL modules used

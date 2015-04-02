@@ -10,6 +10,8 @@ from bunch import Bunch
 from django.db import IntegrityError
 
 # OGL modules used
+from listings.actions import log_and_adj_quality
+from listings.constants import *
 from listings.models import SavedListing, Listing
 
 LOG = logging.getLogger(__name__)
@@ -30,6 +32,7 @@ def unsave_car_from_db(user, listing_id):
     if len(records) == 1:
         sl_to_delete = records[0]
         sl_to_delete.delete()
+        log_and_adj_quality(user, ACTION_UNFAV, listing_id=listing_id)
     else:
         LOG.error('OOPS!retrieved {} records to delete'.format(len(records)))
         return False
@@ -54,6 +57,7 @@ def save_car_to_db(user, listing_id):
     fav.status = 'A'
     try:
         fav.save()
+        log_and_adj_quality(user, ACTION_FAV, listing_id=listing_id)
     except IntegrityError:  # already a favorite....
         return None
     return True

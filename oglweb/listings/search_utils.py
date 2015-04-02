@@ -1,4 +1,6 @@
+# search_utils.py
 
+# builtin modules used
 import copy
 import datetime
 import json
@@ -13,13 +15,13 @@ from elasticsearch.exceptions import NotFoundError
 from money import Money
 
 # OGL modules used
+from listings.actions import log_action, calc_quality_adj, apply_quality_adj
 from listings.constants import *
 from listings.display_utils import prettify_listing
 from listings.models import Zipcode, Listing, SavedQuery, ActionLog
 from listings.favlist_utils import favdict_for_user
 from listings.query_utils import *
 from listings.utils import *
-
 
 # hash of scoring functions
 SCORING_FUNCS = {
@@ -547,7 +549,7 @@ def flag_listing(user, listing_id, reason, other_reason=None):
     remove = False
     if user.is_authenticated() and user.is_superuser:
         remove = True
-    adj = calc_quality_adj(user, listing_id, ACTION_FLAG, reason)
+    adj = calc_quality_adj(user, ACTION_FLAG, reason)
     listing = Listing.objects.get(pk=listing_id)
     if not listing:
         return False
@@ -556,7 +558,7 @@ def flag_listing(user, listing_id, reason, other_reason=None):
     if listing.dynamic_quality + adj < -1100:  # arbitrary threshold :)
         remove = True
 
-    apply_quality_adj(user, ACTION_FLAG, reason, adj, listing=listing)
+    apply_quality_adj(user, ACTION_FLAG, reason, adj, listing)
 
     if remove:
         es = Elasticsearch()
@@ -574,130 +576,6 @@ def flag_listing(user, listing_id, reason, other_reason=None):
     long_reason = reason
     if reason == FLAG_REASON_OTHER:
         long_reason = long_reason + ':' + other_reason
-    log_action(user, ACTION_FLAG, long_reason, adj, listing=listing)
+    log_action(user, ACTION_FLAG, long_reason, adj, listing)
 
     return True
-
-
-# calc_quality_adj()
-#
-# calculates a quality adjustment to apply from a given user action
-#
-# e.g. admin flags as fraud might be -10000, whereas an anonymous user
-# clicking on the link might be +10 (if we track that at all....)
-#
-def calc_quality_adj(user, listing_id, action, reason=None):
-    # GEE TODO: would be great if users had an impact factor to apply...
-    adj = 0
-    if action == ACTION_FLAG:
-        if reason == FLAG_REASON_UNINTERESTING:
-            adj = -100
-        elif reason == FLAG_REASON_NONCAR:
-            adj = -1000
-        elif reason == FLAG_REASON_INCORRECT:
-            adj = -300
-        elif reason == FLAG_REASON_FRAUD:
-            adj = -1000
-        elif reason == FLAG_REASON_SOLD:
-            adj = -5000
-        else:
-            adj = -300
-        if user.is_authenticated:
-            if user.is_superuser:
-                adj = adj * 10  # 10x the adjustment for superuser acts
-        else:
-            adj = adj / 10
-    elif action == ACTION_FAV:
-        if user.is_authenticated:
-            adj = +300
-        else:
-            adj = +100
-    elif action == ACTION_UNFAV:
-        if user.is_authenticated:
-            adj = -100  # give back 1/3 of the favoriting bonus
-        else:
-            adj = -50  # give back 1/2 of the favoriting bonus
-    return adj
-
-
-# apply_quality_adj()
-#
-# applies a quality adjustment to a listing based on user & action (etc)
-#
-# Notes:
-# can be passed either listing_id or an actual listing object (for speed)
-# calls calc_quality_adj if adj is not passed in (again, efficiency...)
-# this action should getting logged separately (this does not log)
-#
-def apply_quality_adj(user, action,
-                      reason=None, adj=None,
-                      listing=None, listing_id = None):
-    if not listing and listing.id:  # seemingly a valid listing obj?
-        if not listing_id:
-            return False
-        listing = Listing().objects.get(pk=listing_id)
-        if not listing:
-            return False
-    if adj is None:
-        adj = calc_quality_adj(user, listing_id, action, reason)
-    if adj:
-        # save to the listing itself in the db (denormalizing for performance)
-        if not listing.dynamic_quality:
-            listing.dynamic_quality = 0
-        listing.dynamic_quality += adj
-        listing.save()
-
-    # now apply the update to elasticsearch, which uses it for scoring;
-    # always fetch the listing from es since the listing object we have will
-    # be from the db, not es, and will have wrong geo info & misc issues
-    LOG.info('GEE TEMP: ABOUT TO UPDATE DYNAMIC QUALITY FOR ITEM #' + str(listing.id))
-    es = Elasticsearch()
-    try:
-        r = es.get(index="carbyr-index",
-                   doc_type="listing-type",
-                   id=listing.id)
-        if r['found']:
-            es_listing = r['_source']
-            if not es_listing['dynamic_quality']:
-                es_listing['dynamic_quality'] = 0
-            es_listing['dynamic_quality'] += adj
-            es.index(index="carbyr-index",
-                     doc_type="listing-type",
-                     id=es_listing['id'],
-                     body=es_listing)
-            LOG.info('GEE TEMP: UPDATED DYNAMIC QUALITY FOR ITEM #' + str(es_listing['id']))
-    except NotFoundError as err:
-        pass
-        return False
-    return True
-
-
-# log_action()
-#
-# logs the given action by the given user
-#
-# Notes:
-# includes the applied adjustment, if any.
-# calcs the adjustment if such applies and None is passed in.
-#
-def log_action(user, action,
-               reason=None, adj=None,
-               listing_id=None, listing=None):
-    logentry = ActionLog()
-    if user.is_authenticated():
-        logentry.user = user;
-    # two ways we might get listing info... or we may get neither:
-    if listing_id and not listing:
-        listing = Listing();
-        listing.id = listing_id
-    if listing:  # whether passed as a listing or listing_id
-        logentry.listing = listing
-    logentry.action = action
-    if reason:
-        logentry.reason = reason
-    if listing_id and adj is None:
-        adj = calc_quality_adj(user, listing_id, action, reason)
-    logentry.adjustment = adj
-    logentry.save()
-    return True
-        
