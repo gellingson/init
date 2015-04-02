@@ -27,7 +27,7 @@ import urllib.parse
 
 # third party modules used
 from bunch import Bunch
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString, Comment
 from ebaysdk.finding import Connection as ebaysdk_finding
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
@@ -94,7 +94,7 @@ def autorevo_parse_listing(listing, entry, detail):
     # doesn't have listing text on inventory page
     try:
         listing.listing_text = detail.find(
-            class_='innerDescriptionText').find('p').text
+            class_='innerDescriptionText').find('p').text.strip()
     except AttributeError:
         listing.listing_text = ''
 
@@ -124,7 +124,7 @@ def bat_parse_listing(listing, entry, detail):
     text = entry.find(class_="current-listing-details-excerpt")
     if text:
         if text.find('p'):
-            listing.listing_text = text.find('p').text
+            listing.listing_text = text.find('p').text.strip()
 
     price_button_div = entry.find(class_="current-listing-details-button")
     if price_button_div:
@@ -161,7 +161,7 @@ def bat_parse_listing(listing, entry, detail):
 def carbuffs_parse_listing(listing, entry, detail):
 
     # get the short listing text from the inventory page
-    listing.listing_text = entry.find(class_="car-excerpt").text
+    listing.listing_text = entry.find(class_="car-excerpt").text.strip()
 
     # pull the rest of the fields from the detail page
     (listing.model_year,
@@ -224,7 +224,7 @@ def cvc_parse_listing(listing, entry, detail):
      listing.make,
      listing.model) = u.regularize_year_make_model(strings[0])
 
-    listing.listing_text = strings[1]
+    listing.listing_text = strings[1].strip()
 
     # no real patterns to mine on the details page.
     # but hey, at least it has the price! (unlike the inventory page)
@@ -248,7 +248,7 @@ def dawydiak_parse_listing(listing, entry, detail):
     # get some stuff from the inventory page
 
     # if dawydiak has any listing text, it's in the introlist
-    listing.listing_text = entry.find(class_='introlist').text
+    listing.listing_text = entry.find(class_='introlist').text.strip()
 
     if entry.find(class_='dscprice'):
         listing.price = u.regularize_price(entry.find(class_='dscprice').text)
@@ -286,7 +286,7 @@ def fj_parse_listing(listing, entry, detail):
      listing.model) = u.regularize_year_make_model(s)
 
     # and short listing text from the inventory page
-    listing.listing_text = entry.find(class_="entry-subheader blue").get_text()
+    listing.listing_text = entry.find(class_="entry-subheader blue").get_text().strip()
 
     # pull the rest of the fields from the detail page
 
@@ -329,7 +329,7 @@ def lc_parse_listing(listing, entry, detail):
     # we just have to make the best of it
 
     # get the short listing text from the inventory page
-    listing.listing_text = entry.find('h3').text
+    listing.listing_text = entry.find('h3').text.strip()
 
     # price is only on the inventory page, not on the detail page (!)
     # and it's often missing (text will just be CALL, SOLD, etc)
@@ -400,7 +400,7 @@ def sfs_parse_listing(listing, entry, detail):
      listing.make,
      listing.model) = u.regularize_year_make_model(entry.find('h2').text)
 
-    listing.listing_text = entry.find('h3').text
+    listing.listing_text = entry.find('h3').text.strip()
 
     if entry.find('h6'):
         listing.price = u.regularize_price(entry.find('h6').text)
@@ -419,8 +419,10 @@ def sfs_parse_listing(listing, entry, detail):
 #
 def specialty_parse_listing(listing, entry, detail):
 
-    # get the short listing text from the inventory page
-    listing.listing_text = entry.get_text()
+    # get the short listing text from the inventory page; we want the
+    # text from the top-level of the entry only, not the details inside
+    # various spans or other sub-elements:
+    listing.listing_text = ''.join([t for t in entry.contents if isinstance(t, NavigableString) and not isinstance(t, Comment)]).strip()
 
     # grab price from the main listings page entry
     if entry.find(class_='vehicle-price-label'):
@@ -635,7 +637,7 @@ def pull_dealer_inventory(dealer, session=None):
                             len(tag.text) > 50 and
                             len(tag.text) > len(listing.listing_text)
                     ):
-                        listing.listing_text = tag.text
+                        listing.listing_text = tag.text.strip()
             # if that failed, try to find something on the detail page
             if detail and not listing.listing_text:
                 for tag in detail.descendants:
@@ -644,7 +646,7 @@ def pull_dealer_inventory(dealer, session=None):
                                 len(tag.text) > 50 and
                                 len(tag.text) > len(listing.listing_text)
                         ):
-                            listing.listing_text = tag.text
+                            listing.listing_text = tag.text.strip()
 
             # many sites have no stock#/inventory ID; default to the unique
             # URL element. note that this will be wonky for item(s) that are
@@ -888,7 +890,7 @@ def process_ebay_listing(session, item, classified, counts, dblog=False, batch_y
     # VIN -- not present by default at least
 
     # listing_text
-    listing.listing_text = item['title']
+    listing.listing_text = item['title'].strip()
 
     # price
     # GEE TODO: this is ignoring ebay price weirdness and currency
