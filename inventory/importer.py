@@ -288,6 +288,10 @@ def fj_parse_listing(listing, entry, detail):
     # and short listing text from the inventory page
     listing.listing_text = entry.find(class_="entry-subheader blue").get_text().strip()
 
+    # now hack the pic href to get a larger one
+    listing.pic_href = listing.pic_href.replace('/small/',
+                                                '/medium/')
+
     # pull the rest of the fields from the detail page
 
     listing.local_id = detail.find(id="ContactCarId")['value']
