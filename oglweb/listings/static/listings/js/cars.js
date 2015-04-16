@@ -36,6 +36,44 @@ function unfav(listing_id, title, elt){
 	$('#unFavCarModal').modal();
 }
 
+function clickthrough(listing_id){
+	var url = '/goto?listing_id=' + listing_id
+	var win = window.open(url, '_blank')
+	// win.focus() seems to switch focus without this on osx safari?
+	// alternatively can select
+	self.focus() // to keep the focus on the carbyr window -- doesn't work?
+}
+
+function view(row){
+	// pull out the fav button as a referent so we can call fav()/unfav()
+	var addfav_btn = row.find('.addfav')
+	$('#viewModalLabel').text(row.attr('title'))
+	ajaxPost('/ajax/viewcar', {'listing_id': row.attr('id')}, function(content){
+		// the post registers the click and returns all the info we have
+		$('#viewYear').text(content.listing.model_year)
+		$('#viewMake').text(content.listing.make)
+		$('#viewModel').text(content.listing.model)
+		$('#viewDescription').text(content.listing.listing_text)
+		$('#viewImage').attr('src', content.listing.pic_href)
+		$('#viewCT').attr('href', '/goto?listing_id=' + content.listing.id)
+		$('#viewCTbtn').unbind('click').click(function(event) {
+			clickthrough(content.listing.id)
+			$('#viewModal').modal('hide');
+		});
+		if (content.listing.favorite) {
+			$('#viewFav').prop('disabled', true);
+			$('#viewFavdiv').removeClass('hidden').text('This car is in your favorites')
+		} else {
+			$('#viewFavdiv').addClass('hidden').text('Not in favorite list')
+			$('#viewFav').prop('disabled', false);
+			$('#viewFav').unbind('click').click(function(event) {
+				fav(content.listing.id, content.listing.title, addfav_btn)
+			});
+		}
+		$('#viewModal').modal();
+	});	
+}
+
 function flag(listing_id, title, elt){
 	$('#flagcartitle').text(title);
 	$('#flaglisting_id').val(listing_id);
@@ -72,19 +110,32 @@ function editnote(listing_id, title, elt){
 }
 
 function setup_listing_buttons(){
-	$('button.unfav').click(function() {
+	// vanilla interface
+	$('.listing-row').click(function(event) {
+		clickthrough($(this).attr('id')) // yes, html elt id is listing_id
+	});
+	// test interface overrides this click
+	$('.test.listing-row').unbind('click').click(function(event) {
+		view($(this));
+	});
+	$('button.unfav').click(function(event) {
+		event.stopPropagation();
 		unfav($(this).attr('listing_id'), $(this).attr('title'), $(this));
 	});
-	$('button.addfav').click(function() {
+	$('button.addfav').click(function(event) {
+		event.stopPropagation();
 		fav($(this).attr('listing_id'), $(this).attr('title'), $(this));
 	});
-	$('button.flag').click(function() {
+	$('button.flag').click(function(event) {
+		event.stopPropagation();
 		flag($(this).attr('listing_id'), $(this).attr('title'), $(this));
 	});
-	$('button.editnote').click(function() {
+	$('button.editnote').click(function(event) {
+		event.stopPropagation();
 		editnote($(this).attr('listing_id'), $(this).attr('title'), $(this));
 	});
-	$('a.editnote').click(function() {
+	$('a.editnote').click(function(event) {
+		event.stopPropagation();
 		editnote($(this).attr('listing_id'), $(this).attr('title'), $(this));
 	});
 }

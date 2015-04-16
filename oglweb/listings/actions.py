@@ -75,6 +75,12 @@ def calc_quality_adj(user, action, reason=None):
         else:
             adj = -25  # give back 1/2 of the favoriting bonus
     elif action == ACTION_VIEW:
+        # this means view on the site but not click through to source
+        if user.is_authenticated:
+            adj = 15
+        else:
+            adj = 5
+    elif action == ACTION_CLICKTHROUGH:
         # roughly 1/3 of the value of a favoriting...
         # may be too high once we get meaningful traffic levels
         if user.is_authenticated:
@@ -115,7 +121,6 @@ def apply_quality_adj(user, action,
     # now apply the update to elasticsearch, which uses it for scoring;
     # always fetch the listing from es since the listing object we have will
     # be from the db, not es, and will have wrong geo info & misc issues
-    LOG.info('GEE TEMP: ABOUT TO UPDATE DYNAMIC QUALITY FOR ITEM #' + str(listing.id))
     es = Elasticsearch()
     try:
         r = es.get(index="carbyr-index",
@@ -130,7 +135,6 @@ def apply_quality_adj(user, action,
                      doc_type="listing-type",
                      id=es_listing['id'],
                      body=es_listing)
-            LOG.info('GEE TEMP: UPDATED DYNAMIC QUALITY FOR ITEM #' + str(es_listing['id']))
     except NotFoundError as err:
         pass
         return False

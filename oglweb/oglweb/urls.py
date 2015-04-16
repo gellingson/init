@@ -20,6 +20,7 @@ urlpatterns = [
     url(r'^ajax/savecar$', views.save_car_api),
     url(r'^ajax/unsavecar$', views.unsave_car_api),
     url(r'^ajax/addnote$', views.add_note_api),
+    url(r'^ajax/viewcar$', views.view_car_api),
     url(r'^dashboard/$', views.dashboard, name='dashboard'),
     url(r'^blank/$', views.blank, name='blank'),
     url(r'^statictest/$', views.statictest, name='statictest'),
@@ -39,4 +40,6 @@ urlpatterns = [
     url(r'^cars/rss/$', ListingsFeed(), name='rss'),
     url(r'^cars/(?P<filter>[a-z]+)/$', views.cars, name='filtered'),
     url(r'^cars/(?P<filter>[a-z]+)/rss/$', ListingsFeed(), name='filtered-rss'),
+    url(r'^viewcar/$', views.view_car),
+    url(r'^goto/$', views.redirect_to_original_listing),
 ]

@@ -6,6 +6,7 @@ ACTION_FLAG = 'X'
 ACTION_FAV = 'F'
 ACTION_UNFAV = 'U'
 ACTION_VIEW = 'V'
+ACTION_CLICKTHROUGH = 'C'
 ACTION_SEARCH = 'S'
 
 # Reasons that a user might flag a listing

@@ -11,6 +11,7 @@ from bunch import Bunch
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
+from django.forms.models import model_to_dict
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.template import RequestContext
@@ -20,6 +21,7 @@ from elasticsearch import Elasticsearch
 import humanize
 
 # OGL modules used
+from listings.actions import log_and_adj_quality
 from listings.constants import *
 from listings.display_utils import prettify_listing
 from listings.favlist_utils import *
@@ -371,3 +373,62 @@ def unsave_car_api(request):
         result = unsave_car_from_db(request.user, listing_id)
         return {'result': result}
     return {'result': None}
+
+
+# view_car_api
+#
+# return 
+@ajax
+def view_car_api(request):
+    if request.method == 'POST':
+        listing_id = request.POST['listing_id']
+        LOG.debug('view_car_api request for listing ID ' + str(listing_id))
+        listing = Listing.objects.get(pk=listing_id)
+        # do nothing but register the action for now
+        log_and_adj_quality(request.user, ACTION_VIEW, listing=listing)
+        fav_dict = {}
+        if request.user.is_authenticated():
+            fav_dict = favdict_for_user(request.user)
+        pretty_listing = prettify_listing(Bunch(model_to_dict(listing)),
+                                          fav_dict)
+        # GEE TODO: understand where the fucking "_state" db thing comes from
+        # and deal with all the datetime and decimals that don't do json :(
+        #pretty_listing.pop("_state", None)
+        pretty_listing.pop("lat", None)
+        pretty_listing.pop("lon", None)
+        pretty_listing.pop("last_update", None)
+        pretty_listing.pop("listing_date", None)
+        pretty_listing.pop("removal_date", None)
+        LOG.debug(json.dumps(pretty_listing, indent=4, sort_keys=True))
+        return {'listing': pretty_listing}
+    return {'result': None}
+
+# view_car
+#
+# views a single car (by listing_id)
+#
+def view_car(request):
+    listing_id = request.GET['listing_id']
+    LOG.info('view listing ID is ' + str(listing_id))
+    listing = Listing.objects.get(pk=listing_id)
+    fav_dict = {}
+    if request.user.is_authenticated():
+        fav_dict = favdict_for_user(request.user)
+    pretty_listing = prettify_listing(Bunch(model_to_dict(listing)),
+                                      fav_dict)
+    context = {}
+    context['listing'] = pretty_listing
+    context['testdata'] = 'somedata'
+    context['item'] = pretty_listing
+    return render(request, 'listings/viewcar.html', context)
+
+# redirect_to_original_listing
+#
+# tracks the fact that the user is clicking through, then sends them off...
+#
+def redirect_to_original_listing(request):
+    listing_id = request.GET['listing_id']
+    listing = Listing.objects.get(pk=listing_id)
+    log_and_adj_quality(request.user, ACTION_CLICKTHROUGH, listing=listing)
+    return HttpResponseRedirect(listing.listing_href)
+    
