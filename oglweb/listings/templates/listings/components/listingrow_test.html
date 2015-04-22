@@ -1,5 +1,5 @@
 {% load staticfiles %}
-<div class="row listing-row test" id="{{ item.id }}">
+<div class="row listing-row" id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}">
 		  <div class="col-md-4 listing">
 			  {% if item.since == 'New' %}
 			  <img src="{% static 'listings/images/new-50-red.png' %}" class="popicon" width="50" height="50">
@@ -29,15 +29,15 @@
 			{{ item.listing_text }}
 		  </div>
 		<div class="col-md-1 listing">
-		  <button class="btn-link addfav{% if item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
-		  <button class="btn-link editnote{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-pencil wideglyph"></span></button>
-		  <button class="btn-link unfav{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-trash wideglyph"></span></button>
-		  <button class="btn-link flag" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-thumbs-down wideglyph"></span></button>
+          <button class="btn-link addfav{% if item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="Add to Favorites" ltitle="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
+		  <button class="btn-link editnote{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="Edit Note" ltitle="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-pencil wideglyph"></span></button>
+		  <button class="btn-link unfav{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="Remove from Favorites" ltitle="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-trash wideglyph"></span></button>
+		  <button class="btn-link flag" listing_id="{{ item.id }}" title="Flag Listing" ltitle="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-thumbs-down wideglyph"></span></button>
 		</div>
 		<div class="noteframe{% if not item.note %} hidden{% endif %}">
 		  <div class="col-md-12">
 		  </div>
-		  <a class="editnote" listing_id="{{ item.id }}" title="{{ item.model_year }} {{ item.make }} {{ item.model }}">
+		  <a class="editnote" listing_id="{{ item.id }}" title="Edit Note" ltitle="{{ item.model_year }} {{ item.make }} {{ item.model }}">
 			<div class="col-md-1">
 			  <p><strong>Notes:</strong></p>
 			</div>

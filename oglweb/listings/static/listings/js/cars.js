@@ -120,23 +120,23 @@ function setup_listing_buttons(){
 	});
 	$('button.unfav').click(function(event) {
 		event.stopPropagation();
-		unfav($(this).attr('listing_id'), $(this).attr('title'), $(this));
+		unfav($(this).attr('listing_id'), $(this).attr('ltitle'), $(this));
 	});
 	$('button.addfav').click(function(event) {
 		event.stopPropagation();
-		fav($(this).attr('listing_id'), $(this).attr('title'), $(this));
+		fav($(this).attr('listing_id'), $(this).attr('ltitle'), $(this));
 	});
 	$('button.flag').click(function(event) {
 		event.stopPropagation();
-		flag($(this).attr('listing_id'), $(this).attr('title'), $(this));
+		flag($(this).attr('listing_id'), $(this).attr('ltitle'), $(this));
 	});
 	$('button.editnote').click(function(event) {
 		event.stopPropagation();
-		editnote($(this).attr('listing_id'), $(this).attr('title'), $(this));
+		editnote($(this).attr('listing_id'), $(this).attr('ltitle'), $(this));
 	});
 	$('a.editnote').click(function(event) {
 		event.stopPropagation();
-		editnote($(this).attr('listing_id'), $(this).attr('title'), $(this));
+		editnote($(this).attr('listing_id'), $(this).attr('ltitle'), $(this));
 	});
 }
 
