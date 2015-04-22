@@ -288,7 +288,7 @@ def fj_parse_listing(listing, entry, detail):
     # and short listing text from the inventory page
     listing.listing_text = entry.find(class_="entry-subheader blue").get_text().strip()
 
-    # now hack the pic href to get a larger one
+    # now hack the pic href to get a larger one (also have /large/ available)
     listing.pic_href = listing.pic_href.replace('/small/',
                                                 '/medium/')
 
