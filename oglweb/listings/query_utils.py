@@ -25,6 +25,7 @@
 import copy
 import datetime
 import inspect
+import json
 import logging
 import pytz
 import time
@@ -136,15 +137,88 @@ class Query(object):
         return "{}/{}/{}/{}".format(self.id, self.ref, self.descr, self.query)
 
 
-PREFAB_SEARCH_LIST = {
-    '_default':
-    {
-        'ref': '_default',
-        'descr': 'recently-listed cars',
-        'type': QUERYTYPE_DEFAULT,
-        'query': {'query': {'filtered': {'query': {'constant_score': { 'filter': { 'range': { 'listing_date': { 'from': datetime.date.fromtimestamp(time.time()-86400).__str__(), 'to': datetime.date.fromtimestamp(time.time()+86400).__str__()}}}}}}}},
-        'params': {},
+# hash of scoring functions
+SCORING_FUNCS = {
+    "staticqual": {
+        "filter": {
+            "exists" : { "field" : "static_quality" }
+        },
+        "field_value_factor": {
+            "field": "static_quality",
+            "factor": 0.001
+        }
     },
+    "dynamicqual": {
+        "filter": {
+            "exists" : { "field" : "dynamic_quality" }
+        },
+        "field_value_factor": {
+            "field": "dynamic_quality",
+            "factor": 0.001
+        }
+    },
+    "recency": {
+        "gauss": {
+            "listing_date": {
+                # defaults to current time so don't need this:
+                # "origin": datetime.now().__str__(),
+                "scale": "10d",
+                "offset": 0,
+                "decay": 0.7
+            }
+        }
+    },
+    "distance": {
+        "gauss": {
+            "location": {
+                "origin": "37.34, -121.88",  # default to be overridden
+                "scale": "100m",
+                "offset": "5m",
+                "decay": 0.95
+            }
+        }
+    },
+    "sub100": {
+        "filter": { "range": { "price": { "lte": 100 }}},
+        "boost_factor": -0.05 # becomes 'weight' in es 1.4
+    },
+    "sub1k": {
+        "filter": { "range": { "price": { "lte": 1000 }}},
+        "boost_factor": -0.04 # becomes 'weight' in es 1.4
+    },
+    "over10k": {
+        "filter": { "range": { "price": { "gte": 10000 }}},
+        "boost_factor": 0.02 # becomes 'weight' in es 1.4
+    }
+}
+#NO_NEED_DO_STATIC = {
+#    "nopic": {
+#        "filter": { "term": { "pic_href": "N/A" }},
+#        "boost_factor": 0.5 # becomes 'weight' in es 1.4
+#    },
+#    "hmngs": {
+#        "filter": { "term": { "source_textid": "hmngs" }},
+#        "boost_factor": 0.199 # becomes 'weight' in es 1.4
+#    },
+#    {
+#        "filter": { "term": { "source_textid": "ccars" }},
+#        "boost_factor": 0.96 # becomes 'weight' in es 1.4
+#    },
+#    {
+#        "filter": { "term": { "source_textid": "carsd" }},
+#        "boost_factor": 0.95
+#    },
+#    {
+#        "filter": { "term": { "source_textid": "autod" }},
+#        "boost_factor": 0.94
+#    },
+#    {
+#        "filter": { "term": { "source_textid": "craig" }},
+#        "boost_factor": 0.92
+#    }
+#}
+
+PREFAB_SEARCH_LIST = {
     '_sotw_vette':
     {
         'ref': '_sotw_vette',
@@ -428,6 +502,8 @@ def update_recents(session, current_query):
 # retrieve the referenced query from the suggestion list or session
 #
 def get_query_by_ref(session, query_ref):
+    if query_ref == '_default':  # special case: rebuilt each time
+        return get_default_query()
     if query_ref.startswith(QUERYTYPE_SUGGESTED):
         # might be a real (current) suggested query
         qd = SUGGESTED_SEARCH_LIST.get(query_ref, None)
@@ -535,3 +611,227 @@ def get_show_cars_option(session, query):
         session['show'] = 'new_only'
         session['show_for_query_ref'] = query.ref
         return 'new_only'
+
+
+# get_default_query()
+#
+# returns the currently-defined default query by calling build_new_query()
+#
+def get_default_query():
+    args = Bunch()
+    args.errors = {}
+    args.sort = "relevance"
+    args.action = None
+    args.query_ref =  None
+    args.query_descr = None
+    args.query_date = None
+    args.base_url = None
+    args.query_string = None
+    args.limit = None
+    args.limit_zip = None
+    args.zip = args.limit_zip
+    args.lat = None
+    args.lon = None
+    args.min_price = None
+    args.max_price = None
+    args.min_year = None
+    args.max_year = None
+    args.filter_term = None
+    args.has_criteria = False
+    return build_new_query(args)
+
+
+# build_new_query()
+#
+# assembles a new query per the given args
+#
+# NOTES:
+# returns a Query object, but not all fields are set:
+# just type, descr, and query fields will be set.
+# ref, mark_date, id (pk), and user mapping are left to the caller.
+#
+def build_new_query(args):
+    q = Query()
+    q.type = QUERYTYPE_RECENT  # presume we have some args (checked below)
+    q.params = {}
+    q.params['min_year'] = args.min_year
+    q.params['max_year'] = args.max_year
+    q.params['min_price'] = args.min_price
+    q.params['max_price'] = args.max_price
+    q.params['limit'] = args.limit
+    q.params['zip'] = args.limit_zip
+    
+    descr_list = [] # used to assemble the descr of the query
+
+    # building the query string:
+
+    # querybody components
+    filter_term = args.get('filter_term', None)
+    geolimit_term = ''
+    search_term = ''
+    price_term = ''
+    year_term = ''
+
+    if not args.has_criteria:
+        # no criteria at all; don't retrieve everything; give
+        # cars from the last few days
+        q.type = QUERYTYPE_DEFAULT
+        q.query_ref = '_default'
+        search_term = {
+            "constant_score": {
+                "filter": {
+                    "range": {
+                        "listing_date": {
+                            "from": datetime.date.fromtimestamp(
+                                time.time()-86400).__str__(),
+                            "to": datetime.date.fromtimestamp(
+                                time.time()+86400).__str__()
+                        }
+                    }
+                }
+            }
+        }
+        descr_list.append("recently-listed cars")
+    elif args.query_string:
+        search_term = {
+            "query_string": {
+                "query": args.query_string,
+                "default_operator": "AND"
+            }
+        }
+        descr_list.append(args.query_string)
+    else:
+        descr_list.append('cars') # default first term of the query description
+
+    if args.limit:
+        # go ahead and use implicit zip if the user requests a limit func...
+        if not args.zip or 'invalid_zip' in args.errors:
+            pass  # will throw an error message to the user; no geolimit term
+        else:
+            geolimit_term = {
+                "geo_distance" : {
+                    "distance": "100mi",
+                    "location": {
+                        "lat": args.lat,
+                        "lon": args.lon
+                    }
+                }
+            }
+            descr_list.append('near ' + args.zip)
+
+    if args.min_price or args.max_price:
+        price_term = {
+            "range": {
+                "price": {
+                }
+            }
+        }
+        price_descr = ''
+        min_pretty = None
+        max_pretty = None
+        if args.min_price:
+            price_term['range']['price']['gte'] = args.min_price
+            min_pretty = Money(args.min_price, 'USD').format('en_US', '$#,###')
+        price_descr = price_descr + 'price'
+        if args.max_price:
+            price_term['range']['price']['lte'] = args.max_price
+            max_pretty = Money(args.max_price, 'USD').format('en_US', '$#,###')
+        if min_pretty and max_pretty:
+            price_descr = min_pretty + ' to ' + max_pretty
+        elif min_pretty:
+            price_descr = 'over ' + min_pretty
+        else:
+            price_descr = 'under ' + max_pretty
+        descr_list.append(price_descr)
+
+    if args.min_year or args.max_year:
+        year_term = {
+            "range": {
+                "model_year": {
+                }
+            }
+        }
+        year_descr = ''
+        if args.min_year:
+            year_term['range']['model_year']['gte'] = args.min_year
+        if args.max_year:
+            year_term['range']['model_year']['lte'] = args.max_year
+        if args.min_year and args.max_year:
+            year_descr = 'model year between ' + str(args.min_year) + ' and ' + str(args.max_year)
+        elif args.min_year:
+            year_descr = 'model year ' + str(args.min_year) + ' and newer'
+        else:
+            year_descr = 'model year ' + str(args.max_year) + ' and older'
+        descr_list.append(year_descr)
+
+    # sorting not currently exposed in the search UI
+    sort_term = None
+    if args.sort == 'nearest':
+        sort_term = [
+            {
+                "_geo_distance": {
+                    "location": {
+                        "lat": args.lat,
+                        "lon": args.lon
+                    },
+                    "order": "asc",
+                    "unit": "mi"
+                }
+            }
+        ]
+    else:
+        scoring_wrapper = {
+            "query": {
+                "function_score": {
+                    "functions": [
+                    ],
+                "score_mode": "sum",
+                }
+            }
+        }
+        fs = scoring_wrapper['query']['function_score']['functions']
+        fs.append(SCORING_FUNCS['staticqual'])
+        fs.append(SCORING_FUNCS['dynamicqual'])
+        fs.append(SCORING_FUNCS['recency'])
+        #if not geolimit_term:
+            #fs.append(SCORING_FUNCS['distance'])
+            # GEE TODO: edit this func to have the correct reference geopoint
+        if not price_term:
+            fs.append(SCORING_FUNCS['sub100'])
+            fs.append(SCORING_FUNCS['sub1k'])
+            fs.append(SCORING_FUNCS['over10k'])
+        
+
+    # assemble the pieces
+    q.query = {"query": {"filtered": {}}}
+    if search_term:
+        q.query['query']['filtered']['query'] = search_term
+    if geolimit_term:
+        add_filter(q.query, geolimit_term)
+
+    # filter term is dead code now (dec '14)
+    if filter_term:
+        add_filter(q.query, filter_term)
+    if price_term:
+        add_filter(q.query, price_term)
+    if year_term:
+        add_filter(q.query, year_term)
+    if sort_term:
+        q.query['sort'] = sort_term
+    elif scoring_wrapper:
+        inner_query = q.query
+        #inner_query = { 'query': { 'filtered': { 'query': { 'query_string': { 'query': 'corvette', 'default_operator': 'and' }}}}}
+        q.query = scoring_wrapper
+        q.query['query']['function_score']['query'] = inner_query['query']
+
+    # have es explain its scoring for each hit (SLOW, uncomment in test only)
+    # q.query['explain'] = 'true'
+
+    # build query description out of all the descr_list terms
+    q.descr = ', '.join(descr_list)
+
+    LOG.info('NEW ES QUERY: ' + json.dumps(q.query, indent=2, sort_keys=True))
+    # return the user-friendly description and the actual es query body
+    return q
+
+
