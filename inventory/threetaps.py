@@ -340,10 +340,12 @@ def extract_3taps_year_make_model(listing, item,
                         listing.model_year = ht_model_year
                         listing.make = ht_make
                         listing.model = ht_model
-            except:
-                LOG.exception('exception encountered while getting ' +
-                              'year/make/model from html for element ' +
-                              str(listing.local_id))
+            except (lxml.etree.XMLSyntaxError, lxml.etree.ParserError):
+                counts['badhtml'] += 1
+                LOG.warning('exception encountered while getting ' +
+                            'year/make/model from html for element ' +
+                            str(listing.local_id))
+                LOG.debug('backtrace=', exc_info=True)
 
             # and store the decoded version since we've bothered to make it
             if dblog and lsinfo.detail_enc == 'B':
