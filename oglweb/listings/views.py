@@ -104,7 +104,6 @@ def dashboard(request):
 #
 # ajax api: flags a car as inappropriate
 #
-@login_required
 @ajax
 def flag_car_api(request):
     if request.method == 'POST':
@@ -120,7 +119,6 @@ def flag_car_api(request):
 # add_note_api()
 #
 # ajax api: adds a note to a favorite car
-@login_required
 @ajax
 def add_note_api(request):
     if request.method == 'POST':
@@ -356,7 +354,6 @@ def listingadmin(request, error_message=None):
 
 
 @ajax
-@login_required
 def save_car_api(request):
     if request.method == 'POST':
         listing_id = request.POST['listing_id']
@@ -366,7 +363,6 @@ def save_car_api(request):
 
 
 @ajax
-@login_required
 def unsave_car_api(request):
     if request.method == 'POST':
         listing_id = request.POST['listing_id']
