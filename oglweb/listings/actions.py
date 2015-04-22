@@ -59,31 +59,31 @@ def calc_quality_adj(user, action, reason=None):
             adj = -5000
         else:
             adj = -300
-        if user.is_authenticated:
+        if user.is_authenticated():
             if user.is_superuser:
                 adj = adj * 10  # 10x the adjustment for superuser acts
         else:
             adj = adj / 10
     elif action == ACTION_FAV:
-        if user.is_authenticated:
+        if user.is_authenticated():
             adj = +150
         else:
             adj = +50
     elif action == ACTION_UNFAV:
-        if user.is_authenticated:
+        if user.is_authenticated():
             adj = -50  # give back 1/3 of the favoriting bonus
         else:
             adj = -25  # give back 1/2 of the favoriting bonus
     elif action == ACTION_VIEW:
         # this means view on the site but not click through to source
-        if user.is_authenticated:
+        if user.is_authenticated():
             adj = 15
         else:
             adj = 5
     elif action == ACTION_CLICKTHROUGH:
         # roughly 1/3 of the value of a favoriting...
         # may be too high once we get meaningful traffic levels
-        if user.is_authenticated:
+        if user.is_authenticated():
             adj = 50
         else:
             adj = 15
