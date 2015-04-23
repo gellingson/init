@@ -33,6 +33,7 @@ import time
 # third party modules used
 import iso8601
 from bunch import Bunch
+from money import Money
 
 # OGL modules used
 from listings.constants import *
@@ -835,3 +836,20 @@ def build_new_query(args):
     return q
 
 
+
+# add_filter()
+#
+# adds a filtering clause to an es query
+# NOTE: optionally deep copies & then returns a new querybody!
+#
+def add_filter(querybody, new_filter, do_copy=False):
+    if do_copy:
+        copybody = copy.deepcopy(querybody)
+    else:
+        copybody = querybody
+    if not 'filter' in copybody['query']['filtered']:
+        # then this is the first filter; add the filtering cruft
+        copybody['query']['filtered']['filter'] = {}
+        copybody['query']['filtered']['filter']['and'] = []
+    copybody['query']['filtered']['filter']['and'].append(new_filter)
+    return copybody
