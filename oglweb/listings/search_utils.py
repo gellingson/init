@@ -4,6 +4,7 @@
 import copy
 import datetime
 import pytz
+import re
 import time
 
 # third party modules used
@@ -21,6 +22,31 @@ from listings.favlist_utils import favdict_for_user
 from listings.query_utils import *
 from listings.utils import *
 
+
+# sanitize_string_for_es()
+#
+# Escape special characters
+# http://lucene.apache.org/core/old_versioned_docs/versions/2_9_1/queryparsersyntax.html#Escaping Special Characters
+#
+# NOTE: this is UNUSED and MOSTLY UNTESTED; just checking it into git
+# in case I want to pick it up again later
+#
+def sanitize_string_for_es(str):
+    str = re.sub('[\\\+\-\&\|\!\(\)\{\}\[\]\^\~\*\?\:/]', 'FOO(1)', str)
+
+    # AND, OR and NOT are used by lucene as logical operators. We need
+    # to escape them -- nope, we want the user to be able to use them
+    #['AND', 'OR', 'NOT'].each do |word|
+    #    escaped_word = word.split('').map {|char| "\\#{char}" }.join('')
+    #    str = str.gsub(/\s*\b(#{word.upcase})\b\s*/, " #{escaped_word} ")
+    #        end
+
+    # Escape odd quotes -- this seems to not be sufficient
+    # given possible sequence of ' and " interactions?
+    # quote_count = str.count('"')
+    # str = str + "'" if quote_count % 2 == 1
+
+    return str
 
 
 #
@@ -197,11 +223,18 @@ def get_listings(query, number=50, offset=0, user=None, show='new_only'):
         querybody = add_date_limit(querybody, query.mark_date)
 
     es = Elasticsearch()
-    search_resp = es.search(index='carbyr-index',
-                            doc_type='listing-type',
-                            size=number,
-                            from_=offset,
-                            body=querybody)
+    try:
+        search_resp = es.search(index='carbyr-index',
+                                doc_type='listing-type',
+                                size=number,
+                                from_=offset,
+                                body=querybody)
+    except:
+        # es throws exceptions for a variety of reasons (e.g. invalid user
+        # input) that we should just treat as no-results-found rather than
+        # throwing a 500 error for unhandled exception
+        return 0, [], 0  # 0 rows returned, [] are those rows, 0 rows tossed
+
     listings = []
 
     # if we know the user, see if they have any favorites
