@@ -1,13 +1,14 @@
 // waypoint infinite scrolling
-$('.listings').waypoint('infinite', {
-	  container: 'auto',
-	  items: '.listing-row',
-	  more: '.more-listings-link',
-	  offset: 'bottom-in-view',
-	  loadingClass: 'infinite-loading',
-	  onBeforePageLoad: $.noop,
-	  onAfterPageLoad: setup_listing_buttons
-	});
+var infinite = new Waypoint.Infinite({
+	element: $('.listings')[0],
+	items: '.listing-row',
+	loadingClass: 'infinite-loading',
+	more: '.more-listings-link',
+	offset: 'bottom-in-view',
+	onBeforePageLoad: $.noop,
+	onAfterPageLoad: setup_listing_buttons,
+	loadingClass: 'infinite-loading'
+})
 
 function show_buttons(elt){
 	// the label is getting the click event, not the radio input

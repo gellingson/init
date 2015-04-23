@@ -81,6 +81,7 @@ function flag(listing_id, title, elt){
 		var form = $(this);
 		ajaxPost(form.attr('action'), form.serialize(), function(content){
 			elt.closest('.listing-row').remove();
+			Waypoint.refreshAll()
 		});
 		event.preventDefault();
 		$('#flagCarModal').modal('hide');
