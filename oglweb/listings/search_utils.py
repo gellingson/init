@@ -11,7 +11,6 @@ from bunch import Bunch
 from django.utils.datastructures import MultiValueDictKeyError
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
-from money import Money
 
 # OGL modules used
 from listings.actions import log_action, calc_quality_adj, apply_quality_adj
