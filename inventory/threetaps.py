@@ -193,12 +193,47 @@ def extract_3taps_desc_fields(listing, item, classified, counts):
         except ValueError:
             pass
 
-    # colors -- just check annotations; otherwise leave null
-    # some sources (e.g. hmngs) have this pretty often; others (e.g. carsd) not
-    if anno.get('exteriorColor'):
-        listing.color = anno['exteriorColor'].strip()
-    if anno.get('interiorColor'):
-        listing.int_color = anno['interiorColor'].strip()
+    # colors -- info is in various places; try to be flexible:
+    #
+    # hmngs, autod use exteriorColor, interiorColor (no space, cap-C only)
+    # autoc uses exterior Color, interior Color (space, cap-C only)
+    # craig uses paint_color, N/A (underscore, no caps)
+    # carsd & ccars have no color in the annotations info that I see, but:
+    # carsd generally has color info in the "body" tag, as in these examples:
+    # "body": "Indigo Blue, 2 door, RWD, Convertible, 6-Speed Automatic, 5.0L V8 32V GDI DOHC, Stock# B37355"
+    # "body": "Glacier White, 4 door, Rear-Wheel Drive with Limited-Slip Differential, SUV, 5-Speed Automatic, 4.0L V6 24V MPFI DOHC, Stock# 584937"
+    # "body": "Silver, 4 door, FWD, Sedan, 2.3L I4 16V MPFI DOHC, Stock# 106"
+    # ... so format is color, number of doors ' door', drivetrain type (can be long or short), body style, transmission, engine, 'Stock# ' stock number
+    # ... HOWEVER, sometimes fields go missing, including color, so we should sanity check the contents in case it is '2 door' or something
+    # for ccars, "body" is short body of listing text, in variable/human-written format
+    # so there is no single reliable place to get color
+    #
+    # ... and let's not try to standardize or interpret color info yet
+
+    listing.color = anno.get('exteriorColor',
+                             anno.get('exterior Color',
+                                      anno.get('paint_color', ''))).strip().title()
+
+    if not listing.color:
+        listing.color = None  # turn '' back into None
+    listing.int_color = anno.get('interiorColor',
+                                 anno.get('interior Color', '')).strip().title()
+    if not listing.int_color:
+        listing.int_color = None  # turn '' back into None
+
+    # yes the ''/None thing is annoying, but I want to strip() and trim()
+    # and then I want to NOT store '' in mysql (which it will - mysql sucks)
+
+    # carsd has body text in a specific format; color usually the 1st field
+    if classified.textid == 'carsd':
+        value = item.body.split(',')[0]
+        # is this '2 door' or '2.3L or 'FWD' or similar? If not, take it!
+        if value and value[:1].isalpha() and value[-2:] != 'WD':
+            listing.color = value.strip().title()
+    # try to find any missing colors in the body text
+    listing.color, listing.int_color = u.extract_color_info(item.body,
+                                                            listing.color,
+                                                            listing.int_color)
 
     # VIN -- isn't in any of the 3taps feeds (at least without
     # checking html) so always leave it null

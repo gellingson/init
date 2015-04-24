@@ -779,7 +779,7 @@ def ebay_attr_get(item, attr_name):
 # returns an ok flag, a Listing object, and a ListingSourceinfo object
 # ... and also modifies the running totals in counts
 #
-def process_ebay_listing(session, item, classified, counts, dblog=False, batch_year=None):
+def process_ebay_listing(session, item, classified, counts, dblog=False, batch_year=None, color=None):
     ok = True
     item = Bunch(item) # for convenience
     LOG.debug('eBay ITEM: {}'.format(item['itemId']))
@@ -888,9 +888,16 @@ def process_ebay_listing(session, item, classified, counts, dblog=False, batch_y
         except ValueError:
             pass
 
-    # colors -- eBay has the info but it's not in the pull.
-    # GEE TODO: can I get this info via outputSelector?
-    
+    # colors -- eBay has the info but it's not in the pull. Seems to be
+    # another victim of eBay's inconsistent attribute handling. However,
+    # since we're sometimes batching by exterior color to work around
+    # other eBay issues, the color may be known by the caller that
+    # pulled this particular batch... so let's just apply that color
+    # to each listing in the batch. Hacky & only applies to years that
+    # we batch, but better than nothing:
+    listing.color = color
+    # still no way to get interior color, or ext color for nonbatched years
+
     # VIN -- not present by default at least
 
     # listing_text
@@ -992,6 +999,8 @@ def pull_ebay_inventory(classified, session,
 
     # for any years that are too big we further segment by color (!)
     # (hey, it splits the inventory into reasonably-suitable chunks)
+    # note: this color list is eBay-specific; other imports use
+    # different list of color words & extract color info differently
     colors = [
         'NotSubBatching', 'Black', 'Blue', 'Brown', 'Burgundy', 'Gold',
         'Gray', 'Green', 'Orange', 'Purple', 'Red', 'Silver', 'Tan',
@@ -1075,10 +1084,17 @@ def pull_ebay_inventory(classified, session,
         # GEE PATCH: delete the next line when ebay fixes the missing year attr
         pull_year = ebay_year_batches[inventory_marker['batch']][0]
         for item in r['searchResult']['item']:
-            ok, listing, lsinfo = process_ebay_listing(session, item,
-                                                       classified, counts,
-                                                       dblog=dblog,
-                                                       batch_year=pull_year) # GEE PATCH
+            if inventory_marker['sub']:
+                ok, listing, lsinfo = process_ebay_listing(session, item,
+                                                           classified, counts,
+                                                           dblog=dblog,
+                                                           batch_year=pull_year,  # GEE PATCH
+                                                           color=colors[inventory_marker['sub']])
+            else:
+                ok, listing, lsinfo = process_ebay_listing(session, item,
+                                                           classified, counts,
+                                                           dblog=dblog,
+                                                           batch_year=pull_year)  # GEE PATCH
             # ok to date means we got something potentially useful
             if ok:
                 tagify(listing, strict=False, counts=counts)
@@ -1282,8 +1298,8 @@ def import_from_classified(classified, session, es, dblog=False):
             # that is harmless; both 3taps and non-3taps cases will handle
             # that fine when the import is next attempted
 
-            LOG.exception('Importing inventory from dealer %s halted by exception',
-                          dealer.textid)
+            LOG.exception('Importing inventory from classified %s halted by exception',
+                          classified.textid)
             return False            
 
         # record listings and lsinfos in the db (this method commits!)

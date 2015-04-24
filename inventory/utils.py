@@ -30,6 +30,8 @@ from sqlalchemy.orm.exc import NoResultFound
 from inventory.settings import XL, _HDRS
 from inventory.settings import _BORING_MAKES, _INTERESTING_MODELS, _INTERESTING_WORDS
 from inventory.settings import _MAKES, _MODELS, _TAGS, _TAG_RELS, load_refdata_cache
+from inventory.settings import _COLOR_WORDS, _INTERIOR_WORDS, _NONBODY_WORDS
+from inventory.settings import _USABLE_FIELDS
 from orm.models import Listing
 
 
@@ -391,6 +393,241 @@ def regularize_url(href_in, base_url=None,
                 pass  # well, that didn't work
     LOG.debug('regularized href=%s from input href=%s', href_out, href_in)
     return href_out
+
+
+# extract_field_data()
+#
+# identifies & extracts fields from a blob of text
+#
+# e.g. 'price: $2,000' -> { price: $2,000 }
+#
+# Tries a few possible formats and selects the most appropriate/effective
+# pattern; checks for common fields & tries to sanity-check; cleans up but
+# does NOT fully regularize field names, so ' price ' -> Price but not
+# 'Low Price' -> 'Price' or 'Style' -> 'Body Style' or anything like that
+#
+# If this text is a pressed-down bunch of html, we're probably less able
+# to parse it reliably than we would with the html tags intact, so use this
+# only if full html is unavailable or not working for some reason
+#
+# returns a dict of fieldname: fieldvalue
+#
+def extract_field_data(text):
+    # the worst case is something like this:
+    # mileage 120,428 price $5200 color blue interior color dark grey transmission 4 on the floor
+    # without some hierarchy of whitespace or repeated differentiation tokens, we're screwed
+    # but we should be able to handle things like:
+    # a) separator but no assignment mark
+    # * mileage 120,428 * price $5200 * color blue * interior color dark grey * transmission 4 on the floor GEE TODO we don't handle this format yet
+    # b) assignment mark but no separator
+    # mileage: 120,428 price: $5200 color: blue interior color: dark grey transmission: 4 on the floor
+    # c) both assignment mark and separator (the easy/reliable case)
+    # <begin>* mileage: 120,428 * price: $5200 * color: blue * interior color: dark grey * transmission: 4 on the floor<end>
+    #
+    # also, for cases using a separator we try to use a non-whitespace sep so
+    # that we don't get distracted by variable whitespace, but if there isn't
+    # a clear non-whitespace sep we can try to use a whitespace sep like \n\t
+    #
+    # GEE TODO:
+    # * handle case a), or at minimum more flexibility on assignment operator
+    # * better detection of <begin><end>, including edge cases related to separator
+    # * dictify & count usable fields, not just number of tuples, to select method
+    #
+    # algorithm is:
+    # see if there are any likely repeating separator patterns
+    # try to separate & score the results, with or without whitespace
+    # pick the best-looking choice, do a bit of cleanup and return it
+    # (or return nothing if we don't think we found field data)
+    #
+    # note also that we will have to filter out lists, like:
+    # * air conditioning * 4 doors * ABS * spacious * cheap
+    # or even
+    # * easy financing! * friendly people! * (800) 555-1212
+    #
+    # for now, assume an assignment operator b/w tag and value of either : or =
+    # count how many times each potential separater occurs & pick a specific one
+
+    # do we have some apparent field data at all?
+    # look for 1 or 2 words, = or :, one word
+    somefields = re.findall(r'\s*(\w*|\w*\s*\w*)\s*[=:]\s*([\w\,\-\.$]+)',
+                            text)
+    if len(somefields) < 4:
+        return None  # doesn't look promising enough to continue
+
+    # OK, do not assume we have the right list yet: try to make a better one
+    fields = []
+
+    # do we have a non-whitespace separator, such as '*'?
+    # look for seps between [word, = or :, word] patterns (narrow, will miss
+    # some valid fields but should exist in quantity in any set of fields)
+    seplist = re.findall(r'\s*\w*\s*[=:]\s*[\w\,\-\.$]*(\W*)\s*\w*\s*[=:]',
+                         text)
+    seplist_clean = [sep.strip() for sep in seplist if sep.strip()]
+    if seplist_clean:
+        # get most frequently-used clean sep and the count
+        sep = max(set(seplist_clean), key=seplist_clean.count)
+        count = seplist_clean.count(sep)
+        if count > 4:
+            # let's divvy up using this clean sep
+            fields = re.findall(re.escape(sep) +
+                                r' *((?:\w+\b *)*)[=:]\s*((?:[\w\,\-\.$/]+ *)*)',
+                                text)
+    if not fields:
+        # get list of whitespace combos other than a single space
+        seplist_whitespace = [sep.strip(' ') for sep in seplist if sep.strip(' ')]
+        sep = max(set(seplist_whitespace), key=seplist_whitespace.count)
+        count = seplist_whitespace.count(sep)
+        if count > 4:
+            # let's divvy up using this whitespace sep
+            fields = re.findall(re.escape(sep) + r'', text)
+        else:
+            # no usable separator; have to do it the hard way
+            # which limits RHS to two words and LHS to one word
+            # ... and can mis-allocate words b/w those two
+            # .... which is exactly what we already did first
+            # with somefields, so reuse that result
+            fields = somefields
+            LOG.info('no separator')
+    
+    return dictify_useful_field_tuples(fields)
+
+
+# transforms tuple list to dict, for usable fields only
+#
+# picks randomly if duplicate or synonymous fields are present
+# e.g. (Color, Blue) and (Exterior Color, Red) = WTF (!)
+# e.g. (Color, Blue) and (Color, Red) also = WTF (!)
+#
+def dictify_useful_field_tuples(tuple_list):
+    field_dict = {}
+    for tup in tuple_list:
+        if tup[0].title() in _USABLE_FIELDS:
+            field_dict[_USABLE_FIELDS[tup[0].title()]] = tup[1]
+    return field_dict
+
+
+# discarded because better to count after dedup/dictify
+#def count_usable_fields(tuple_list):
+#    count = 0
+#    for tup in tuple_list:
+#        if tup[0].title() in _USABLE_FIELDS:
+#            count += 1
+#    return count
+    
+
+# extract_color_info()
+#
+# attempts to extract color information from a block of text
+#
+# if color and/or int_color are passed in they will be presumed correct;
+# this method only attempts to extract missing colors
+#
+# GEE TODO: this was implemented (just) before general-purpose field
+# extraction; should update this to leverage that field extraction
+#
+def extract_color_info(text, color=None, int_color=None):
+    text_words = None  # text split into words (split once, if needed)
+
+    # first try some simple reliable (if present) regular expressions
+    if not color:
+        try:
+            color = re.search(r'exterior color\s*[:=]\s*(\w+)',
+                              text,
+                              flags=re.IGNORECASE).group(1).title()
+        except AttributeError:
+            pass  # probable cause: no match, re.search returned NoneType
+    if not color:
+        try:
+            color = re.search(r'exterior color\s*[:=]\s*(\w+)',
+                              text,
+                              flags=re.IGNORECASE).group(1).title()
+        except AttributeError:
+            pass  # probable cause: no match, re.search returned NoneType
+    if not color:
+        try:
+            color = re.search(r'color\s*[:=]\s*(\w+)',
+                              text,
+                              flags=re.IGNORECASE).group(1).title()
+        except AttributeError:
+            pass  # probable cause: no match, re.search returned NoneType
+
+    # now move on to things best accomplished by manipulating word list
+    if not color:  # color not already known; keep looking
+        # algorithm is: search for color refs in the body, starting with
+        # color words least likely to refer to interior or wheels or
+        # other non-body color; adopt that color if it isn't obviously
+        # wrong ( e.g. "black wheels" or "tan seats"). Multi-word colors
+        # are not handled, e.g. "Glacier Blue Mist" -> "Blue" :-)
+        text_words = re.split(r'[;,/\s]\s*', text.title())
+        for word in _COLOR_WORDS:
+            try:
+                i = text_words.index(word)
+                prevword = None
+                if i > 0:
+                    prevword = text_words[i - 1]
+                nextword = None
+                try:
+                    nextword = text_words[i + 1]
+                except IndexError:
+                    pass
+                if prevword != 'Over' and nextword not in _NONBODY_WORDS:
+                    color = word
+                    break
+            except ValueError:
+                pass  # that color word not found in the text
+
+    # interior color: again, try regexps first
+    if not int_color:
+        try:
+            int_color = re.search(r'interior color\s*[:=]\s*(\w+)',
+                                  text,
+                                  flags=re.IGNORECASE).group(1).title()
+        except AttributeError:
+            pass  # probable cause: no match, re.search returned NoneType
+    if not int_color:
+        try:
+            word = re.search(r'interior\s*[:=]\s*(\w+)',
+                             text,
+                             flags=re.IGNORECASE).group(1).title()
+            if word in _COLOR_WORDS:
+                # interior: leather = ignore, interior: black = use
+                int_color = word
+        except AttributeError:
+            pass  # probable cause: no match, re.search returned NoneType
+
+    # now move on to things best accomplished by manipulating word list
+    if not int_color:
+        # two patterns to look for:
+        # 1) X <interior word>, e.g. Black Seats -> Black
+        if not text_words:
+            text_words = re.split(r'[;,/\s]\s*', text.title())
+        for word in _INTERIOR_WORDS:
+            try:
+                i = text_words.index(word)
+                if i > 0 and text_words[i - 1] in _COLOR_WORDS:
+                    int_color = text_words[i - 1]
+                    break
+            except ValueError:
+                pass  # that word not found in the text
+        # 2) X over Y, e.g. Red over Black -> Red body, black interior
+        # Considered checking that in looking for X over Y that
+        # X be a color word but that would fail for compound colors
+        # such as 'Red Metallic over Black' or 'Grey Mist over Tan'...
+        # testing for the over format last and letting it go at that.
+        if not int_color:
+            try:
+                i = text_words.index('Over')
+                if i > 0 and (i + 1) < len(text_words):
+                    if text_words[i + 1] in _COLOR_WORDS:
+                        int_color = text_words[i + 1]
+            except ValueError:
+                pass  # Over not found in the text
+
+    # considered searching for the relatively common nomenclature
+    # X/Y e.g. red/black, but too many false positives from cases
+    # like 'red/white stripes, or 'purple with grey/orange interior'
+    # (yes really... a custom hotrod truck... yikes!)
+    return color, int_color
 
 
 # validate_listing()
