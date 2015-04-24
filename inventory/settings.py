@@ -81,7 +81,7 @@ _INTERESTING_MODELS = [
     'NSX', 'MR2', 'MR-2', 'SUPRA', 'LFA', '300ZX', 'SKYLINE', 'GTR', 'LEAF',
     'MX5', 'MX-5', 'MIATA', 'MX-5 MIATA', 'RX7',
     'EVOLUTION', 'EVO', 'I-MIEV', 'I',
-    'CORVETTE', 'VOLT', 'GRAND NATIONAL', 'ELR', 'CTS-V',
+    'CORVETTE', 'CAMARO', 'VOLT', 'GRAND NATIONAL', 'ELR', 'CTS-V',
     'BOSS', 'SHELBY', 'GT', 'MUSTANG', 'C-MAX',
     '1M', 'Z3M', 'M3', 'M5', 'M6', 'I3', 'I8',
     '330', '330CI', '330I', '335', '335D', '335I', 'SLS',
@@ -102,6 +102,44 @@ _INTERESTING_WORDS = [
 
 # GEE TODO: specific submodels that can only be recognized by multiple words,
 # e.g. Focus ST/RS, Integra Type R.
+
+_COLOR_WORDS = ['Silver', 'Blue', 'Red', 'Green', 'Yellow', 'Orange', 'White', 'Grey', 'Gray', 'Gold', 'Purple', 'Teal', 'Burgundy', 'Black', 'Brown', 'Beige', 'Tan']
+_INTERIOR_WORDS = ['Interior', 'Seats', 'Leather', 'Cloth']
+_OTHER_NONBODY_WORDS = ['Wheels', 'Series', 'Line', 'Stripes', 'Stripe', 'Top']
+# 'black convertible vette -> black, black convertible top -> not black; not incliding 'convertible' as a nonbody word but this is another reason to push black & tan down the testing sequence
+_NONBODY_WORDS = _INTERIOR_WORDS + _OTHER_NONBODY_WORDS
+
+# dictionary of fields to try to pull from listing texts
+_USABLE_FIELDS = {
+    'Vin': 'VIN',
+    'Interior Color': 'Interior Color',
+    'Exterior Color': 'Exterior Color',
+    'Color': 'Exterior Color',
+    'Gas Mileage': 'Gas Mileage',
+    'Mileage': 'Mileage',
+    'Miles': 'Mileage',
+    'Odometer': 'Mileage',
+    'Drivetrain': 'Drivetrain',
+    'Drive Train': 'Drivetrain',
+    'Engine':'Engine',
+    'Transmission': 'Transmission',
+    'Condition': 'Condition',
+    'Doors': 'Doors',
+    'Fuel Type': 'Fuel Type',
+    'Fuel':'Fuel Type',
+    'Stock Number': 'Stock Number',
+    'Cylinders': 'Cylinders',
+    'Model Year': 'Model Year',
+    'Year': 'Model Year',
+    'Make': 'Make',
+    'Manufacturer': 'Make',
+    'Model': 'Model',
+    'Trim': 'Trim',
+    'Trim Level': 'Trim',
+    'Price': 'Price',
+    'Asking Price': 'Price',
+    'Asking': 'Price',
+}
 
 # global hashes (caches) of refdata objects from the db, populated at startup
 _MAKES = {}
