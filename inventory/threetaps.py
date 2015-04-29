@@ -375,7 +375,7 @@ def extract_3taps_year_make_model(listing, item,
                         listing.model_year = ht_model_year
                         listing.make = ht_make
                         listing.model = ht_model
-            except (lxml.etree.XMLSyntaxError, lxml.etree.ParserError):
+            except (etree.XMLSyntaxError, etree.ParserError):
                 counts['badhtml'] += 1
                 LOG.warning('exception encountered while getting ' +
                             'year/make/model from html for element ' +
