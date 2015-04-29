@@ -43,7 +43,7 @@ import inventory.utils as u
 from inventory.tagging import tagify
 from inventory.threetaps import pull_3taps_inventory
 from orm.models import Classified, Dealership
-from orm.models import Listing, ListingSourceinfo, ListingDetails
+from orm.models import Listing, ListingSourceinfo
 from orm.models import ConceptTag, ConceptImplies
 from orm.models import NonCanonicalMake, NonCanonicalModel, Zipcode
 
