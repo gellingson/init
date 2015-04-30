@@ -233,6 +233,15 @@ class Listing(IDMixIn, Base):
             self.markers = ''.join(set(self.markers.append(more_markers)))
 
 
+class ListingExtras(IDMixIn, Base):
+    listing_id = Column(Integer, ForeignKey('listing.id'))
+    pics = Column(Text)
+    raw_fields = Column(Text)
+    useful_fields = Column(Text)
+    raw_texts = Column(Text)
+    useful_texts = Column(Text)
+
+
 class ListingSourceinfo(IDMixIn, Base):
     source_type = Column(String(1))
     source_id = Column(Integer)

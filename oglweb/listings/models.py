@@ -18,7 +18,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
-from jsonfield import JSONCharField
+from jsonfield import JSONCharField, JSONField
 
 # OGL modules used
 
@@ -193,6 +193,20 @@ class Listing(models.Model):
 
     def __str__(self):
         return "{} {} {} ({}, {})".format(self.model_year, self.make, self.model, self.source_textid, str(self.id))
+
+    class Meta:
+        managed = False
+        db_table = 'listing'
+
+
+class ListingExtras(models.Model):
+    id = models.IntegerField(primary_key=True)  # AutoField?
+    listing = models.ForeignKey(Listing)
+    pics = JSONField(blank=True, null=True)
+    raw_fields = JSONField(blank=True, null=True)
+    useful_fields = JSONField(blank=True, null=True)
+    raw_texts = JSONField(blank=True, null=True)
+    useful_texts = JSONField(blank=True, null=True)
 
     class Meta:
         managed = False
