@@ -11,12 +11,14 @@
 
 # third party imports
 
-from django.contrib.syndication.views import Feed
+from django.contrib.syndication.views import Feed, FeedDoesNotExist
 from django.core.urlresolvers import reverse
+from django.shortcuts import get_object_or_404
 
 # OGL imports
-
 from  listings.models import Listing
+from listings.query_utils import *
+from listings.search_utils import *
 
 # This feed is RSS, not Atom.
 # See https://docs.djangoproject.com/en/dev/ref/contrib/syndication/ for how to expand & improve it
@@ -33,7 +35,42 @@ class ListingsFeed(Feed):
         return '{} {} {}'.format(item.model_year, item.make, item.model)
 
     def item_description(self, item):
-        return item.listing_text
+        return '<img href="' + item.pic_href + '"><p>' + item.listing_text + '</p>'
+#        return item.listing_text
+
+    # item_link is only needed if NewsItem has no get_absolute_url method.
+    def item_link(self, item):
+        return item.listing_href
+
+class QueryFeed(Feed):
+    description_template = 'listings/feeds/listing_description.html'
+
+    def get_object(self, request, user_id, query_id):
+        # GEE - note that we are going to db, not session (don't have one)
+        q = get_object_or_404(SavedQuery, pk=query_id)
+        print('GEE: ' + q.descr + str(q.user) + '/' + str(q.user.id) + '/' + str(user_id))
+        if str(q.user.id) == user_id:
+            return q
+        return None
+
+    def title(self, obj):
+        return "Listings for: " + obj.descr
+
+    def link(self, obj):
+        return '/' + str(obj.user.id) + '/' + str(obj.id) + '/rss/'
+
+    def description(self, obj):
+        return "A continuous stream of Carbyr car listings for your query: %s" + obj.descr
+
+    def items(self, obj):
+        num, listings, tossed = get_listings(obj)
+        return listings
+
+    def item_title(self, item):
+        return '{} {} {}'.format(item.model_year, item.make, item.model)
+
+#    def item_description(self, item):
+#        return '<img href="' + item.pic_href + '"><p>' + item.listing_text + '</p>'
 
     # item_link is only needed if NewsItem has no get_absolute_url method.
     def item_link(self, item):

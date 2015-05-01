@@ -2,7 +2,8 @@ from django.conf.urls import include, url
 from django.contrib import admin
 
 from listings import views as views
-from listings.feeds import ListingsFeed
+from listings.feeds import ListingsFeed, QueryFeed
+
 #from oglweb import views as oglviews
 
 # NOTE: was using include(listings.site.urls) but that borked calls to
@@ -40,6 +41,7 @@ urlpatterns = [
     url(r'^cars/rss/$', ListingsFeed(), name='rss'),
     url(r'^cars/(?P<filter>[a-z]+)/$', views.cars, name='filtered'),
     url(r'^cars/(?P<filter>[a-z]+)/rss/$', ListingsFeed(), name='filtered-rss'),
+    url(r'^cars/(?P<user_id>[0-9]+)/(?P<query_id>[0-9]+)/rss/$', QueryFeed(), name='query-rss'),
     url(r'^viewcar/$', views.view_car),
     url(r'^goto/$', views.redirect_to_original_listing),
 ]
