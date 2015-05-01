@@ -48,7 +48,6 @@ class QueryFeed(Feed):
     def get_object(self, request, user_id, query_id):
         # GEE - note that we are going to db, not session (don't have one)
         q = get_object_or_404(SavedQuery, pk=query_id)
-        print('GEE: ' + q.descr + str(q.user) + '/' + str(q.user.id) + '/' + str(user_id))
         if str(q.user.id) == user_id:
             return q
         return None
@@ -57,7 +56,9 @@ class QueryFeed(Feed):
         return "Listings for: " + obj.descr
 
     def link(self, obj):
-        return '/' + str(obj.user.id) + '/' + str(obj.id) + '/rss/'
+        if obj:
+            return 'http://carbyr.com/cars/' + str(obj.user.id) + '/' + str(obj.id) + '/rss/'
+        return 'http://carbyr.com/'
 
     def description(self, obj):
         return "A continuous stream of Carbyr car listings for your query: %s" + obj.descr
