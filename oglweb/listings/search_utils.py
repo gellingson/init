@@ -213,7 +213,7 @@ def get_listings(query, number=50, offset=0, user=None, show='new_only'):
     # if we know the user, see if they have any favorites
     fav_dict = {}
     flag_set = set()
-    if user.is_authenticated():
+    if user and user.is_authenticated():
         fav_dict = favdict_for_user(user)
         # a superuser flagging always nukes the post; other users may
         # have flagged posts and we should not show those posts again
