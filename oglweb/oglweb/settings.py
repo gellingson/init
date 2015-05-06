@@ -187,7 +187,7 @@ ACCOUNT_SIGNUP_FORM_CLASS='listings.forms.SignupForm'
 SOCIALACCOUNT_AUTO_SIGNUP=False
 SOCIALACCOUNT_PROVIDERS = {
     'facebook': {
-        'SCOPE': ['email', 'publish_actions'],
+        'SCOPE': ['email'],
 #        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
         'METHOD': 'js_sdk',
         'VERIFIED_EMAIL': False
