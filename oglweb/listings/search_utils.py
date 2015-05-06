@@ -221,8 +221,13 @@ def get_listings(query, number=50, offset=0, user=None, show='new_only'):
             flag_set = flagset_for_user(user)
 
     tossed = 0
+    result_num = 0
     for item in search_resp['hits']['hits']:
-        LOG.info('SCORE: ' + str(item['_score']) + '(' + str(item['_source']['static_quality']) + '/' + str(item['_source']['dynamic_quality']) + '/' + str(item['_source']['listing_date']) + '): ' + item['_source']['listing_text'][:20])
+        result_num += 1
+        if result_num <= 5:
+            LOG.info('SCORE: ' + str(item['_score']) + '(' + str(item['_source']['static_quality']) + '/' + str(item['_source']['dynamic_quality']) + '/' + str(item['_source']['listing_date']) + '): ' + item['_source']['listing_text'][:20])
+        else:
+            LOG.debug('SCORE: ' + str(item['_score']) + '(' + str(item['_source']['static_quality']) + '/' + str(item['_source']['dynamic_quality']) + '/' + str(item['_source']['listing_date']) + '): ' + item['_source']['listing_text'][:20])
         car = Bunch(item['_source'])
         removal_date = force_date(car.removal_date, None)
         if int(car.id) in flag_set:

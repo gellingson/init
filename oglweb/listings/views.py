@@ -180,6 +180,9 @@ def cars_api(request, query_ref=None, number=50, offset=0):
 
         context = {}
         if q:
+            LOG.info('%s: api search: %s [%s]',
+                     request.user.username or 'anon',
+                     q.ref or '', q.descr)
             if not q.mark_date:
                 show = None
             total_hits, listings, tossed = get_listings(q,
@@ -259,6 +262,10 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
 
     # update recent searches list (also updates the query param)
     update_recents(request.session, query)
+
+    LOG.info('%s: search: %s [%s]',
+             request.user.username or 'anon',
+             query.ref or '', query.descr)
 
     total_hits, listings, tossed = get_listings(query,
                                                 user=request.user,

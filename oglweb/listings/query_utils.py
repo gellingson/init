@@ -821,7 +821,6 @@ def build_new_query(args):
         q.query['sort'] = sort_term
     elif scoring_wrapper:
         inner_query = q.query
-        #inner_query = { 'query': { 'filtered': { 'query': { 'query_string': { 'query': 'corvette', 'default_operator': 'and' }}}}}
         q.query = scoring_wrapper
         q.query['query']['function_score']['query'] = inner_query['query']
 
@@ -831,7 +830,9 @@ def build_new_query(args):
     # build query description out of all the descr_list terms
     q.descr = ', '.join(descr_list)
 
-    LOG.info('NEW ES QUERY: ' + json.dumps(q.query, indent=2, sort_keys=True))
+    LOG.debug('BUILT NEW ES QUERY: ' + json.dumps(q.query,
+                                                  indent=2,
+                                                  sort_keys=True))
     # return the user-friendly description and the actual es query body
     return q
 
