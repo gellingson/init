@@ -35,7 +35,7 @@ class ListingsFeed(Feed):
         return '{} {} {}'.format(item.model_year, item.make, item.model)
 
     def item_description(self, item):
-        return '<img href="' + item.pic_href + '"><p>' + item.listing_text + '</p>'
+        return '<img href="' + str(item.pic_href) + '"><p>' + str(item.listing_text) + '</p>'
 #        return item.listing_text
 
     # item_link is only needed if NewsItem has no get_absolute_url method.
@@ -61,7 +61,7 @@ class QueryFeed(Feed):
         return 'http://carbyr.com/'
 
     def description(self, obj):
-        return "A continuous stream of Carbyr car listings for your query: %s" + obj.descr
+        return "A continuous stream of Carbyr car listings for your query: " + str(obj.descr)
 
     def items(self, obj):
         num, listings, tossed = get_listings(obj)
