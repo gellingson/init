@@ -64,6 +64,9 @@ class QueryFeed(Feed):
         return "A continuous stream of Carbyr car listings for your query: " + str(obj.descr)
 
     def items(self, obj):
+        LOG.info('%s: feed: %s [%s]',
+                 obj.user.username or 'anon',
+                 obj.ref or '', obj.descr)        
         num, listings, tossed = get_listings(obj)
         return listings
 
