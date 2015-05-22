@@ -386,6 +386,7 @@ def extract_3taps_year_make_model(listing, item,
             if dblog and lsinfo.detail_enc == 'B':
                 lsinfo.detail_enc = 'T'
                 lsinfo.detail = html_decoded
+
     if not listing.model_year:  # from the html...
         if an_model_year and an_model_year > '1800' and an_model_year < '2020':
             listing.model_year = an_model_year
@@ -395,14 +396,17 @@ def extract_3taps_year_make_model(listing, item,
         # GEE TODO: recheck in a few months (spring '15) and hopefully remove:
         # recent (dec-14) bug in hmngs is getting annotation 'make' wrong, as
         # 'Willys-Overland' when it is not. So at least temporarily a patch:
-        if an_make and (classified.textid != 'hmngs' or
-                        an_make != 'Willys' or he_make == an_make):
+        # GEE TODO: yet another bug now (May '15) in hmngs: annotations model
+        # info is loosing the 1st few chars, e.g. 'Chevrolet' 'rvette'; also,
+        # getting some very odd insertions like 'Custer Car' or 'Healey MG'
+        # when heading info is fine; fuck it, prefer heading info for hmngs
+        if an_make and classified.textid != 'hmngs':
             listing.make = an_make
             if an_model:  # take any model found with the winning make
                 listing.model = an_model
             else:
                 listing.model = he_model
-        else:
+        else:  # get from the heading field
             listing.make = he_make
             if he_model:
                 listing.model = he_model
