@@ -848,8 +848,11 @@ def add_filter(querybody, new_filter, do_copy=False):
         copybody = copy.deepcopy(querybody)
     else:
         copybody = querybody
+    # add nested hashes as required so we can add the actual filter
+    # (generally required if this is the first filter being added)
+    if not 'filtered' in copybody['query']:
+        copybody['query']['filtered'] = {}
     if not 'filter' in copybody['query']['filtered']:
-        # then this is the first filter; add the filtering cruft
         copybody['query']['filtered']['filter'] = {}
         copybody['query']['filtered']['filter']['and'] = []
     copybody['query']['filtered']['filter']['and'].append(new_filter)
