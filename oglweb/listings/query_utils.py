@@ -655,6 +655,7 @@ def build_new_query(args):
     q = Query()
     q.type = QUERYTYPE_RECENT  # presume we have some args (checked below)
     q.params = {}
+    q.params['query_string'] = args.query_string
     q.params['min_year'] = args.min_year
     q.params['max_year'] = args.max_year
     q.params['min_price'] = args.min_price
