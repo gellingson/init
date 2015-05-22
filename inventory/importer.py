@@ -295,7 +295,9 @@ def fj_parse_listing(listing, entry, detail):
 
     # pull the rest of the fields from the detail page
 
-    listing.local_id = detail.find(id="ContactCarId")['value']
+    foo = detail.find(id="ContactCarId")
+    if foo:
+        listing.local_id = foo['value']
     listing.stock_no = listing.local_id # no separate stock#
 
     # many interesting items are in an "alpha-inner-bottom' div,
