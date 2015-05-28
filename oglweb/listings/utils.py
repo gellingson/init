@@ -9,6 +9,7 @@ import iso8601
 import locale
 import pytz
 import time
+import tzlocal
 
 # force_date()
 #
@@ -63,6 +64,26 @@ def force_date(maybedate, default=False):
 #
 def now_utc():
     return datetime.datetime.now(pytz.UTC)
+
+
+# utc_to_local_tz()
+#
+# tiny convenience method to take a proper TZ-aware datetime in UTC
+# (what I normally use!) to a naive datetime in the locale of the
+# currently-executing code
+#
+def utc_to_local_tz(utc_dt):
+    return utc_dt.replace(tzinfo=pytz.utc).astimezone(tz=None)
+
+
+# utc_to_naive_local_tz(utctime)
+#
+# ... as above then strip out that tz to make a naive datetime
+# (ie one which can be compared to the output of datetime.now(),
+# which I NEVER want to use but some libraries (e.g. humanize) do
+#
+def utc_to_naive_local_tz(utctime):
+    return utc_to_local_tz(utctime).replace(tzinfo=None)
 
 
 # extract_int()

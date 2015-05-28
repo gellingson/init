@@ -307,13 +307,11 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
     context['query_type'] = query.type
     recents = querylist_from_session(request.session, QUERYTYPE_RECENT)
     if query.mark_date:
-        d = force_date(query.mark_date)
-        # this is apparently the shitty python way to remove tz awareness?!
-        d2 = datetime.datetime(d.year, d.month, d.day, d.hour, d.minute)
-        context['query_mark_date'] = humanize.naturaltime(d2)
+        d = utc_to_naive_local_tz(force_date(query.mark_date))
+        context['query_mark_date'] = humanize.naturaltime(d)
     context['show'] = show
     # record timestamp at which query was issued; used e.g. to set mark_date
-    context['query_timestamp'] = datetime.datetime.now().isoformat()
+    context['query_timestamp'] = now_utc().isoformat()
 
     # repop search form with the values of the current ad-hoc or saved query
     populate_search_context(context, args, query)
@@ -364,9 +362,11 @@ def oldtest(request):
 def listingadmin(request, error_message=None):
     return index(request, template=LISTINGSADMIN)
 
+#from django.views.decorators.csrf import csrf_exempt
 
 @ajax
 def save_car_api(request):
+    #LOG.info(request.user)
     if request.method == 'POST':
         listing_id = request.POST['listing_id']
         result = save_car_to_db(request.user, listing_id)
