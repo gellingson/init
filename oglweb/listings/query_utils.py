@@ -844,17 +844,30 @@ def build_new_query(args):
 # adds a filtering clause to an es query
 # NOTE: optionally deep copies & then returns a new querybody!
 #
+# there are a few query "geometries" that can be passed to this routine;
+# pattern A: relatively raw "inner" query
+# pattern B: inner query is now inside a scoring_wrapper
+#
 def add_filter(querybody, new_filter, do_copy=False):
     if do_copy:
         copybody = copy.deepcopy(querybody)
     else:
         copybody = querybody
+
+    # which pattern is the passed-in query?
+    if 'function_score' in copybody['query']:
+        # pattern B, with scoring wrapper
+        q = copybody['query']['function_score']['query']
+    else:
+        # pattern A, just an "inner" query
+        q = copybody['query']
+
     # add nested hashes as required so we can add the actual filter
     # (generally required if this is the first filter being added)
-    if not 'filtered' in copybody['query']:
-        copybody['query']['filtered'] = {}
-    if not 'filter' in copybody['query']['filtered']:
-        copybody['query']['filtered']['filter'] = {}
-        copybody['query']['filtered']['filter']['and'] = []
-    copybody['query']['filtered']['filter']['and'].append(new_filter)
+    if not 'filtered' in q:
+        q['filtered'] = {}
+    if not 'filter' in q['filtered']:
+        q['filtered']['filter'] = {}
+        q['filtered']['filter']['and'] = []
+    q['filtered']['filter']['and'].append(new_filter)
     return copybody
