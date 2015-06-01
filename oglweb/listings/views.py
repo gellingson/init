@@ -17,6 +17,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.template import RequestContext
 from django.utils.html import escape
+from django.views.decorators.csrf import csrf_exempt
 from django_ajax.decorators import ajax
 from elasticsearch import Elasticsearch
 import humanize
@@ -212,6 +213,9 @@ def cars_api(request, query_ref=None, number=50, offset=0):
 #
 # this is the primary view for car search/results viewing
 #
+# making this csrf_exempt to simplify actions/reloading after login/signup
+#
+@csrf_exempt
 def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSBASE, error_message=None):
     request.session['ogl_alpha_user'] = True  # been here, seen this = IN
     args = handle_search_args(request, filter, base_url, query_ref)
@@ -330,6 +334,9 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
 # this wraps cars() and adds/modifies the interface to be
 # whatever is being worked on & isn't ready to share yet
 #
+# making this csrf_exempt to simplify actions/reloading after login/signup
+#
+@csrf_exempt
 def cars_test(request, base_url=None, query_ref=None):
     return cars(request, template=LISTINGSTEST, base_url=base_url, query_ref=query_ref)
 
@@ -362,7 +369,6 @@ def oldtest(request):
 def listingadmin(request, error_message=None):
     return index(request, template=LISTINGSADMIN)
 
-#from django.views.decorators.csrf import csrf_exempt
 
 @ajax
 def save_car_api(request):

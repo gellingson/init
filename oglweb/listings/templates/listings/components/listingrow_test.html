@@ -29,7 +29,7 @@
 			{{ item.listing_text }}
 		  </div>
 		<div class="col-md-1 listing">
-          <button class="btn-link addfav{% if item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="Add to Favorites" ltitle="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
+		  <button class="btn-link addfav{% if item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="Add to Favorites" ltitle="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-heart wideglyph"></span></button>
 		  <button class="btn-link editnote{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="Edit Note" ltitle="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-pencil wideglyph"></span></button>
 		  <button class="btn-link unfav{% if not item.favorite %} hidden{% endif %}" listing_id="{{ item.id }}" title="Remove from Favorites" ltitle="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-trash wideglyph"></span></button>
 		  <button class="btn-link flag" listing_id="{{ item.id }}" title="Flag Listing" ltitle="{{ item.model_year }} {{ item.make }} {{ item.model }}"><span class="glyphicon glyphicon-thumbs-down wideglyph"></span></button>

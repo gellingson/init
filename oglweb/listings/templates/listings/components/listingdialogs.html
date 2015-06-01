@@ -1,4 +1,5 @@
-	<div class="modal fade" id="viewModal" tabindex="-1" role="dialog" aria-labelledby="viewModalLabel" aria-hidden="true">
+{% load account %}
+<div class="modal fade" id="viewModal" tabindex="-1" role="dialog" aria-labelledby="viewModalLabel" aria-hidden="true">
 	  <div class="modal-dialog">
 		<div class="modal-content">
 		  <div class="modal-header">
@@ -222,3 +223,118 @@
 		</div>
 	  </div>
 	</div>
+	<div class="modal fade" id="loginModal" tabindex="-1" role="dialog" aria-labelledby="loginModalLabel" aria-hidden="true">
+	  <div class="modal-dialog">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+			<h4 class="modal-title" id="loginModalLabel"><span class="login-content">Log In</span><span class="signup-content">Sign Up</span></h4>
+		  </div>
+		  <div class="modal-body">
+			<div class="modal-center modal-row">
+			  {% include "socialaccount/snippets/login_extra.html" %}
+			  <a title="Facebook" class="socialaccount_provider facebook"
+				 href="javascript:allauth.facebook.login('{{ request.get_full_path }}','authenticate','login')">
+				<img src="/static/listings/images/sign-in-with-fb.png" alt="Facebook">
+			  </a>
+			</div>
+			<div class="modal-center modal-row">
+			  <a title="Google" class="socialaccount_provider google"
+				 href="/accounts/google/login/?process=login&next={{ request.get_full_path|urlencode:'' }}">
+				<img src="/static/listings/images/sign-in-with-google.png" alt="Google">
+			  </a>
+			</div>
+			<div class="modal-center modal-row">
+			  <a title="Twitter" class="socialaccount_provider twitter"
+				 href="/accounts/twitter/login/?process=login&next={{ request.get_full_path|urlencode:'' }}">
+				<img src="/static/listings/images/sign-in-with-twitter.png" alt="Twitter">
+			  </a>
+			</div>
+			<div class="modal-center modal-row">Or:</div>
+			<span class="login-content">
+			  <form id="loginform" method="post" action="{% url 'account_login' %}">
+				{% csrf_token %}
+				<input type="hidden" name="remember" id="id_remember" value="1">
+				<input type="hidden" name="next" id="id_next" value="{{ request.get_full_path }}">
+				<div class="row modal-row">
+				  <div class="col-md-4 text-right">
+					<label class="modal-label" for="id_login">Username:</label>
+				  </div>
+				  <div class="col-md-8">
+					<input type="text" name="login" id="id_login" placeholder="Username"/>
+				  </div>
+				</div>
+				<div class="row modal-row">
+				  <div class="col-md-4 text-right">
+					<label class="modal-label" for="id_password">Password:</label>
+				  </div>
+				  <div class="col-md-8">
+					<input type="password" name="password" id="id_password" placeholder="Password"/>
+				  </div>
+				</div>
+				<div class="row modal-row">
+				  <div class="col-md-4 text-right">
+				  </div>
+				  <div class="col-md-8">
+					<button class="btn btn-primary" type="submit" id="login_login">Log In</button>
+					<button class="btn btn-link" type="button" id="logintosignup" onclick="login_to_signup()">I'm New Here</button>
+				  </div>
+				</div>				
+			  </form>
+			</span>
+			<span class="signup-content">
+			  <form id="signupform" method="post" action="{% url 'account_signup' %}">
+				{% csrf_token %}
+				<input type="hidden" name="next" id="id_next" value="{{ request.get_full_path }}">
+				<div class="row modal-row">
+				  <div class="col-md-4 text-right">
+					<label class="modal-label" for="id_login">Username:</label>
+				  </div>
+				  <div class="col-md-8">
+					<input type="text" name="username" id="id_username" placeholder="Username"/>
+				  </div>
+				</div>
+				<div class="row modal-row">
+				  <div class="col-md-4 text-right">
+					<label class="modal-label" for="id_password">Password:</label>
+				  </div>
+				  <div class="col-md-8">
+					<input type="password" name="password1" id="id_password1" placeholder="Password"/>
+				  </div>
+				</div>
+				<div class="row modal-row">
+				  <div class="col-md-4 text-right">
+					<label class="modal-label" for="id_password">Password (again):</label>
+				  </div>
+				  <div class="col-md-8">
+					<input type="password" name="password2" id="id_password2" placeholder="Password"/>
+				  </div>
+				</div>
+				<div class="row modal-row">
+				  <div class="col-md-4 text-right">
+					<label class="modal-label" for="id_email">Email (optional):</label>
+				  </div>
+				  <div class="col-md-8">
+					<input type="text" name="email" id="id_email" placeholder="Email"/>
+				  </div>
+				</div>
+				<div class="row modal-row">
+				  <div class="col-md-4 text-right">
+				  </div>
+				  <div class="col-md-8">
+					<button class="btn btn-primary" type="submit" id="login_signup">Sign Up</button>
+					<button class="btn btn-link" type="button" id="signuptologin" onclick="signup_to_login()">Existing Account</button>
+				  </div>
+				</div>
+			  </form>		  
+			</span>
+			<div class="modal-input login-content">
+			  <p>Forgot your password? <a class="button secondaryAction" href="{% url 'account_reset_password' %}">Reset it now.</a></p>
+			</div>
+		  </div>
+		</div>
+	  </div>
+	</div>
+<script type="text/javascript">
+  var logged_in_user = "{% user_display user %}"
+</script>
