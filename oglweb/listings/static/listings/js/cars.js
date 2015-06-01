@@ -2,21 +2,14 @@
 // note: cannot be invoked on items already in a favlist, e.g. on dashboard
 // however, defining this here along with unfav as it operates on listing rows
 function fav(listing_id, title, elt){
-	console.log('in fav')
 	if (logged_in_user) {
-		console.log('has a user')
 		var csrf = $.cookie('csrftoken');
-		console.log('using csrf ' + csrf);
 		$('#favcartitle').text(title)
 		ajaxPost('/ajax/savecar', {'listing_id': listing_id}, function(content){
-			console.log('after post')
 			elt.addClass('hidden');
 			elt.parent().children('.unfav').removeClass('hidden');
 			elt.parent().children('.editnote').removeClass('hidden');
 			$('#favCarModal').modal();
-		}, function(content){
-			console.log('after post FAIL')
-			console.log(content)
 		});
 	} else {
 		login('fav', elt); // come back to fav this after login (not impl)
@@ -78,9 +71,7 @@ function signup_to_login(event){
 
 // put up login modal
 function login(to, elt){
-	console.log('putting up login')
 	var csrf = $.cookie('csrftoken');
-	console.log(csrf);
 
 	signup_to_login();
 
@@ -162,7 +153,6 @@ function setup_listing_buttons(){
 	$('.test.listing-row').unbind('click').click(function(event) {
 		view($(this));
 	});
-	console.log('fubar')
 	$('button.testlogin').click(function(event) {
 		event.stopPropagation();
 		login('', $(this)); // login with no specific next action
@@ -190,7 +180,6 @@ function setup_listing_buttons(){
 }
 
 $(document).ready(function(){
-	console.log('logged in user is: ' + logged_in_user)
 	setup_listing_buttons();
 	// save modal: focus() on the query description field of the modal
 	$('#saveModal').on('shown.bs.modal', function () {
