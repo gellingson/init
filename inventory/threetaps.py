@@ -239,7 +239,17 @@ def extract_3taps_desc_fields(listing, item, classified, counts):
     # checking html) so always leave it null
 
     # listing_text
-    listing.listing_text = item.heading
+    if (classified.textid != 'craig' and item.body and
+        (not item.heading or (len(item.body) > len(item.heading)))):
+        # stripping primarily because hmngs often has extraneous leading ':'
+        listing.listing_text = item.body.strip(':*#^[] ')
+        # GEE TODO: downcase upper case shouting
+        if len(item.body) > 450:  # 450 looks nice on my screen (heh)
+            # GEE TODO: dynamically size text cleanly
+            listing.listing_text = listing.listing_text[:445] + '...'
+    else:
+        listing.listing_text = item.heading
+
     if classified.textid == 'ccars' and listing.listing_text:
         # drop leading site ID in format '(CC-123456) '
         if listing.listing_text[:4] == '(CC-':
@@ -265,26 +275,30 @@ def extract_3taps_desc_fields(listing, item, classified, counts):
 def extract_3taps_urls(listing, item, classified, counts):
     ok = True
     # pic_href
-    try:
-        # for all 3taps sites the listing pic _should_ be first in the list
-        # many times we don't get the right pic at all, but so far if the
-        # right pic is there, it is first in the list. So use that....
-        listing.pic_href = item.images[0]['full']
-        if listing.pic_href: 
-            # now work around some 3taps issues where they pull scaled-down
-            # thumbnails rather than full size images; we can fix the URLs
-            if classified.textid == 'carsd':
-                listing.pic_href = listing.pic_href.split('&width')[0]
-            if classified.textid == 'autod':
-                listing.pic_href = listing.pic_href.replace('/scaler/80/60/',
-                                                            '/scaler/544/408/')
-        else:  # oops... the key existed but was empty (null)
-            LOG.debug('Empty picture for a posting')
-            listing.pic_href = 'N/A'
-            counts['badpic'] += 1
-            listing.static_quality -= 100
+    # for most 3taps sites most of the time, the seller's preferred
+    # listing pic is the first (and often only) pic in the list...
+    # however, if the first pic isn't available (odd, but at least
+    # in some cases there is an empty {} before the actual pic list,
+    # notably for ccars listings) then go down the list until we get
+    # something
+    listing.pic_href = None
+    for image in item.images:
+        try:
+            listing.pic_href = image['full']
+            if listing.pic_href: # ie at least a non-null string
+                # now work around some 3taps issues where they pull scaled-down
+                # thumbnails rather than full size images; we can fix the URLs
+                if classified.textid == 'carsd':
+                    listing.pic_href = listing.pic_href.split('&width')[0]
+                if classified.textid == 'autod':
+                    listing.pic_href = listing.pic_href.replace('/scaler/80/60/',
+                                                                '/scaler/544/408/')
+                break  # found a workable picture; stop the loop
 
-    except (KeyError, IndexError, TypeError):
+        except (KeyError, IndexError, TypeError):
+            pass
+            
+    if not listing.pic_href: 
         LOG.debug('Failed to find a picture for a posting')
         listing.pic_href = 'N/A'
         counts['badpic'] += 1
