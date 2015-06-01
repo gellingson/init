@@ -19,7 +19,7 @@ function fav(listing_id, title, elt){
 			console.log(content)
 		});
 	} else {
-		login('fav', elt);
+		login('fav', elt); // come back to fav this after login (not impl)
 	}
 }
 
@@ -57,8 +57,10 @@ function clickthrough(listing_id){
 }
 
 function login_to_signup(event){
-	$('.login-content').hide()
-	$('.signup-content').show()
+	$('.login-content').hide();
+	$('.signup-content').show();
+	$('#id_username').val($('#id_login').val());
+	$('#id_password1').val($('#id_password').val());
 	if (event) {
 		event.stopPropagation();
 	}
@@ -67,6 +69,8 @@ function login_to_signup(event){
 function signup_to_login(event){
 	$('.login-content').show()
 	$('.signup-content').hide()
+	$('#id_login').val($('#id_username').val());
+	$('#id_password').val($('#id_password1').val());
 	if (event) {
 		event.stopPropagation();
 	}
@@ -79,41 +83,6 @@ function login(to, elt){
 	console.log(csrf);
 
 	signup_to_login();
-
-	$('#loginform').unbind('submit').submit(function() {
-		event.preventDefault()
-		console.log('doing login')
-		$.ajax({
-			type: 'POST',
-			url: $('#loginform').attr('action'),
-			data: $('#loginform').serialize(),
-			success: function(data)
-			{
-				// from now forward, we need to use updated csrftoken
-				// (otherwize the django-ajax package keeps using the old
-				// (pre-login) csrf token sent with this view -> 403 errs
-				$.ajaxSetup({
-					data: {csrfmiddlewaretoken: $.cookie('csrftoken') },
-				});
-				console.log(data)
-				var csrf2 = $.cookie('csrftoken');
-				console.log('after: ' + csrf2);
-				logged_in_user='someone'
-				$('#loginModal').modal('hide');
-				if (to == 'fav') {
-					fav($(elt).attr('listing_id'), $(elt).attr('ltitle'), elt);
-				}
-				else {
-					alert('nada')
-				}
-			},
-			error: function(data)
-			{
-				console.log('FAIL: ');
-				console.log(data);
-			}
-		});
-	});
 
 	$('#loginModal').modal();
 }
@@ -196,7 +165,7 @@ function setup_listing_buttons(){
 	console.log('fubar')
 	$('button.testlogin').click(function(event) {
 		event.stopPropagation();
-		login('', $(this)); // login with no next action
+		login('', $(this)); // login with no specific next action
 	});
 	$('button.unfav').click(function(event) {
 		event.stopPropagation();
