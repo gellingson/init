@@ -146,34 +146,34 @@ function editnote(listing_id, title, elt){
 
 function setup_listing_buttons(){
 	// vanilla interface
-	$('.listing-row').click(function(event) {
+	$('.listing-row').unbind('click').click(function(event) {
 		clickthrough($(this).attr('id')) // yes, html elt id is listing_id
 	});
-	// test interface overrides this click
+	// test interface overrides this click (not in use, but to display listing page)
 	$('.test.listing-row').unbind('click').click(function(event) {
 		view($(this));
 	});
-	$('button.testlogin').click(function(event) {
+	$('button.testlogin').unbind('click').click(function(event) {
 		event.stopPropagation();
 		login('', $(this)); // login with no specific next action
 	});
-	$('button.unfav').click(function(event) {
+	$('button.unfav').unbind('click').click(function(event) {
 		event.stopPropagation();
 		unfav($(this).attr('listing_id'), $(this).attr('ltitle'), $(this));
 	});
-	$('button.addfav').click(function(event) {
+	$('button.addfav').unbind('click').click(function(event) {
 		event.stopPropagation();
 		fav($(this).attr('listing_id'), $(this).attr('ltitle'), $(this));
 	});
-	$('button.flag').click(function(event) {
+	$('button.flag').unbind('click').click(function(event) {
 		event.stopPropagation();
 		flag($(this).attr('listing_id'), $(this).attr('ltitle'), $(this));
 	});
-	$('button.editnote').click(function(event) {
+	$('button.editnote').unbind('click').click(function(event) {
 		event.stopPropagation();
 		editnote($(this).attr('listing_id'), $(this).attr('ltitle'), $(this));
 	});
-	$('a.editnote').click(function(event) {
+	$('a.editnote').unbind('click').click(function(event) {
 		event.stopPropagation();
 		editnote($(this).attr('listing_id'), $(this).attr('ltitle'), $(this));
 	});
