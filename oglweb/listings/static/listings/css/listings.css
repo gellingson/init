@@ -263,6 +263,11 @@ Added by Stephanie
 	padding-right: 5px;
 }
 
+.modal-row
+{
+  margin-bottom: 10px;
+}
+
 .modal-input
 {
 	margin-left: 25px;
@@ -271,7 +276,7 @@ Added by Stephanie
 .modal-center
 {
 	text-align: center;
-	margin-bottom: 30px;
+	margin-bottom: 10px;
 }
 
 .btn-link
