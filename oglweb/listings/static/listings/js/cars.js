@@ -2,13 +2,25 @@
 // note: cannot be invoked on items already in a favlist, e.g. on dashboard
 // however, defining this here along with unfav as it operates on listing rows
 function fav(listing_id, title, elt){
-	$('#favcartitle').text(title)
-	ajaxPost('/ajax/savecar', {'listing_id': listing_id}, function(content){
-		elt.addClass('hidden');
-		elt.parent().children('.unfav').removeClass('hidden');
-		elt.parent().children('.editnote').removeClass('hidden');
-		$('#favCarModal').modal();
-	});
+	console.log('in fav')
+	if (logged_in_user) {
+		console.log('has a user')
+		var csrf = $.cookie('csrftoken');
+		console.log('using csrf ' + csrf);
+		$('#favcartitle').text(title)
+		ajaxPost('/ajax/savecar', {'listing_id': listing_id}, function(content){
+			console.log('after post')
+			elt.addClass('hidden');
+			elt.parent().children('.unfav').removeClass('hidden');
+			elt.parent().children('.editnote').removeClass('hidden');
+			$('#favCarModal').modal();
+		}, function(content){
+			console.log('after post FAIL')
+			console.log(content)
+		});
+	} else {
+		login('fav', elt);
+	}
 }
 
 function unfav(listing_id, title, elt){
@@ -42,6 +54,68 @@ function clickthrough(listing_id){
 	// win.focus() seems to switch focus without this on osx safari?
 	// alternatively can select
 	self.focus() // to keep the focus on the carbyr window -- doesn't work?
+}
+
+function login_to_signup(event){
+	$('.login-content').hide()
+	$('.signup-content').show()
+	if (event) {
+		event.stopPropagation();
+	}
+}
+
+function signup_to_login(event){
+	$('.login-content').show()
+	$('.signup-content').hide()
+	if (event) {
+		event.stopPropagation();
+	}
+}
+
+// put up login modal
+function login(to, elt){
+	console.log('putting up login')
+	var csrf = $.cookie('csrftoken');
+	console.log(csrf);
+
+	signup_to_login();
+
+	$('#loginform').unbind('submit').submit(function() {
+		event.preventDefault()
+		console.log('doing login')
+		$.ajax({
+			type: 'POST',
+			url: $('#loginform').attr('action'),
+			data: $('#loginform').serialize(),
+			success: function(data)
+			{
+				// from now forward, we need to use updated csrftoken
+				// (otherwize the django-ajax package keeps using the old
+				// (pre-login) csrf token sent with this view -> 403 errs
+				$.ajaxSetup({
+					data: {csrfmiddlewaretoken: $.cookie('csrftoken') },
+				});
+				console.log(data)
+				var csrf2 = $.cookie('csrftoken');
+				console.log('after: ' + csrf2);
+				logged_in_user='someone'
+				$('#loginModal').modal('hide');
+				if (to == 'fav') {
+					fav($(elt).attr('listing_id'), $(elt).attr('ltitle'), elt);
+				}
+				else {
+					alert('nada')
+				}
+			},
+			error: function(data)
+			{
+				console.log('FAIL: ');
+				console.log(data);
+			}
+		});
+	});
+
+	$('#loginModal').modal();
 }
 
 function view(row){
@@ -119,6 +193,11 @@ function setup_listing_buttons(){
 	$('.test.listing-row').unbind('click').click(function(event) {
 		view($(this));
 	});
+	console.log('fubar')
+	$('button.testlogin').click(function(event) {
+		event.stopPropagation();
+		login('', $(this)); // login with no next action
+	});
 	$('button.unfav').click(function(event) {
 		event.stopPropagation();
 		unfav($(this).attr('listing_id'), $(this).attr('ltitle'), $(this));
@@ -142,6 +221,7 @@ function setup_listing_buttons(){
 }
 
 $(document).ready(function(){
+	console.log('logged in user is: ' + logged_in_user)
 	setup_listing_buttons();
 	// save modal: focus() on the query description field of the modal
 	$('#saveModal').on('shown.bs.modal', function () {
