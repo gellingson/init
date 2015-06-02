@@ -23,13 +23,14 @@ from listings.search_utils import *
 # This feed is RSS, not Atom.
 # See https://docs.djangoproject.com/en/dev/ref/contrib/syndication/ for how to expand & improve it
 
+# this is the basic non-user-specific feed, suitable for testing/trial purposes only
 class ListingsFeed(Feed):
     title = 'Feed of car listings'
     link = '/rss/'
     description = 'Car listings as they post up.'
 
     def items(self):
-        return Listing.objects.order_by('-pk')[:50]
+        return Listing.objects.filter(status='F').order_by('-pk')[:50]
 
     def item_title(self, item):
         return '{} {} {}'.format(item.model_year, item.make, item.model)
@@ -41,6 +42,7 @@ class ListingsFeed(Feed):
     # item_link is only needed if NewsItem has no get_absolute_url method.
     def item_link(self, item):
         return item.listing_href
+
 
 class QueryFeed(Feed):
     description_template = 'listings/feeds/listing_description.html'
