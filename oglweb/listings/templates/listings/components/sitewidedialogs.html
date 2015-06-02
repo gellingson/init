@@ -117,7 +117,7 @@
 		<div class="modal-content">
 		  <div class="modal-header">
 			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-			<h4 class="modal-title" id="postLoginModalLabel">Welcome, {% user_display user %}!</h4>
+			<h4 class="modal-title" id="postLoginModalLabel">Welcome back, {% user_display user %}!</h4>
 		  </div>
 		  <div class="modal-body">
 			{% if new_user %}
@@ -131,7 +131,7 @@
 			{% endif %}
 		  </div>
 		  <div class="modal-footer">
-			<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+			<button type="button" class="btn btn-primary" data-dismiss="modal">Continue</button>
 		  </div>
 		</div>
 	  </div>
@@ -141,17 +141,15 @@
 		<div class="modal-content">
 		  <div class="modal-header">
 			<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-			<h4 class="modal-title" id="postSignupModalLabel">Welcome back, {% user_display user %}!</h4>
+			<h4 class="modal-title" id="postSignupModalLabel">Welcome, {% user_display user %}!</h4>
 		  </div>
 		  <div class="modal-body">
 			<p><strong>Welcome to Carbyr!</strong></p>
-			<p>You can now save favorite cars to <a href="/dashboard/">your dashboard</a> so they will always be at your fingertips on any logged-in device.</p>
-			<p>Your favorite searches also are now in your dashboard, and can be filtered to show you new listings only.</p>
-			<p>The dashboard, search, and other pages can always be accessed from the top navigation menu.</p>
+			<p>You can now save favorite cars and searches to <a href="/dashboard/">your dashboard</a> so they will always be at your fingertips on any logged-in device.</p>
 			<p>There are also some fun search ideas in the <strong>More Ideas</strong> section of the <a href="/cars">search</a> page's <strong>Saved</strong> tab!</p>
 		  </div>
 		  <div class="modal-footer">
-			<button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+			<button type="button" class="btn btn-primary" data-dismiss="modal">Continue</button>
 		  </div>
 		</div>
 	  </div>
