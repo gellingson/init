@@ -6,3 +6,65 @@
 
 ga('create', 'UA-55492403-1', 'auto');
 ga('send', 'pageview');
+
+// modal support
+
+function login_to_signup(event){
+	$('.login-content').hide();
+	$('.signup-content').show();
+	$('#id_username').val($('#id_login').val());
+	$('#id_password1').val($('#id_password').val());
+	$('#login_message').text('Join Carbyr...')
+	if (event) {
+		event.stopPropagation();
+	}
+}
+
+function signup_to_login(event){
+	$('.login-content').show()
+	$('.signup-content').hide()
+	$('#id_login').val($('#id_username').val());
+	$('#id_password').val($('#id_password1').val());
+	$('#login_message').text('Log in to Carbyr...')
+	if (event) {
+		event.stopPropagation();
+	}
+}
+
+function login(msg){
+	signup_to_login();
+	if (msg.length > 0) {
+		$('#login_message').text(msg)
+	}
+	$('#loginModal').modal();
+}
+
+function signup(msg){
+	login_to_signup();
+	if (msg.length > 0) {
+		$('#login_message').text(msg)
+	}
+	$('#loginModal').modal();
+}
+
+function post_signup() {
+	$('#postSignupModal').modal();
+}
+
+function post_login() {
+	$('#postLoginModal').modal();
+}
+	
+$(document).ready(function(){
+	$('#login_link').click(function(event) {
+		event.preventDefault();
+		login('Log in to Carbyr...');
+	});									 
+	$('#signup_link').click(function(event) {
+		event.preventDefault();
+		signup('Join Carbyr...');
+	});									 
+	// pop any (first/single) modal requested via django.contrib.messages
+	console.log('launching: ' + $('.modal_launcher').filter(':first').text())
+	$('#' + $('.modal_launcher').filter(':first').text()).modal()
+});

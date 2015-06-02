@@ -57,13 +57,8 @@
 			</li>
 			{% else %}
 			{% if not suppress_login %}
-			{% if login_next_url %}
-			<li><a href="/accounts/login?next={{ login_next_url }}">Log In</a></li>
-			<li><a href="/accounts/signup?next={{ login_next_url }}">Sign Up</a></li>
-			{% else %}
-			<li><a href="/accounts/login">Log In</a></li>
-			<li><a href="/accounts/signup">Sign Up</a></li>
-			{% endif %}
+			<li><a id="login_link" href="/accounts/login?next=/cars/">Log In</a></li>
+			<li><a id="signup_link" href="/accounts/signup?next=/cars/">Sign Up</a></li>
 			{% endif %}
 			{% endif %}
 			<li><a href="/about">About Carbyr</a></li>
@@ -106,6 +101,7 @@
 {% block extrascripts %}
 {% endblock extrascripts %}	
 {% block dialogs %}
+{% include "listings/components/sitewidedialogs.html" %}
 {% endblock dialogs %}
   </body>
 </html>

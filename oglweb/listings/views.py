@@ -300,10 +300,6 @@ def cars(request, filter=None, base_url=None, query_ref=None, template=LISTINGSB
     if suggestions:
         context['suggestions'] = list(suggestions.values())
 
-    # if the user is not logged in, return here after log in/sign up action
-    if not request.user or not request.user.is_authenticated():
-        context['login_next_url'] = urllib.parse.quote_plus(request.get_full_path())
-
     # GEE TODO: rename querytype field to type for consistency
     context['listings'] = listings
     context['query_descr'] = query.descr

@@ -3,8 +3,7 @@
 // however, defining this here along with unfav as it operates on listing rows
 function fav(listing_id, title, elt){
 	if (logged_in_user) {
-		var csrf = $.cookie('csrftoken');
-		$('#favcartitle').text(title)
+		$('#favcartitle').text(title);
 		ajaxPost('/ajax/savecar', {'listing_id': listing_id}, function(content){
 			elt.addClass('hidden');
 			elt.parent().children('.unfav').removeClass('hidden');
@@ -12,7 +11,7 @@ function fav(listing_id, title, elt){
 			$('#favCarModal').modal();
 		});
 	} else {
-		login('fav', elt); // come back to fav this after login (not impl)
+		login('You must log in to save cars to your account...');
 	}
 }
 
@@ -47,35 +46,6 @@ function clickthrough(listing_id){
 	// win.focus() seems to switch focus without this on osx safari?
 	// alternatively can select
 	self.focus() // to keep the focus on the carbyr window -- doesn't work?
-}
-
-function login_to_signup(event){
-	$('.login-content').hide();
-	$('.signup-content').show();
-	$('#id_username').val($('#id_login').val());
-	$('#id_password1').val($('#id_password').val());
-	if (event) {
-		event.stopPropagation();
-	}
-}
-
-function signup_to_login(event){
-	$('.login-content').show()
-	$('.signup-content').hide()
-	$('#id_login').val($('#id_username').val());
-	$('#id_password').val($('#id_password1').val());
-	if (event) {
-		event.stopPropagation();
-	}
-}
-
-// put up login modal
-function login(to, elt){
-	var csrf = $.cookie('csrftoken');
-
-	signup_to_login();
-
-	$('#loginModal').modal();
 }
 
 function view(row){

@@ -1,5 +1,6 @@
 
 from allauth.account.signals import user_signed_up, user_logged_in
+from django.contrib import messages
 from django.contrib.sessions.models import Session
 from django.dispatch import receiver
 
@@ -66,4 +67,18 @@ def get_names(request, user, sociallogin=None, **kwargs):
             picture_url = sociallogin.account.extra_data['picture']
  
     user.save()
+    return
+
+
+@receiver(user_signed_up)
+def queue_welcome_message(request, user, sociallogin=None, **kwargs):
+    messages.add_message(request, messages.INFO, 'postSignupModal', extra_tags='hidden modal_launcher')
+    return
+
+
+# note that this will be called right after signup... will queue a second
+# modal request in that circumstance, which will be ignored (hopefully)
+@receiver(user_logged_in)
+def queue_welcome_back_message(request, user, sociallogin=None, **kwargs):
+    messages.add_message(request, messages.INFO, 'postLoginModal', extra_tags='hidden modal_launcher')
     return
