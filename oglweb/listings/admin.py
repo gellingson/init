@@ -1,5 +1,11 @@
+# third part modules used
+from django.db import models
 from django.contrib import admin
-from listings.models import Classified, Dealership, Listing, NonCanonicalMake, NonCanonicalModel, ConceptTag, ConceptImplies
+from django.forms import TextInput, Textarea
+from jsonfield import JSONCharField, JSONField
+
+# OGL modules used
+from listings.models import *
 
 class ClassifiedAdmin(admin.ModelAdmin):
     fieldsets = [
@@ -36,6 +42,15 @@ class ConceptTagAdmin(admin.ModelAdmin):
 @admin.register(ConceptImplies)
 class ConceptImpliesAdmin(admin.ModelAdmin):
     fields = ('has_tag', 'implies_tag')
+
+@admin.register(SavedQuery)
+class SavedQueryAdmin(admin.ModelAdmin):
+    fields = ('querytype', 'user', 'ref', 'descr', 'query', 'params', 'mark_date')
+    formfield_overrides = {
+        JSONCharField: {
+            'widget': Textarea(attrs={'rows':4, 'cols':120})
+        }
+    }
 
 admin.site.register(Dealership, DealershipAdmin)
 admin.site.register(Classified, ClassifiedAdmin)

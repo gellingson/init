@@ -48,11 +48,11 @@ class SavedListing(models.Model):
 
 class SavedQuery(models.Model):
     querytype = models.CharField(max_length=1)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, blank=True, null=True)
     ref = models.CharField(max_length=24)
     descr = models.CharField(max_length=80)
     query = JSONCharField(max_length=2048)
-    params = JSONCharField(max_length=2048)
+    params = JSONCharField(max_length=2048, blank=True, null=True)
     mark_date = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
