@@ -172,7 +172,8 @@ def cars_api(request, query_ref=None, number=50, offset=0):
             query_ref = request.GET.get('q', None)
         # how to interp 'show' default: anything != 'new_only' -> all cars;
         # will validate & throw out this value if not applicable to query
-        show = request.GET.get('show', None) 
+        show = request.GET.get('show', None)
+        LOG.info('show=<' + str(show) + '>')
         q = None
         total_hits = 0
         listings = []
