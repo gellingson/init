@@ -170,10 +170,6 @@ def cars_api(request, query_ref=None, number=50, offset=0):
         offset = int(offset)
         if not query_ref:  # then look in the GET params
             query_ref = request.GET.get('q', None)
-        # how to interp 'show' default: anything != 'new_only' -> all cars;
-        # will validate & throw out this value if not applicable to query
-        show = request.GET.get('show', None)
-        LOG.info('show=<' + str(show) + '>')
         q = None
         total_hits = 0
         listings = []
@@ -187,8 +183,8 @@ def cars_api(request, query_ref=None, number=50, offset=0):
             LOG.info('%s: api search: %s [%s]',
                      request.user.username or 'anon',
                      q.ref or '', q.descr)
-            if not q.mark_date:
-                show = None
+            show = get_show_cars_option(request.session, q)
+
             total_hits, listings, tossed = get_listings(q,
                                                         number=number,
                                                         offset=offset,
@@ -199,10 +195,6 @@ def cars_api(request, query_ref=None, number=50, offset=0):
             if total_hits > (offset + number):
                 context['next_page_offset'] = offset + number
                 context['query_ref'] = query_ref
-                if show == 'new_only':
-                    context['new_only'] = True
-                else:
-                    context['new_only'] = False
             return render(request, LISTINGSAPI, context)
 
         else: # no query found to execute
