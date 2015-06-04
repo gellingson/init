@@ -45,7 +45,7 @@ class ConceptImpliesAdmin(admin.ModelAdmin):
 
 @admin.register(SavedQuery)
 class SavedQueryAdmin(admin.ModelAdmin):
-    fields = ('querytype', 'user', 'ref', 'descr', 'query', 'params', 'mark_date')
+    fields = ('querytype', 'user', 'ref', 'descr', 'query', 'params', 'mark_date', 'note', 'status')
     formfield_overrides = {
         JSONCharField: {
             'widget': Textarea(attrs={'rows':4, 'cols':120})

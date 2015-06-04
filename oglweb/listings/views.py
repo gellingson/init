@@ -39,6 +39,8 @@ LOG = logging.getLogger(__name__)
 
 def homepage(request):
     context = {}
+    queries = get_suggested_queries()
+    context['querylist'] = queries
     return render(request, HOMEPAGE, context)
 
 

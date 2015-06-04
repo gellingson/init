@@ -357,11 +357,13 @@ class SavedQuery(IDMixIn, Base):
     querytype = Column(String(1), nullable=False)
     user_id = Column(Integer,
                      ForeignKey('auth_user.id'))
-    ref = Column(String(24))
+    ref = Column(String(30))
     descr = Column(String(80))
     query = Column(String(2048))
     params = Column(String(2048))
     mark_date = Column(UTCDateTime)
+    note = Column(String(255))
+    status = Column(String(1))
 
 
 class SavedListing(IDMixIn, Base):

@@ -37,7 +37,7 @@ from money import Money
 
 # OGL modules used
 from listings.constants import *
-from listings.models import SavedQuery
+from listings.models import Listing, SavedQuery
 from listings.utils import *
 
 LOG = logging.getLogger(__name__)
@@ -47,6 +47,10 @@ QUERYTYPE_DEFAULT = 'D'
 QUERYTYPE_FAVORITE = 'F'
 QUERYTYPE_RECENT = 'R'
 QUERYTYPE_SUGGESTED = '_'
+
+# status column added late, so default (in normal use) status is Null
+# other statuses will be added here
+QUERYSTATUS_ON_HOMEPAGE = 'H'
 
 # Query class
 #
@@ -297,6 +301,7 @@ SUGGESTED_SEARCH_LIST = {
     }
 }
 
+
 # querylist_from_session()
 #
 # pulls named list of json-ed saved queries from the session &
@@ -359,7 +364,7 @@ def save_query(ref, descr, session, user):
     recents = querylist_from_session(session, QUERYTYPE_RECENT)
     from_search = None
     # ref'd query is normally recents[0] but let's be flexible in case
-    if recents and ref.startswith(QUERYTYPE_RECENT):
+    if recents and ref and ref[0] != QUERYTYPE_FAVORITE:
         for search in recents:
             if search.ref == ref:
                 from_search = search
@@ -514,7 +519,12 @@ def get_query_by_ref(session, query_ref):
         if qd:
             return Query().from_dict(qd)
         else:
-            return None
+            # check in the database
+            try:
+                sq = SavedQuery.objects.get(ref=query_ref)
+                return Query().from_saved_query(sq)
+            except:
+                return None
     # otherwise, look in the session
     querylist = []
     querylist = querylist_from_session(session, query_ref[0])
@@ -871,3 +881,25 @@ def add_filter(querybody, new_filter, do_copy=False):
         q['filtered']['filter']['and'] = []
     q['filtered']['filter']['and'].append(new_filter)
     return copybody
+
+
+# get_suggested_queries()
+#
+# returns a list of queries to suggest to someone
+#
+# pulls the listing_id from the query and attaches
+# that listing, if it exists & is current, etc
+#
+# GEE TODO: consider indexing in use with this table!!
+#
+def get_suggested_queries():
+
+    queries = SavedQuery.objects.filter(querytype=QUERYTYPE_SUGGESTED,
+                                        status=QUERYSTATUS_ON_HOMEPAGE)
+    for query in queries:
+        id = query.params.get('listing_id', None)
+        if id:
+            listing = Listing.objects.get(pk=id)
+            if listing.pic_href:
+                query.params['pic_href'] = listing.pic_href
+    return queries
