@@ -83,11 +83,11 @@ def handle_search_args(request, filter=None, base_url = None, query_ref=None):
     except Zipcode.DoesNotExist:
         args.errors['invalid_zip'] = True
 
-    args.min_price = extract_int(request.GET.get('price_min', None))
-    args.max_price = extract_int(request.GET.get('price_max', None))
+    args.min_price = extract_int(request.GET.get('min_price', None))
+    args.max_price = extract_int(request.GET.get('max_price', None))
 
-    args.min_year = extract_int(request.GET.get('year_min', None))
-    args.max_year = extract_int(request.GET.get('year_max', None))
+    args.min_year = extract_int(request.GET.get('min_year', None))
+    args.max_year = extract_int(request.GET.get('max_year', None))
 
     args.has_criteria = (args.query_string or
                          args.limit or
