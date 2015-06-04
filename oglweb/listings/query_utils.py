@@ -738,16 +738,17 @@ def build_new_query(args):
                 }
             }
         }
-        price_descr = ''
+        price_descr = 'price'
         min_pretty = None
         max_pretty = None
         if args.min_price:
             price_term['range']['price']['gte'] = args.min_price
             min_pretty = Money(args.min_price, 'USD').format('en_US', '$#,###')
-        price_descr = price_descr + 'price'
         if args.max_price:
             price_term['range']['price']['lte'] = args.max_price
             max_pretty = Money(args.max_price, 'USD').format('en_US', '$#,###')
+            if not args.min_price:  # max implies exclude missing/bogus price
+                price_term['range']['price']['gte'] = "1"
         if min_pretty and max_pretty:
             price_descr = min_pretty + ' to ' + max_pretty
         elif min_pretty:
