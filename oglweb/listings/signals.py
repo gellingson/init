@@ -1,4 +1,11 @@
+# signals.py
+#
+# handles login and signup events at this point
 
+# builtin modules used
+import logging
+
+# third party modules used
 from allauth.account.signals import user_signed_up, user_logged_in
 from django.contrib import messages
 from django.contrib.sessions.models import Session
@@ -43,6 +50,24 @@ def get_and_set_queries(request, user, **kwargs):
     db_favs = SavedQuery.objects.filter(user=user, querytype='F')
     favs = [Query().from_saved_query(sq) for sq in db_favs]
     querylist_to_session(request.session, QUERYTYPE_FAVORITE, favs)
+    return
+
+
+@receiver(user_signed_up)
+def log_signup(request, user, sociallogin=None, **kwargs):
+    r = request.META.get('HTTP_REFERER', request.path)
+    ref = request.session.get('refer', None)
+    if ref:
+        LOG.info('{}: signed up from {}, origination {}'.format(user.username, r, ref))
+    else:
+        LOG.info('{}: signed up from {}'.format(user.username, r))
+    return
+
+
+@receiver(user_logged_in)
+def log_login(request, user, sociallogin=None, **kwargs):
+    r = request.META.get('HTTP_REFERER', request.path)
+    LOG.info('{}: logged in from {}'.format(user.username, r))
     return
 
 

@@ -14,6 +14,7 @@ urlpatterns = [
     # url(r'^$', 'oglweb.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),
     # url(r'^$', oglviews.fubar, name='homepage'),
+    url(r'^land/(?P<ref>[a-z0-9]+)/$', views.landing, name='landing'),
     url(r'^$', views.homepage, name='homepage'),
     url(r'^about/$', views.about, name='about'),
     url(r'^accounts/profile/$', views.profile, name='profile'),

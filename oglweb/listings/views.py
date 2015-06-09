@@ -37,9 +37,26 @@ LOG = logging.getLogger(__name__)
 
 # Create your views here.
 
-def homepage(request):
+
+# landing()
+#
+# landing page to receive customers coming from promotional campaigns
+#
+# for now always goes to the homepage, but could do otherwise; logs
+# and tracks the landing action, however...
+#
+def landing(request, page='home', ref=None):
+    LOG.info('landing ({})'.format(ref))
+    request.session['refer'] = ref  # store for later analysis (sign up?)
+    return homepage(request, ref=ref)
+
+
+def homepage(request, ref=None):
+    if not ref and request.method == 'GET':
+        # r ('r'eferer, or list 'r'eference) selects queries to feature
+        ref = request.GET.get('r', 'home')
     context = {}
-    queries = get_suggested_queries()
+    queries = get_queries(ref)
     context['querylist'] = queries
     return render(request, HOMEPAGE, context)
 

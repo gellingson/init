@@ -37,7 +37,7 @@ from money import Money
 
 # OGL modules used
 from listings.constants import *
-from listings.models import Listing, SavedQuery
+from listings.models import Listing, SavedQuery, QueryList
 from listings.utils import *
 
 LOG = logging.getLogger(__name__)
@@ -50,6 +50,8 @@ QUERYTYPE_SUGGESTED = '_'
 
 # status column added late, so default (in normal use) status is Null
 # other statuses will be added here
+
+
 QUERYSTATUS_ON_HOMEPAGE = 'H'
 
 # Query class
@@ -884,23 +886,27 @@ def add_filter(querybody, new_filter, do_copy=False):
     return copybody
 
 
-# get_suggested_queries()
+# get_queries()
 #
-# returns a list of queries to suggest to someone
+# returns a (named) list of queries to suggest to someone
 #
 # pulls the listing_id from the query and attaches
 # that listing, if it exists & is current, etc
 #
-# GEE TODO: consider indexing in use with this table!!
 #
-def get_suggested_queries():
+def get_queries(ref):
 
-    queries = SavedQuery.objects.filter(querytype=QUERYTYPE_SUGGESTED,
-                                        status=QUERYSTATUS_ON_HOMEPAGE)
-    for query in queries:
-        id = query.params.get('listing_id', None)
+    query_list = []
+    if not ref:  # no list specified to fetch
+        return query_list
+
+    query_refs = QueryList.objects.filter(list_ref=ref).order_by('seq')
+    for queryref in query_refs:
+        q = queryref.query
+        id = q.params.get('listing_id', None)
         if id:
             listing = Listing.objects.get(pk=id)
             if listing.pic_href:
-                query.params['pic_href'] = listing.pic_href
-    return queries
+                q.params['pic_href'] = listing.pic_href
+        query_list.append(q)
+    return query_list

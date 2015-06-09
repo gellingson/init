@@ -373,3 +373,9 @@ class SavedListing(IDMixIn, Base):
                         ForeignKey('listing.id'))
     status = Column(String(1), nullable=False)
     note = Column(String(2048))
+
+
+class QueryList(IDMixIn, Base):
+    list_ref = Column(String(30), nullable=False)
+    seq = Column(Integer)
+    query_id = Column(Integer, ForeignKey('saved_query.id'))

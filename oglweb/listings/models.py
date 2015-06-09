@@ -408,3 +408,14 @@ class Zipcode(models.Model):
     class Meta:
         managed = False
         db_table = 'zipcode'
+
+
+class QueryList(models.Model):
+    id = models.IntegerField(primary_key=True)  # AutoField?
+    list_ref = models.CharField(max_length=30)
+    seq = models.IntegerField(blank=True, null=True)
+    query = models.ForeignKey('SavedQuery')
+
+    class Meta:
+        managed = False
+        db_table = 'query_list'

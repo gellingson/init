@@ -52,6 +52,12 @@ class SavedQueryAdmin(admin.ModelAdmin):
         }
     }
 
+@admin.register(QueryList)
+class QueryListAdin(admin.ModelAdmin):
+    list_display = ('list_ref', 'seq')
+    ordering = ('list_ref', 'seq')
+    fields = ('list_ref', 'seq', 'query')
+
 admin.site.register(Dealership, DealershipAdmin)
 admin.site.register(Classified, ClassifiedAdmin)
 admin.site.register(Listing, ListingAdmin)
