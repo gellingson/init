@@ -14,7 +14,7 @@ function login_to_signup(event){
 	$('.signup-content').show();
 	$('#id_username').val($('#id_login').val());
 	$('#id_password1').val($('#id_password').val());
-	$('#login_message').text('Join Carbyr...')
+	$('#login_message').text('')
 	if (event) {
 		event.stopPropagation();
 	}
@@ -25,7 +25,7 @@ function signup_to_login(event){
 	$('.signup-content').hide()
 	$('#id_login').val($('#id_username').val());
 	$('#id_password').val($('#id_password1').val());
-	$('#login_message').text('Log in to Carbyr...')
+	$('#login_message').text('')
 	if (event) {
 		event.stopPropagation();
 	}
@@ -58,11 +58,11 @@ function post_login() {
 $(document).ready(function(){
 	$('#login_link').click(function(event) {
 		event.preventDefault();
-		login('Log in to Carbyr...');
+		login('');
 	});									 
 	$('#signup_link').click(function(event) {
 		event.preventDefault();
-		signup('Join Carbyr...');
+		signup('');
 	});									 
 	// pop any (first/single) modal requested via django.contrib.messages
 	console.log('launching: ' + $('.modal_launcher').filter(':first').text())

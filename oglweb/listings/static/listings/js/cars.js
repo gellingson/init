@@ -11,7 +11,7 @@ function fav(listing_id, title, elt){
 			$('#favCarModal').modal();
 		});
 	} else {
-		login('You must log in to save cars to your account...');
+		login('Log in or join Carbyr to save cars to your account...');
 	}
 }
 
@@ -125,7 +125,7 @@ function setup_listing_buttons(){
 	});
 	$('button.testlogin').unbind('click').click(function(event) {
 		event.stopPropagation();
-		login('', $(this)); // login with no specific next action
+		login(''); // login with no specific next action
 	});
 	$('button.unfav').unbind('click').click(function(event) {
 		event.stopPropagation();
