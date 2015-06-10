@@ -22,6 +22,7 @@ FLAG_REASON_UNSPECIFIED = 'X'
 
 HOMEPAGE = 'listings/homepage.html'
 ABOUTPAGE = 'listings/about.html'
+LANDINGPAGE = 'listings/landing.html'
 LISTINGSBASE = 'listings/listingsbase.html'
 LISTINGSADMIN = 'listings/listingsadmin.html'
 LISTINGSTEST = 'listings/listingstest.html'

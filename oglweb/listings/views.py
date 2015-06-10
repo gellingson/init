@@ -48,7 +48,13 @@ LOG = logging.getLogger(__name__)
 def landing(request, page='home', ref=None):
     LOG.info('landing ({})'.format(ref))
     request.session['refer'] = ref  # store for later analysis (sign up?)
-    return homepage(request, ref=ref)
+    if not ref and request.method == 'GET':
+        # r ('r'eferer, or list 'r'eference) selects queries to feature
+        ref = request.GET.get('r', 'home')
+    context = {}
+    queries = get_queries(ref)
+    context['querylist'] = queries
+    return render(request, LANDINGPAGE, context)
 
 
 def homepage(request, ref=None):
