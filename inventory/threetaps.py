@@ -248,8 +248,22 @@ def extract_3taps_desc_fields(listing, item, classified, counts):
             # GEE TODO: dynamically size text cleanly
             listing.listing_text = listing.listing_text[:445] + '...'
     else:
-        listing.listing_text = item.heading
+        listing.listing_text = item.heading.strip()
 
+    # GEE TODO: patterns of YMM errors that seem fixable:
+    # year year make model, e.g. 2001 2001 dodge dart
+    # year model, e.g. 2005 corvette, or 2010 mini, or 2011 pt cruiser
+    # year model model, e.g. 2007 eagle eagle, or 
+    # common misspellings (Caddilac, Checy, Check, Benz, ...)
+
+    # workaround for 3taps CL bug that mangles heading sometimes
+    if classified.textid == 'craig':
+        if listing.listing_text.startswith('span classstar'):
+            counts['badtext'] += 1
+            listing.listing_text = "{} {} {}".format(listing.model_year,
+                                                     listing.make,
+                                                     listing.model)
+    
     if classified.textid == 'ccars' and listing.listing_text:
         # drop leading site ID in format '(CC-123456) '
         if listing.listing_text[:4] == '(CC-':
@@ -347,19 +361,23 @@ def extract_3taps_year_make_model(listing, item,
      an_model) = u.regularize_year_make_model_fields(anno.get('year'),
                                                      anno.get('make'),
                                                      anno.get('model'))
+    
     # from the heading
     (he_model_year,
      he_make,
      he_model) = u.regularize_year_make_model(item.get('heading'))
 
     # from the html
-    # for cl, annotations are often WRONG, so always go to the html
-    # (but fall back to the annotations if we have to). The html
-    # contains one ore more <p class="attrgroup">... one of which
+    # CL annotations are often MISSING/INCOMPLETE, so *maybe* go to the html.
+    # The html contains one ore more <p class="attrgroup">... one of which
     # often contains a <span> with Y/M/M info.
+    # we could always parse the html, but it is expensive -- even with lxml
+    # it's far and away the most expensive CPU operation (probably the vast
+    # majority of the total CPU expended!) so we only do it conditionally
     # GEE TODO: some of the other attrgroup spans are also interesting
     ht_model_year = ht_make = ht_model = None
-    if classified.textid == 'craig' and html:
+    if (classified.textid == 'craig' and html
+        and not (an_model_year and an_make and an_model)):
         # the encoded html gets chopped at 64k blob size, and there may
         # be other situations where something gets munged; if the length
         # is wrong pad chop off a few chars until it is a multiple of
@@ -381,6 +399,7 @@ def extract_3taps_year_make_model(listing, item,
             # but it does throw an occasional exception on bad inputs (heh)
             try:
                 d = pq(html_decoded)
+                counts['html_parsed'] += 1
                 for span in d('.attrgroup').find('span').items():
                     if not listing.model_year or not listing.make:
                         (ht_model_year,

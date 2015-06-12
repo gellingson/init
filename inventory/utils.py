@@ -663,6 +663,7 @@ def apply_post_tagging_filters(listing, inv_settings, counts):
     if 'limited' in inv_settings and not listing.has_tag('interesting'):
         counts['rejected:uninteresting'] += 1
         return False # throw it away for limited inventory stages
+
     if listing.has_tag('rv'):
         counts['rejected:rv'] += 1
         return False

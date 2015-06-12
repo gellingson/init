@@ -36,7 +36,10 @@ def tagify(listing, strict=False, counts=None):
     remove_tags = []  # not sure if we want to do this...
     make = None
 
-    if u.is_car_interesting(listing, strict):
+    unknown_make_is_interesting = True
+    if strict:
+        unknown_make_is_interesting = False
+    if u.is_car_interesting(listing, unknown_make_is_interesting):
         new_tags.append('interesting')
 
     # GEE TODO: maybe we should be doing some of this tagging in the
