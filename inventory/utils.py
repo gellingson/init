@@ -266,11 +266,21 @@ def regularize_year_make_model(year_make_model_string):
                 if num < 20:
                     year = 2000 + num
                 if year:  # only look for makemodel in the remaining words
+                    print("YEAR IS %d", year)
                     if len(words) > word:
                         makemodel = words[(word+1):]
-                break
+                        # now check for a common (?) error: repeated year,
+                        # e.g. 2005 2005 Chevrolet Corvette
+                        print("remaining is " + " ".join(makemodel))
+                        if int(makemodel[0]) == year:
+                            print("DOES EQUAL")
+                            makemodel = makemodel[1:]
+                    else:
+                        makemodel = []
             except ValueError:
                 pass  # that wasn't it... no harm, no foul
+            if year:
+                break
 
         if not year:  # then we see no year in the offered string
             # this means we're not doing well and will probably trash this
@@ -697,9 +707,22 @@ def is_car_interesting(listing, unknown_make_is_interesting=True):
         return True # automatically interesting
     if int(listing.price) > 100000: # Prima facia evidence of interesting? :)
         return True
+    desc = listing.listing_text.upper()
+
+    # cheap hack to try to capture race/track cars
+    if " RACE" in desc or " TRACK" in desc:
+        if not (" RACE TRAILER" in desc or
+                " RACE CAR TRAILER" in desc or
+                ("RACE RED" in desc and "FORD" in desc) or
+                ("OCEAN RACE" in desc and "VOLVO" in desc)):
+            return True
+
     if not unknown_make_is_interesting:
         # any known make should already be regularized so we don't need
         # to worry about fuzzy matching here:
+        # ... HOWEVER, the keys in _MAKES are the *non* canonical names,
+        # thus they are upcase, and we need to ensure that there is a NCM
+        # entry with both words in the non-canonical form, e.g. ALFA ROMEO
         if listing.make and listing.make.upper() in _MAKES:
             pass  # known make; continue
         else:
@@ -739,7 +762,6 @@ def is_car_interesting(listing, unknown_make_is_interesting=True):
                 return True
     # heh, can't think of any reason to keep this record, so...
     return False
-
 
 
 # soup_from_file()
