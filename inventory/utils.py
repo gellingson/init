@@ -266,14 +266,11 @@ def regularize_year_make_model(year_make_model_string):
                 if num < 20:
                     year = 2000 + num
                 if year:  # only look for makemodel in the remaining words
-                    print("YEAR IS %d", year)
                     if len(words) > word:
                         makemodel = words[(word+1):]
                         # now check for a common (?) error: repeated year,
                         # e.g. 2005 2005 Chevrolet Corvette
-                        print("remaining is " + " ".join(makemodel))
                         if int(makemodel[0]) == year:
-                            print("DOES EQUAL")
                             makemodel = makemodel[1:]
                     else:
                         makemodel = []
