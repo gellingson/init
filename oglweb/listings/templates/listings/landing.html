@@ -41,6 +41,17 @@
     </div>
 	<div class="container">
 	  <div class="row">
+        <div class="col-md-12">
+          <h2>Cars worth driving...</h2>
+		  <p>Life is too short to drive a boring car. Fortunately Carbyr is here to help!</p>
+		  <p>Carbyr brings together all the best and most interesting cars from across the internet. There are hundreds of thousands of interesting cars for sale RIGHT NOW. We went and found them for you, separating the needles from the haystack of tens of millions of boring car appliances clogging dealership lots across the country.</p>
+		  <p>Classic <a href="/cars/?query_string=triumph">Triumph</a>? Great choice! All-electric <a href="/cars/?query_string=tesla">Tesla</a>? You bet. <a href="/cars/?query_string=miata&min_price=1&max_price=10000">Miata under $10K</a>? YES! There's a great car out there for everyone, including you. <a href="/cars/">Find yours now!</a></p>
+		  <p><a href="/about">Learn more</a> about Carbyr, <a href="/cars/">search for your favorite car</a>, or just <a href="/cars/">browse</a> some the internet's most interesting wheels, Carbyr-style...</p>
+		</div>
+	  </div>
+	</div>
+	<div class="container">
+	  <div class="row">
 		{% for query in querylist %}
 		<div class="col-md-4">
 		  <a href="/cars/?s={{ query.ref }}">
@@ -58,17 +69,6 @@
 		  </a>
 		</div>
 		{% endfor %}  
-	  </div>
-	</div>
-	<div class="container">
-	  <div class="row">
-        <div class="col-md-12">
-          <h2>Cars worth driving...</h2>
-		  <p>Life is too short to drive a boring car. Fortunately Carbyr is here to help!</p>
-		  <p>Carbyr brings together all the best and most interesting cars from across the internet. There are hundreds of thousands of interesting cars for sale RIGHT NOW. We went and found them for you, separating the needles from the haystack of tens of millions of boring car appliances clogging dealership lots across the country.</p>
-		  <p>Classic <a href="/cars/?query_string=triumph">Triumph</a>? Great choice! All-electric <a href="/cars/?query_string=tesla">Tesla</a>? You bet. <a href="/cars/?query_string=miata&min_price=1&max_price=10000">Miata under $10K</a>? YES! There's a great car out there for everyone, including you. <a href="/cars/">Find yours now!</a></p>
-		  <p><a href="/about">Learn more</a> about Carbyr, <a href="/cars/">search for your favorite car</a>, or just <a href="/cars/">browse</a> some the internet's most interesting wheels, Carbyr-style...</p>
-		</div>
 	  </div>
 	</div>
 	<hr>
