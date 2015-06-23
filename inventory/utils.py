@@ -700,7 +700,7 @@ def make_sure_path_exists(path):
 # particularly dirty sources where you have lots of junky records)
 #
 def is_car_interesting(listing, unknown_make_is_interesting=True):
-    if int(listing.model_year) > 1800 and int(listing.model_year) <= 1975:
+    if int(listing.model_year) > 1800 and int(listing.model_year) <= 1990:
         return True # automatically interesting
     if int(listing.price) > 100000: # Prima facia evidence of interesting? :)
         return True
