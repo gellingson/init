@@ -149,14 +149,6 @@ def extract_3taps_desc_fields(listing, item, classified, counts):
             pass
     # then if ever 3taps says the expiration is even sooner, make it so
     if item.expires:
-        if not listing.removal_date.tzinfo:
-            print("FUCKed removal_date")
-            print(listing)
-        if not u.guessDate(item.expires).tzinfo:
-            print("FUCKed item.expires")
-            print(item.expires)
-            print(listing)
-
         listing.removal_date = min(listing.removal_date,
                                    u.guessDate(item.expires))
 
@@ -672,7 +664,7 @@ def pull_3taps_inventory(classified, session,
                 protect=True
             ok = u.apply_post_tagging_filters(listing, inv_settings, counts, protect=protect)
             if 'unknown_make' in listing.tags:
-                print('{} {} {}'.format(listing.model_year, listing.make, listing.model))
+                LOG.debug('unknown make: {} {} {}'.format(listing.model_year, listing.make, listing.model))
             # GEE TODO: fix these & incorp into post_tagging filters (above)
             # a few more CL junk-data tests: drop records that fail
             if ok and classified.textid == 'craig' and not listing.has_tag('interesting'):
