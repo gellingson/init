@@ -663,13 +663,14 @@ def validate_listing(listing, counts):
 # apply_post_tagging_filters()
 #
 # applies last set of validity & relevance checks before applying a listing
-def apply_post_tagging_filters(listing, inv_settings, counts):
+def apply_post_tagging_filters(listing, inv_settings, counts, protect=False):
     if listing.status != 'F':
         return True # always willing to remove inventory
 
-    if 'limited' in inv_settings and not listing.has_tag('interesting'):
-        counts['rejected:uninteresting'] += 1
-        return False # throw it away for limited inventory stages
+    if not protect:  # sometimes we protect even uninteresting cars...
+        if 'limited' in inv_settings and not listing.has_tag('interesting'):
+            counts['rejected:uninteresting'] += 1
+            return False # throw it away for limited inventory stages
 
     if listing.has_tag('rv'):
         counts['rejected:rv'] += 1

@@ -1102,9 +1102,7 @@ def pull_ebay_inventory(classified, session,
             if ok:
                 tagify(listing, strict=False, counts=counts)
                 # more checks after tagification (checks that leverage tagging)
-
-                # more checks after tagification (checks that leverage tagging)
-                ok = u.apply_post_tagging_filters(listing, inv_settings, counts)
+                ok = u.apply_post_tagging_filters(listing, inv_settings, counts, protect=False)
 
             if ok:
                 # it's a keeper!

@@ -323,6 +323,7 @@ def extract_3taps_urls(listing, item, classified, counts):
     # workaround for 3taps issue with broken autod URLs:
     if classified.textid == 'autod':
         if not listing.listing_href or not 'listingId=' in listing.listing_href:
+            counts['noexturl'] += 1
             LOG.debug('discarding record due to broken autod external_url')
             ok = False  # unfixable error, unfortunately
     return ok
@@ -663,8 +664,15 @@ def pull_3taps_inventory(classified, session,
             tagify(listing, strict=(classified.textid == 'craig'), counts=counts)
 
             # more checks after tagification (checks that leverage tagging)
-            ok = u.apply_post_tagging_filters(listing, inv_settings, counts)
-
+            # GEE TODO: make this data-driven!! Also, apply post-tagging to
+            # dealerships (it isn't today)
+            protect=False
+            if (classified.textid == 'hmngs' or classified.textid == 'ccars'
+                or classified.textid == 'autoc'):
+                protect=True
+            ok = u.apply_post_tagging_filters(listing, inv_settings, counts, protect=protect)
+            if 'unknown_make' in listing.tags:
+                print('{} {} {}'.format(listing.model_year, listing.make, listing.model))
             # GEE TODO: fix these & incorp into post_tagging filters (above)
             # a few more CL junk-data tests: drop records that fail
             if ok and classified.textid == 'craig' and not listing.has_tag('interesting'):
