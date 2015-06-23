@@ -24,8 +24,19 @@
       <div class="container">
         <h1>Carbyr</h1>
         <p>Cars are fun; finding the right one wasn't. Until now.</p>
-        <p>
-		  <a class="btn btn-primary btn-lg" role="button" href="/cars/">See all the newest listings! &raquo;</a></p>
+		<div class="col-md-6">
+		  <form class="searchform" role="form" action="/cars/" method="get">
+			<div class="form-group">
+			  <div class="input-group">
+				<label class="sr-only" for="query_string">Quick Search:</label>
+				<input type="text" placeholder="quick search..." class="form-control search-sync" name="query_string" id="query_string"/>
+				<span class="input-group-btn">
+				  <button type="submit" class="btn btn-success">Search</button>
+				</span>
+			  </div>
+			</div>
+		  </form>
+		</div>
       </div>
     </div>
 	<div class="container">
