@@ -315,6 +315,28 @@ def fj_parse_listing(listing, entry, detail):
     return True
 
 
+# gullwing_parse_listing
+#
+def gullwing_parse_listing(listing, entry, detail):
+
+    # get some stuff from the inventory page
+    (listing.model_year,
+     listing.make,
+     listing.model) = u.regularize_year_make_model(entry.find(class_='listing_titlelink').text)
+
+    div = detail.find(class_="sectionheader", text=re.compile("Vehicle Description"))
+    if div:
+        listing.listing_text = ' '.join(div.parent.find_all(text=True, recursive=False)).strip()
+    else:
+        listing.listing_text = entry.find(class_='listing_titlelink').text
+
+    # pull the rest of the fields from the detail page
+    
+    listing.price = u.regularize_price(entry.find('span', class_='gridrow_price').text)
+
+    return True
+
+
 # lc_parse_listing
 #
 # this method handles both left coast classics (lcc) and
