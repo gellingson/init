@@ -717,6 +717,11 @@ def pull_dealer_inventory(dealer, session=None):
             ok = (ok and
                   globals()[dealer.parse_listing_func](listing, entry, detail))
             if ok:
+                # regularize some inputs, which may have come from either
+                # generic or dealership-specific mechanisms (catch-all check)
+                listing.listing_text = u.regularize_listing_text(
+                    listing.listing_text,
+                    listing=listing)
                 # check for common errors / signs of trouble:
                 # need a listing_id
                 if listing.local_id == last_local_id:
@@ -930,7 +935,8 @@ def process_ebay_listing(session, item, classified, counts, dblog=False, batch_y
     # VIN -- not present by default at least
 
     # listing_text
-    listing.listing_text = item['title'].strip()
+    listing.listing_text = u.regularize_listing_text(item['title'],
+                                                     listing=listing)
 
     # price
     # GEE TODO: this is ignoring ebay price weirdness and currency

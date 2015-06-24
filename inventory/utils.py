@@ -402,6 +402,35 @@ def regularize_url(href_in, base_url=None,
     return href_out
 
 
+# regularize_listing_text()
+#
+# regularizes text (strips, chops length, applies various tricks)
+#
+# NOTES:
+# 1) source-specific hacks must be elsewhere; this is source-agnostic
+# 2) can pass in either alt_text or listing (from which to use YMM)
+#    in case the desired text tests out as total crap
+#
+def regularize_listing_text(text, alt_text=None, listing=None):
+    # leading ':' or '*' or whatnot is common; ditch that junk
+    t = text.strip(':*#^[] ')
+    # GEE TODO: downcase upper case shouting
+    # chop to fit
+    if len(t) > 450:  # 450 looks nice on my screen (heh)
+        # GEE TODO: dynamically size text cleanly
+        t = t[:445] + '...'
+    if len(t) < 30:  # probably no useful content; use alt or YMM instead
+        if alt_text:
+            t = regularize_listing_text(alt_text)
+        elif listing:
+            t = '{} {} {}'.format(listing.model_year,
+                                  listing.make,
+                                  listing.model)
+        else:
+            pass  # no alt available; keep what we have (yuck)
+    return t
+
+
 # extract_field_data()
 #
 # identifies & extracts fields from a blob of text
