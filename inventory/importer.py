@@ -317,22 +317,26 @@ def fj_parse_listing(listing, entry, detail):
 
 # gullwing_parse_listing
 #
+# two notes:
+# 1) using the"full inventory" link because it is *much* smaller & faster;
+#    source control contains the original func that uses the paginated
+#    inventory listing in case we want to refer back to it
+# 2) will this work for other "VIN*LIST" dealerships? Seems like it might...
+#
 def gullwing_parse_listing(listing, entry, detail):
 
     # get some stuff from the inventory page
     (listing.model_year,
      listing.make,
-     listing.model) = u.regularize_year_make_model(entry.find(class_='listing_titlelink').text)
+     listing.model) = u.regularize_year_make_model(entry.find('td', class_='fullname').text)
 
     div = detail.find(class_="sectionheader", text=re.compile("Vehicle Description"))
     if div:
         listing.listing_text = ' '.join(div.parent.find_all(text=True, recursive=False)).strip()
     else:
-        listing.listing_text = entry.find(class_='listing_titlelink').text
+        listing.listing_text = entry.find(entry.find('td', class_='fullname').text)
 
-    # pull the rest of the fields from the detail page
-    
-    listing.price = u.regularize_price(entry.find('span', class_='gridrow_price').text)
+    listing.price = u.regularize_price(entry.find('td', class_='price').text)
 
     return True
 
