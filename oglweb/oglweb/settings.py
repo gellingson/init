@@ -17,7 +17,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '@^z4z&io2apa&^+(_afrvd=f(31suab!8kg&+4##2as!li1i$u'
+SECRET_KEY = ''
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(os.environ.get('OGL_SERVER_DEBUG', '') == 'TRUE')
@@ -117,10 +117,10 @@ DATABASES = {
         'HOST': os.environ.get('OGL_DB_HOST','localhost'),
         'NAME': os.environ.get('OGL_DB','carsdb'),
 # uncomment these lines and add password when/if you need to be admin (e.g. migrations)
-        'USER': 'carsdbadmin',
-        'PASSWORD': 'cars4Me',
-#        'USER': os.environ.get('OGL_DB_USERACCOUNT','carsdbuser'),
-#        'PASSWORD': os.environ.get('OGL_DB_USERACCOUNT_PASSWORD', 'nopassword'),
+#        'USER': '',
+#        'PASSWORD': '',
+        'USER': os.environ.get('OGL_DB_USERACCOUNT','carsdbuser'),
+        'PASSWORD': os.environ.get('OGL_DB_USERACCOUNT_PASSWORD', 'nopassword'),
         'CHARSET': 'utf8', # GEE this may apply only to creating test DBs??
     }
 }
@@ -203,7 +203,7 @@ SOCIALACCOUNT_PROVIDERS = {
 #EMAIL_HOST='smtp.mandrillapp.com'
 #EMAIL_PORT=587
 #EMAIL_HOST_USER='info@carbyr.com'
-#EMAIL_HOST_PASSWORD='0vGvsQOzdCdauh7ld9cpXA'
+#EMAIL_HOST_PASSWORD=''
 #EMAIL_TIMEOUT=1
 # setting to just dump emails to stdout
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
